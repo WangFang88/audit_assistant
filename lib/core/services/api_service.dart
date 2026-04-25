@@ -56,6 +56,24 @@ class ApiService {
     await prefs.remove(_userKey);
   }
 
+  Future<String?> getAccessToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(_accessTokenKey);
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+    return token;
+  }
+
+  Future<Map<String, String>> _authorizedHeaders({Map<String, String>? headers}) async {
+    final merged = <String, String>{...?headers};
+    final token = await getAccessToken();
+    if (token != null) {
+      merged['Authorization'] = 'Bearer $token';
+    }
+    return merged;
+  }
+
   Future<LoginResponse> login({required String phone, required String password}) async {
     final response = await _client.post(
       Uri.parse('$_baseUrl/auth/login'),
@@ -71,7 +89,7 @@ class ApiService {
     final uri = Uri.parse('$_baseUrl/overview/dashboard').replace(
       queryParameters: groupId == null ? null : {'groupId': groupId},
     );
-    final response = await _client.get(uri);
+    final response = await _client.get(uri, headers: await _authorizedHeaders());
     final json = _decodeMap(response);
     return DashboardOverview.fromJson(json);
   }
@@ -79,7 +97,7 @@ class ApiService {
   Future<QueryResult> search({required String question, String? groupId}) async {
     final response = await _client.post(
       Uri.parse('$_baseUrl/query/search'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _authorizedHeaders(headers: {'Content-Type': 'application/json'}),
       body: jsonEncode({'question': question, 'groupId': groupId}),
     );
 
@@ -91,7 +109,7 @@ class ApiService {
     final uri = Uri.parse('$_baseUrl/chat/conversations').replace(
       queryParameters: groupId == null ? null : {'groupId': groupId},
     );
-    final response = await _client.get(uri);
+    final response = await _client.get(uri, headers: await _authorizedHeaders());
     final list = _decodeList(response);
     return list.map(ConversationSummary.fromJson).toList();
   }
@@ -99,6 +117,7 @@ class ApiService {
   Future<List<ChatMessage>> fetchMessages(String conversationId) async {
     final response = await _client.get(
       Uri.parse('$_baseUrl/chat/conversations/$conversationId/messages'),
+      headers: await _authorizedHeaders(),
     );
     final list = _decodeList(response);
     return list.map(ChatMessage.fromJson).toList();
@@ -112,7 +131,7 @@ class ApiService {
   }) async {
     final response = await _client.post(
       Uri.parse('$_baseUrl/chat/messages'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _authorizedHeaders(headers: {'Content-Type': 'application/json'}),
       body: jsonEncode({
         'conversationId': conversationId,
         'conversationType': conversationType,
@@ -126,7 +145,10 @@ class ApiService {
   }
 
   Future<List<GroupMember>> fetchMembers(String groupId) async {
-    final response = await _client.get(Uri.parse('$_baseUrl/groups/$groupId/members'));
+    final response = await _client.get(
+      Uri.parse('$_baseUrl/groups/$groupId/members'),
+      headers: await _authorizedHeaders(),
+    );
     final list = _decodeList(response);
     return list.map(GroupMember.fromJson).toList();
   }
@@ -134,7 +156,7 @@ class ApiService {
   Future<ProjectGroup> createGroup({required String name, required String organizationName}) async {
     final response = await _client.post(
       Uri.parse('$_baseUrl/groups'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _authorizedHeaders(headers: {'Content-Type': 'application/json'}),
       body: jsonEncode({'name': name, 'organizationName': organizationName}),
     );
 
@@ -146,7 +168,7 @@ class ApiService {
     final uri = Uri.parse('$_baseUrl/documents').replace(
       queryParameters: groupId == null ? null : {'groupId': groupId},
     );
-    final response = await _client.get(uri);
+    final response = await _client.get(uri, headers: await _authorizedHeaders());
     final list = _decodeList(response);
     return list.map(KnowledgeDocument.fromJson).toList();
   }
@@ -155,7 +177,7 @@ class ApiService {
     final uri = Uri.parse('$_baseUrl/documents/extract-jobs').replace(
       queryParameters: groupId == null ? null : {'groupId': groupId},
     );
-    final response = await _client.get(uri);
+    final response = await _client.get(uri, headers: await _authorizedHeaders());
     final list = _decodeList(response);
     return list.map(ExtractionJob.fromJson).toList();
   }
@@ -169,7 +191,7 @@ class ApiService {
     final backendLibraryType = libraryType == '公共库' ? 'public' : 'private';
     final response = await _client.post(
       Uri.parse('$_baseUrl/documents/import-from-file-server'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _authorizedHeaders(headers: {'Content-Type': 'application/json'}),
       body: jsonEncode({
         'title': title,
         'libraryType': backendLibraryType,
@@ -190,7 +212,7 @@ class ApiService {
     final backendRole = role == '组长' ? 'leader' : 'member';
     final response = await _client.post(
       Uri.parse('$_baseUrl/groups/$groupId/invites'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _authorizedHeaders(headers: {'Content-Type': 'application/json'}),
       body: jsonEncode({'phone': phone, 'role': backendRole}),
     );
 
@@ -203,7 +225,7 @@ class ApiService {
   }) async {
     final response = await _client.post(
       Uri.parse('$_baseUrl/groups/$groupId/transfer-leader'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _authorizedHeaders(headers: {'Content-Type': 'application/json'}),
       body: jsonEncode({'targetUserId': targetUserId}),
     );
 
@@ -211,7 +233,10 @@ class ApiService {
   }
 
   Future<void> removeMember({required String groupId, required String memberId}) async {
-    final response = await _client.delete(Uri.parse('$_baseUrl/groups/$groupId/members/$memberId'));
+    final response = await _client.delete(
+      Uri.parse('$_baseUrl/groups/$groupId/members/$memberId'),
+      headers: await _authorizedHeaders(),
+    );
     _decodeMap(response);
   }
 
