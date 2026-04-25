@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../core/models/app_models.dart';
 import '../../core/services/api_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, required this.apiService, required this.onLogin});
 
   final ApiService apiService;
-  final ValueChanged<AppUser> onLogin;
+  final ValueChanged<LoginResponse> onLogin;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -41,7 +40,7 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) {
         return;
       }
-      widget.onLogin(result.user);
+      widget.onLogin(result);
     } on ApiException catch (error) {
       setState(() {
         _error = error.message;

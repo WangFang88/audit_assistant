@@ -16,6 +16,47 @@ class AuditAssistantApp extends StatefulWidget {
 class _AuditAssistantAppState extends State<AuditAssistantApp> {
   final ApiService _apiService = ApiService();
   AppUser? _currentUser;
+  bool _restoringSession = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreSession();
+  }
+
+  Future<void> _restoreSession() async {
+    final user = await _apiService.restoreSession();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _currentUser = user;
+      _restoringSession = false;
+    });
+  }
+
+  Future<void> _handleLogin(LoginResponse loginResponse) async {
+    await _apiService.persistLogin(loginResponse);
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _currentUser = loginResponse.user;
+    });
+  }
+
+  Future<void> _handleLogout() async {
+    await _apiService.clearSession();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _currentUser = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,16 +64,18 @@ class _AuditAssistantAppState extends State<AuditAssistantApp> {
       title: '小嘉审计助手',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      home: _currentUser == null
-          ? LoginPage(
-              apiService: _apiService,
-              onLogin: (user) => setState(() => _currentUser = user),
-            )
-          : DashboardPage(
-              apiService: _apiService,
-              currentUser: _currentUser!,
-              onLogout: () => setState(() => _currentUser = null),
-            ),
+      home: _restoringSession
+          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          : _currentUser == null
+              ? LoginPage(
+                  apiService: _apiService,
+                  onLogin: _handleLogin,
+                )
+              : DashboardPage(
+                  apiService: _apiService,
+                  currentUser: _currentUser!,
+                  onLogout: _handleLogout,
+                ),
     );
   }
 }

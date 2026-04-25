@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_models.dart';
 
@@ -9,8 +10,48 @@ class ApiService {
       : _client = client ?? http.Client(),
         _baseUrl = baseUrl ?? 'http://localhost:3000/api';
 
+  static const _accessTokenKey = 'auth.accessToken';
+  static const _refreshTokenKey = 'auth.refreshToken';
+  static const _userKey = 'auth.user';
+
   final http.Client _client;
   final String _baseUrl;
+
+  Future<void> persistLogin(LoginResponse loginResponse) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_accessTokenKey, loginResponse.accessToken);
+    await prefs.setString(_refreshTokenKey, loginResponse.refreshToken);
+    await prefs.setString(_userKey, jsonEncode(loginResponse.user.toJson()));
+  }
+
+  Future<AppUser?> restoreSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final accessToken = prefs.getString(_accessTokenKey);
+    final refreshToken = prefs.getString(_refreshTokenKey);
+    final userJson = prefs.getString(_userKey);
+
+    if (accessToken == null || accessToken.isEmpty || refreshToken == null || refreshToken.isEmpty) {
+      return null;
+    }
+
+    if (userJson == null || userJson.isEmpty) {
+      return null;
+    }
+
+    final decoded = jsonDecode(userJson) as Object?;
+    if (decoded is! Map<String, dynamic>) {
+      return null;
+    }
+
+    return AppUser.fromJson(decoded);
+  }
+
+  Future<void> clearSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_accessTokenKey);
+    await prefs.remove(_refreshTokenKey);
+    await prefs.remove(_userKey);
+  }
 
   Future<LoginResponse> login({required String phone, required String password}) async {
     final response = await _client.post(

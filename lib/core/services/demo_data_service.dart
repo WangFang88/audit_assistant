@@ -113,6 +113,7 @@ class DemoDataService {
         type: '群聊',
         lastMessage: '请同步采购抽查结果。',
         unreadCount: 2,
+        groupId: 'group-1',
       ),
       ConversationSummary(
         id: 'conv-direct-1',
@@ -120,6 +121,7 @@ class DemoDataService {
         type: '私信',
         lastMessage: '我已整理出相关条款。',
         unreadCount: 0,
+        groupId: null,
       ),
     ];
   }

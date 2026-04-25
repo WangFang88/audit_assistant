@@ -22,6 +22,16 @@ class AppUser {
       trialEndsAt: json['trialEndsAt'] as String? ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'phone': phone,
+      'role': role,
+      'trialEndsAt': trialEndsAt,
+    };
+  }
 }
 
 class ProjectGroup {
