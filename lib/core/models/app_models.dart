@@ -40,6 +40,8 @@ class KnowledgeDocument {
     required this.extractionMode,
     required this.indexStatus,
     required this.chunkCount,
+    required this.fileType,
+    required this.chunkStrategy,
   });
 
   final String id;
@@ -48,6 +50,8 @@ class KnowledgeDocument {
   final String extractionMode;
   final String indexStatus;
   final int chunkCount;
+  final String fileType;
+  final String chunkStrategy;
 }
 
 class QueryCitation {
@@ -57,6 +61,9 @@ class QueryCitation {
     required this.score,
     required this.matchedChunk,
     required this.reason,
+    required this.articleRef,
+    required this.chapterTitle,
+    required this.pageLabel,
   });
 
   final String title;
@@ -64,6 +71,9 @@ class QueryCitation {
   final double score;
   final String matchedChunk;
   final String reason;
+  final String articleRef;
+  final String chapterTitle;
+  final String pageLabel;
 }
 
 class QueryResult {
@@ -71,13 +81,27 @@ class QueryResult {
     required this.answer,
     required this.explanation,
     required this.pipeline,
+    required this.retrievalStats,
     required this.citations,
   });
 
   final String answer;
   final String explanation;
   final List<String> pipeline;
+  final QueryRetrievalStats retrievalStats;
   final List<QueryCitation> citations;
+}
+
+class QueryRetrievalStats {
+  const QueryRetrievalStats({
+    required this.queryMode,
+    required this.candidateChunks,
+    required this.returnedCitations,
+  });
+
+  final String queryMode;
+  final int candidateChunks;
+  final int returnedCitations;
 }
 
 class ConversationSummary {

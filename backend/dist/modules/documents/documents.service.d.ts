@@ -1,0 +1,62 @@
+declare class ImportDocumentDto {
+    title: string;
+    libraryType: 'public' | 'private';
+    sourcePath: string;
+    groupId?: string;
+}
+type DocumentRecord = {
+    id: string;
+    title: string;
+    libraryType: 'public' | 'private';
+    sourcePath: string;
+    chunkCount: number;
+    indexStatus: 'ready' | 'processing' | 'queued';
+    extractionMode: 'text' | 'ocr';
+    uploadedAt: string;
+    groupId: string | null;
+    fileType: 'pdf' | 'docx' | 'xlsx' | 'image';
+    chunkStrategy: 'structure-first' | 'length-fallback';
+};
+type ExtractJobRecord = {
+    id: string;
+    documentId: string;
+    status: 'processing' | 'queued' | 'completed';
+    stage: 'extract' | 'ocr' | 'chunk' | 'index';
+    progress: number;
+    startedAt: string;
+};
+type DocumentChunkRecord = {
+    id: string;
+    documentId: string;
+    groupId: string | null;
+    libraryType: 'public' | 'private';
+    title: string;
+    chapterTitle: string;
+    articleRef: string;
+    pageLabel: string;
+    content: string;
+    keywords: string[];
+    indexStatus: 'ready' | 'processing';
+};
+export declare class DocumentsService {
+    private readonly documents;
+    private readonly extractJobs;
+    private readonly chunks;
+    listDocuments(groupId?: string): DocumentRecord[];
+    listExtractionJobs(): ExtractJobRecord[];
+    getReadyChunks(groupId?: string): DocumentChunkRecord[];
+    getDocumentById(documentId: string): DocumentRecord;
+    importDocument(dto: ImportDocumentDto): {
+        id: string;
+        title: string;
+        libraryType: "public" | "private";
+        sourcePath: string;
+        groupId: string | null;
+        fileType: "pdf" | "docx" | "xlsx" | "image";
+        extractionMode: string;
+        indexStatus: string;
+        chunkStrategy: string;
+        notes: string;
+    };
+}
+export { ImportDocumentDto };

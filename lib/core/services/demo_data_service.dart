@@ -35,6 +35,8 @@ class DemoDataService {
         extractionMode: '文字抽取',
         indexStatus: '已建索引',
         chunkCount: 18,
+        fileType: 'PDF',
+        chunkStrategy: '结构优先切分',
       ),
       KnowledgeDocument(
         id: 'doc-2',
@@ -43,6 +45,8 @@ class DemoDataService {
         extractionMode: '文字抽取',
         indexStatus: '已建索引',
         chunkCount: 12,
+        fileType: 'DOCX',
+        chunkStrategy: '结构优先切分',
       ),
       KnowledgeDocument(
         id: 'doc-3',
@@ -51,6 +55,8 @@ class DemoDataService {
         extractionMode: 'OCR',
         indexStatus: '处理中',
         chunkCount: 0,
+        fileType: 'PDF',
+        chunkStrategy: '长度回退切分',
       ),
     ];
   }
@@ -68,6 +74,9 @@ class DemoDataService {
             ? '第四条：项目组内部采购须履行审批、比价、验收与留痕。'
             : '第十二条：专项资金使用应符合预算用途，不得擅自改变资金性质。',
         reason: '已基于已切分文本块完成关键词和语义融合检索。',
+        articleRef: procurement ? '第四条' : '第十二条',
+        chapterTitle: procurement ? '第一章 总则' : '第二章 资金使用',
+        pageLabel: procurement ? '第 2 页' : '第 6 页',
       ),
       QueryCitation(
         title: fund ? '某区财政专项资金管理办法' : '财政监督检查工作规范',
@@ -77,6 +86,9 @@ class DemoDataService {
             ? '第十五条：专项资金支出应专款专用，并留存完整依据。'
             : '第八条：审计取证应保留审批、执行、验收全链路证据。',
         reason: '先按库范围和元数据过滤，再从索引中命中相关条款。',
+        articleRef: fund ? '第十五条' : '第八条',
+        chapterTitle: fund ? '第二章 资金使用' : '第二章 监督检查',
+        pageLabel: fund ? '第 8 页' : '第 4 页',
       ),
     ];
 
@@ -84,6 +96,11 @@ class DemoDataService {
       answer: '系统已优先检索公共库与当前项目组私有库中已抽取、已切分、已建索引的文本块，并返回最相关的制度依据。',
       explanation: '当前方案不会在查询时解析原始大文件，超大文件会在导入阶段异步抽取与索引，因此查询响应更稳定。',
       pipeline: const ['元数据过滤', '文本块关键词检索', '文本块语义检索', '结果融合与重排', '千问答案生成'],
+      retrievalStats: const QueryRetrievalStats(
+        queryMode: '关键词 + 语义融合',
+        candidateChunks: 4,
+        returnedCitations: 2,
+      ),
       citations: citations,
     );
   }

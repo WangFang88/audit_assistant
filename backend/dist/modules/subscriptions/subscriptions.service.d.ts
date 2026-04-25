@@ -1,0 +1,32 @@
+export declare class SubscriptionsService {
+    private readonly plans;
+    getOverview(): {
+        currentPlanId: string;
+        trialEndsAt: string;
+        usage: {
+            groups: {
+                used: number;
+                limit: number;
+            };
+            privateDocuments: {
+                used: number;
+                limit: number;
+            };
+            dailyQueries: {
+                used: number;
+                limit: number;
+            };
+        };
+        plans: {
+            id: string;
+            name: string;
+            priceLabel: string;
+            limits: {
+                groupCount: number;
+                privateDocuments: number;
+                dailyQueries: number;
+                caseSearch: boolean;
+            };
+        }[];
+    };
+}

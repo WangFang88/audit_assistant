@@ -127,7 +127,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     _buildQueryPanel(),
                     const SizedBox(height: 16),
-                    _buildResultPanel(),
+                    _buildResultPanel(context),
                     const SizedBox(height: 16),
                     _buildGroupPanel(groups),
                     const SizedBox(height: 16),
@@ -143,7 +143,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     children: [
                       Expanded(flex: 5, child: _buildQueryPanel()),
                       const SizedBox(width: 16),
-                      Expanded(flex: 6, child: _buildResultPanel()),
+                      Expanded(flex: 6, child: _buildResultPanel(context)),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -203,7 +203,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildResultPanel() {
+  Widget _buildResultPanel(BuildContext context) {
     return SectionCard(
       title: '检索结果',
       subtitle: '返回答案、引用条款与性能友好的检索路径。',
@@ -216,6 +216,34 @@ class _DashboardPageState extends State<DashboardPage> {
             spacing: 8,
             runSpacing: 8,
             children: _result.pipeline.map((step) => Chip(label: Text(step))).toList(),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              SizedBox(
+                width: 180,
+                child: _MetricTile(
+                  label: '检索模式',
+                  value: _result.retrievalStats.queryMode,
+                ),
+              ),
+              SizedBox(
+                width: 160,
+                child: _MetricTile(
+                  label: '候选文本块',
+                  value: '${_result.retrievalStats.candidateChunks}',
+                ),
+              ),
+              SizedBox(
+                width: 160,
+                child: _MetricTile(
+                  label: '返回条款',
+                  value: '${_result.retrievalStats.returnedCitations}',
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Text('引用条款', style: Theme.of(context).textTheme.titleSmall),
@@ -237,6 +265,8 @@ class _DashboardPageState extends State<DashboardPage> {
                       Chip(label: Text('${citation.libraryType} ${(citation.score * 100).toStringAsFixed(0)}%')),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Text('${citation.chapterTitle} · ${citation.articleRef} · ${citation.pageLabel}'),
                   const SizedBox(height: 8),
                   Text(citation.matchedChunk),
                   const SizedBox(height: 8),
@@ -282,8 +312,18 @@ class _DashboardPageState extends State<DashboardPage> {
               (document) => ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(document.title),
-                subtitle: Text('${document.libraryType} · ${document.extractionMode} · ${document.indexStatus}'),
-                trailing: Text(document.chunkCount == 0 ? '--' : '${document.chunkCount} 块'),
+                subtitle: Text(
+                  '${document.libraryType} · ${document.fileType} · ${document.extractionMode} · ${document.indexStatus}',
+                ),
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(document.chunkCount == 0 ? '--' : '${document.chunkCount} 块'),
+                    const SizedBox(height: 4),
+                    Text(document.chunkStrategy, style: const TextStyle(fontSize: 12)),
+                  ],
+                ),
               ),
             )
             .toList(),
@@ -378,6 +418,33 @@ class _StatChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 6),
+          Text(value, style: Theme.of(context).textTheme.titleMedium),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricTile extends StatelessWidget {
+  const _MetricTile({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE3E8F2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { IsOptional, IsString, MinLength } from 'class-validator';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { IsIn, IsString, MinLength } from 'class-validator';
 
 class CreateGroupDto {
   @IsString()
@@ -15,7 +15,7 @@ class InviteMemberDto {
   @IsString()
   phone!: string;
 
-  @IsString()
+  @IsIn(['member', 'leader'])
   role!: 'member' | 'leader';
 }
 
@@ -24,9 +24,28 @@ class TransferLeaderDto {
   targetUserId!: string;
 }
 
+type GroupRecord = {
+  id: string;
+  name: string;
+  organizationName: string;
+  ownerUserId: string;
+  memberCount: number;
+  privateDocumentCount: number;
+  lastQueryAt: string | null;
+};
+
+type MemberRecord = {
+  id: string;
+  groupId: string;
+  userId: string;
+  name: string;
+  phone: string;
+  role: 'leader' | 'member';
+};
+
 @Injectable()
 export class GroupsService {
-  private readonly groups = [
+  private readonly groups: GroupRecord[] = [
     {
       id: 'group-1',
       name: '某区财政局审计组',
@@ -38,14 +57,44 @@ export class GroupsService {
     },
   ];
 
-  private readonly members = [
-    { id: 'member-1', groupId: 'group-1', userId: 'user-1', name: '审计专员', role: 'leader' },
-    { id: 'member-2', groupId: 'group-1', userId: 'user-2', name: '审计助理', role: 'member' },
-    { id: 'member-3', groupId: 'group-1', userId: 'user-3', name: '法规顾问', role: 'member' },
+  private readonly members: MemberRecord[] = [
+    {
+      id: 'member-1',
+      groupId: 'group-1',
+      userId: 'user-1',
+      name: '审计专员',
+      phone: '13800138000',
+      role: 'leader',
+    },
+    {
+      id: 'member-2',
+      groupId: 'group-1',
+      userId: 'user-2',
+      name: '审计助理',
+      phone: '13800138001',
+      role: 'member',
+    },
+    {
+      id: 'member-3',
+      groupId: 'group-1',
+      userId: 'user-3',
+      name: '法规顾问',
+      phone: '13800138002',
+      role: 'member',
+    },
   ];
 
   listGroups() {
     return this.groups;
+  }
+
+  getGroupById(groupId: string) {
+    const group = this.groups.find((item) => item.id === groupId);
+    if (!group) {
+      throw new NotFoundException('项目组不存在');
+    }
+
+    return group;
   }
 
   createGroup(dto: CreateGroupDto) {
@@ -61,10 +110,12 @@ export class GroupsService {
   }
 
   listMembers(groupId: string) {
-    return this.members.filter((member) => member.groupId == groupId);
+    this.getGroupById(groupId);
+    return this.members.filter((member) => member.groupId === groupId);
   }
 
   invite(groupId: string, dto: InviteMemberDto) {
+    this.getGroupById(groupId);
     return {
       groupId,
       inviteCode: 'INVITE-2026',
@@ -75,9 +126,19 @@ export class GroupsService {
   }
 
   transferLeader(groupId: string, dto: TransferLeaderDto) {
+    const group = this.getGroupById(groupId);
+    const newLeader = this.members.find(
+      (member) => member.groupId === groupId && member.userId === dto.targetUserId,
+    );
+
+    if (!newLeader) {
+      throw new NotFoundException('目标成员不存在');
+    }
+
     return {
       groupId,
-      previousLeaderId: 'user-1',
+      groupName: group.name,
+      previousLeaderId: group.ownerUserId,
       newLeaderId: dto.targetUserId,
       transferredAt: '2026-04-25 18:00',
     };
