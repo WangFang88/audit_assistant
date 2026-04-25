@@ -32,7 +32,7 @@ export declare class GroupsController {
         groupId: string;
         inviteCode: string;
         phone: string;
-        role: "leader" | "member";
+        role: "member" | "leader";
         expiresAt: string;
     };
     transferLeader(groupId: string, dto: TransferLeaderDto): {
@@ -41,5 +41,13 @@ export declare class GroupsController {
         previousLeaderId: string;
         newLeaderId: string;
         transferredAt: string;
+    };
+    removeMember(groupId: string, memberId: string): {
+        groupId: string;
+        groupName: string;
+        removedMemberId: string;
+        removedUserId: string;
+        removedAt: string;
+        memberCount: number;
     };
 }

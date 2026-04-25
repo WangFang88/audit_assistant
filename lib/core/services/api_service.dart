@@ -166,6 +166,11 @@ class ApiService {
     _decodeMap(response);
   }
 
+  Future<void> removeMember({required String groupId, required String memberId}) async {
+    final response = await _client.delete(Uri.parse('$_baseUrl/groups/$groupId/members/$memberId'));
+    _decodeMap(response);
+  }
+
   Map<String, dynamic> _decodeMap(http.Response response) {
     final body = jsonDecode(response.body) as Object?;
 

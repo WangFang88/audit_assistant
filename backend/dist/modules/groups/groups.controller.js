@@ -34,6 +34,9 @@ let GroupsController = class GroupsController {
     transferLeader(groupId, dto) {
         return this.groupsService.transferLeader(groupId, dto);
     }
+    removeMember(groupId, memberId) {
+        return this.groupsService.removeMember(groupId, memberId);
+    }
 };
 exports.GroupsController = GroupsController;
 __decorate([
@@ -72,6 +75,14 @@ __decorate([
     __metadata("design:paramtypes", [String, groups_service_1.TransferLeaderDto]),
     __metadata("design:returntype", void 0)
 ], GroupsController.prototype, "transferLeader", null);
+__decorate([
+    (0, common_1.Delete)(':groupId/members/:memberId'),
+    __param(0, (0, common_1.Param)('groupId')),
+    __param(1, (0, common_1.Param)('memberId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], GroupsController.prototype, "removeMember", null);
 exports.GroupsController = GroupsController = __decorate([
     (0, common_1.Controller)('groups'),
     __metadata("design:paramtypes", [groups_service_1.GroupsService])

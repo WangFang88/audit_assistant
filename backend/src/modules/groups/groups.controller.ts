@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import {
   CreateGroupDto,
   GroupsService,
@@ -36,5 +36,10 @@ export class GroupsController {
     @Body() dto: TransferLeaderDto,
   ) {
     return this.groupsService.transferLeader(groupId, dto);
+  }
+
+  @Delete(':groupId/members/:memberId')
+  removeMember(@Param('groupId') groupId: string, @Param('memberId') memberId: string) {
+    return this.groupsService.removeMember(groupId, memberId);
   }
 }

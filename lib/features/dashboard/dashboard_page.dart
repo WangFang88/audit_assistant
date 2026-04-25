@@ -587,6 +587,59 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  Future<void> _removeMember(GroupMember member) async {
+    if (_activeGroupId == null || member.role == '组长') {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认清退成员'),
+        content: Text('确定要将 ${member.name} 移出当前项目组吗？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('确认清退')),
+        ],
+      ),
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    setState(() {
+      _membersLoading = true;
+      _error = null;
+    });
+
+    try {
+      await widget.apiService.removeMember(groupId: _activeGroupId!, memberId: member.id);
+      await _refreshMembers();
+      await _loadDashboard(preferredGroupId: _activeGroupId);
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = '成员清退失败。';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _membersLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _showImportDocumentDialog() async {
     final titleController = TextEditingController();
     final pathController = TextEditingController();
@@ -1006,6 +1059,12 @@ class _DashboardPageState extends State<DashboardPage> {
               contentPadding: EdgeInsets.zero,
               title: Text(member.name),
               subtitle: Text('${member.phone} · ${member.role}'),
+              trailing: member.role == '组长'
+                  ? const Text('当前组长')
+                  : TextButton(
+                      onPressed: _membersLoading ? null : () => _removeMember(member),
+                      child: const Text('清退'),
+                    ),
             ),
           ),
         ],
