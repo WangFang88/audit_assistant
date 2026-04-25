@@ -95,6 +95,43 @@ class ApiService {
     return ProjectGroup.fromJson(json);
   }
 
+  Future<List<KnowledgeDocument>> fetchDocuments({String? groupId}) async {
+    final uri = Uri.parse('$_baseUrl/documents').replace(
+      queryParameters: groupId == null ? null : {'groupId': groupId},
+    );
+    final response = await _client.get(uri);
+    final list = _decodeList(response);
+    return list.map(KnowledgeDocument.fromJson).toList();
+  }
+
+  Future<List<ExtractionJob>> fetchExtractionJobs() async {
+    final response = await _client.get(Uri.parse('$_baseUrl/documents/extract-jobs'));
+    final list = _decodeList(response);
+    return list.map(ExtractionJob.fromJson).toList();
+  }
+
+  Future<ImportDocumentResult> importDocument({
+    required String title,
+    required String libraryType,
+    required String sourcePath,
+    String? groupId,
+  }) async {
+    final backendLibraryType = libraryType == '公共库' ? 'public' : 'private';
+    final response = await _client.post(
+      Uri.parse('$_baseUrl/documents/import-from-file-server'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'title': title,
+        'libraryType': backendLibraryType,
+        'sourcePath': sourcePath,
+        'groupId': groupId,
+      }),
+    );
+
+    final json = _decodeMap(response);
+    return ImportDocumentResult.fromJson(json);
+  }
+
   Future<void> inviteMember({
     required String groupId,
     required String phone,

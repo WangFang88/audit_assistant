@@ -258,6 +258,76 @@ class ChatMessage {
   }
 }
 
+class ExtractionJob {
+  const ExtractionJob({
+    required this.id,
+    required this.documentId,
+    required this.status,
+    required this.stage,
+    required this.progress,
+    required this.startedAt,
+  });
+
+  final String id;
+  final String documentId;
+  final String status;
+  final String stage;
+  final int progress;
+  final String startedAt;
+
+  factory ExtractionJob.fromJson(Map<String, dynamic> json) {
+    return ExtractionJob(
+      id: json['id'] as String? ?? '',
+      documentId: json['documentId'] as String? ?? '',
+      status: _mapJobStatus(json['status'] as String? ?? ''),
+      stage: _mapJobStage(json['stage'] as String? ?? ''),
+      progress: json['progress'] as int? ?? 0,
+      startedAt: json['startedAt'] as String? ?? '',
+    );
+  }
+}
+
+class ImportDocumentResult {
+  const ImportDocumentResult({
+    required this.id,
+    required this.title,
+    required this.libraryType,
+    required this.sourcePath,
+    required this.groupId,
+    required this.fileType,
+    required this.extractionMode,
+    required this.indexStatus,
+    required this.chunkStrategy,
+    required this.notes,
+  });
+
+  final String id;
+  final String title;
+  final String libraryType;
+  final String sourcePath;
+  final String? groupId;
+  final String fileType;
+  final String extractionMode;
+  final String indexStatus;
+  final String chunkStrategy;
+  final String notes;
+
+  factory ImportDocumentResult.fromJson(Map<String, dynamic> json) {
+    return ImportDocumentResult(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      libraryType: _mapLibraryType(json['libraryType'] as String? ?? ''),
+      sourcePath: json['sourcePath'] as String? ?? '',
+      groupId: json['groupId'] as String?,
+      fileType: (json['fileType'] as String? ?? '').toUpperCase(),
+      extractionMode: _mapExtractionMode(json['extractionMode'] as String? ?? ''),
+      indexStatus: _mapIndexStatus(json['indexStatus'] as String? ?? ''),
+      chunkStrategy: _mapChunkStrategy(json['chunkStrategy'] as String? ?? ''),
+      notes: json['notes'] as String? ?? '',
+    );
+  }
+}
+
 class SubscriptionOverview {
   const SubscriptionOverview({
     required this.planName,
@@ -301,6 +371,7 @@ class DashboardOverview {
     required this.user,
     required this.groups,
     required this.documents,
+    required this.extractJobs,
     required this.conversations,
     required this.subscription,
     required this.featuredQuery,
@@ -309,6 +380,7 @@ class DashboardOverview {
   final AppUser user;
   final List<ProjectGroup> groups;
   final List<KnowledgeDocument> documents;
+  final List<ExtractionJob> extractJobs;
   final List<ConversationSummary> conversations;
   final SubscriptionOverview subscription;
   final QueryResult featuredQuery;
@@ -323,6 +395,10 @@ class DashboardOverview {
       documents: (json['documents'] as List<dynamic>? ?? const [])
           .whereType<Map<String, dynamic>>()
           .map(KnowledgeDocument.fromJson)
+          .toList(),
+      extractJobs: (json['extractJobs'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(ExtractionJob.fromJson)
           .toList(),
       conversations: (json['conversations'] as List<dynamic>? ?? const [])
           .whereType<Map<String, dynamic>>()
@@ -388,6 +464,34 @@ String _mapMemberRole(String value) {
       return '组长';
     case 'member':
       return '成员';
+    default:
+      return value;
+  }
+}
+
+String _mapJobStatus(String value) {
+  switch (value) {
+    case 'processing':
+      return '处理中';
+    case 'queued':
+      return '排队中';
+    case 'completed':
+      return '已完成';
+    default:
+      return value;
+  }
+}
+
+String _mapJobStage(String value) {
+  switch (value) {
+    case 'extract':
+      return '文字抽取';
+    case 'ocr':
+      return 'OCR';
+    case 'chunk':
+      return '文本切分';
+    case 'index':
+      return '建立索引';
     default:
       return value;
   }

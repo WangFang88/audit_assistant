@@ -32,12 +32,15 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _chatLoading = false;
   bool _sendingMessage = false;
   bool _membersLoading = false;
+  bool _documentsLoading = false;
   String? _error;
   DashboardOverview? _overview;
   QueryResult? _result;
   List<ConversationSummary> _conversations = const [];
   List<ChatMessage> _messages = const [];
   List<GroupMember> _members = const [];
+  List<KnowledgeDocument> _documents = const [];
+  List<ExtractionJob> _extractJobs = const [];
   String? _selectedConversationId;
 
   @override
@@ -77,6 +80,8 @@ class _DashboardPageState extends State<DashboardPage> {
       final conversations = await widget.apiService.fetchConversations();
       final groupId = overview.groups.isNotEmpty ? overview.groups.first.id : null;
       final members = groupId == null ? const <GroupMember>[] : await widget.apiService.fetchMembers(groupId);
+      final documents = await widget.apiService.fetchDocuments(groupId: groupId);
+      final extractJobs = await widget.apiService.fetchExtractionJobs();
       final selectedConversationId = conversations.isNotEmpty ? conversations.first.id : null;
       final messages = selectedConversationId == null
           ? const <ChatMessage>[]
@@ -91,6 +96,8 @@ class _DashboardPageState extends State<DashboardPage> {
         _result = overview.featuredQuery;
         _conversations = conversations;
         _members = members;
+        _documents = documents;
+        _extractJobs = extractJobs;
         _selectedConversationId = selectedConversationId;
         _messages = messages;
       });
@@ -283,6 +290,45 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  Future<void> _refreshDocuments() async {
+    setState(() {
+      _documentsLoading = true;
+      _error = null;
+    });
+
+    try {
+      final documents = await widget.apiService.fetchDocuments(groupId: _activeGroupId);
+      final jobs = await widget.apiService.fetchExtractionJobs();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _documents = documents;
+        _extractJobs = jobs;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = '文档与抽取任务加载失败。';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _documentsLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _showCreateGroupDialog() async {
     final nameController = TextEditingController();
     final organizationController = TextEditingController();
@@ -424,9 +470,71 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       await widget.apiService.transferLeader(
         groupId: _activeGroupId!,
-        targetUserId: selectedUserId!,
+        targetUserId: selectedUserId,
       );
       await _refreshMembers();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.message;
+      });
+    }
+  }
+
+  Future<void> _showImportDocumentDialog() async {
+    final titleController = TextEditingController();
+    final pathController = TextEditingController();
+    String libraryType = '私有库';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('从文件服务器导入'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: titleController, decoration: const InputDecoration(labelText: '文件标题')),
+              const SizedBox(height: 12),
+              TextField(controller: pathController, decoration: const InputDecoration(labelText: '文件服务器路径')),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: libraryType,
+                items: const [
+                  DropdownMenuItem(value: '公共库', child: Text('公共库')),
+                  DropdownMenuItem(value: '私有库', child: Text('私有库')),
+                ],
+                onChanged: (value) => setDialogState(() => libraryType = value ?? '私有库'),
+                decoration: const InputDecoration(labelText: '入库范围'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('导入')),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    try {
+      final result = await widget.apiService.importDocument(
+        title: titleController.text.trim(),
+        libraryType: libraryType,
+        sourcePath: pathController.text.trim(),
+        groupId: libraryType == '私有库' ? _activeGroupId : null,
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.notes)));
+      await _refreshDocuments();
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -476,7 +584,8 @@ class _DashboardPageState extends State<DashboardPage> {
           context,
           overview.user,
           overview.groups,
-          overview.documents,
+          _documents,
+          _extractJobs,
           overview.subscription,
           result,
         ),
@@ -545,6 +654,7 @@ class _DashboardPageState extends State<DashboardPage> {
     AppUser user,
     List<ProjectGroup> groups,
     List<KnowledgeDocument> documents,
+    List<ExtractionJob> extractJobs,
     SubscriptionOverview subscription,
     QueryResult result,
   ) {
@@ -584,7 +694,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 16),
                     _buildGroupPanel(groups),
                     const SizedBox(height: 16),
-                    _buildDocumentPanel(documents),
+                    _buildDocumentPanel(documents, extractJobs),
                   ],
                 );
               }
@@ -605,7 +715,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     children: [
                       Expanded(child: _buildGroupPanel(groups)),
                       const SizedBox(width: 16),
-                      Expanded(child: _buildDocumentPanel(documents)),
+                      Expanded(child: _buildDocumentPanel(documents, extractJobs)),
                     ],
                   ),
                 ],
@@ -772,30 +882,53 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildDocumentPanel(List<KnowledgeDocument> documents) {
+  Widget _buildDocumentPanel(List<KnowledgeDocument> documents, List<ExtractionJob> extractJobs) {
     return SectionCard(
       title: '知识库文件',
       subtitle: '导入即抽取文字、结构化切分、预建索引。',
-      action: FilledButton.tonal(onPressed: () {}, child: const Text('导入文件')),
+      action: Wrap(
+        spacing: 8,
+        children: [
+          FilledButton.tonal(onPressed: _documentsLoading ? null : _refreshDocuments, child: const Text('刷新任务')),
+          FilledButton.tonal(onPressed: _showImportDocumentDialog, child: const Text('导入文件')),
+        ],
+      ),
       child: Column(
-        children: documents
-            .map(
-              (document) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(document.title),
-                subtitle: Text('${document.libraryType} · ${document.fileType} · ${document.extractionMode} · ${document.indexStatus}'),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(document.chunkCount == 0 ? '--' : '${document.chunkCount} 块'),
-                    const SizedBox(height: 4),
-                    Text(document.chunkStrategy, style: const TextStyle(fontSize: 12)),
-                  ],
-                ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_documentsLoading)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: LinearProgressIndicator(),
+            ),
+          ...documents.map(
+            (document) => ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(document.title),
+              subtitle: Text('${document.libraryType} · ${document.fileType} · ${document.extractionMode} · ${document.indexStatus}'),
+              trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(document.chunkCount == 0 ? '--' : '${document.chunkCount} 块'),
+                  const SizedBox(height: 4),
+                  Text(document.chunkStrategy, style: const TextStyle(fontSize: 12)),
+                ],
               ),
-            )
-            .toList(),
+            ),
+          ),
+          const Divider(height: 24),
+          Text('抽取任务', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 8),
+          ...extractJobs.map(
+            (job) => ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('${job.stage} · ${job.status}'),
+              subtitle: Text('文档 ${job.documentId} · ${job.startedAt}'),
+              trailing: Text('${job.progress}%'),
+            ),
+          ),
+        ],
       ),
     );
   }
