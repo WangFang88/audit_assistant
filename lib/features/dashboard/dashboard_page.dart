@@ -1,29 +1,41 @@
 import 'package:flutter/material.dart';
 
 import '../../core/models/app_models.dart';
-import '../../core/services/demo_data_service.dart';
+import '../../core/services/api_service.dart';
 import '../../shared/widgets/section_card.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  const DashboardPage({
+    super.key,
+    required this.apiService,
+    required this.currentUser,
+    required this.onLogout,
+  });
+
+  final ApiService apiService;
+  final AppUser currentUser;
+  final VoidCallback onLogout;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final DemoDataService _dataService = const DemoDataService();
   final TextEditingController _questionController = TextEditingController(
     text: '请检索与专项资金使用和采购审批相关的制度依据。',
   );
 
   int _selectedIndex = 0;
-  late QueryResult _result;
+  bool _loading = true;
+  bool _searching = false;
+  String? _error;
+  DashboardOverview? _overview;
+  QueryResult? _result;
 
   @override
   void initState() {
     super.initState();
-    _result = _dataService.search(_questionController.text);
+    _loadDashboard();
   }
 
   @override
@@ -32,29 +44,144 @@ class _DashboardPageState extends State<DashboardPage> {
     super.dispose();
   }
 
+  Future<void> _loadDashboard() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final overview = await widget.apiService.fetchDashboard();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _overview = overview;
+        _result = overview.featuredQuery;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = '工作台数据加载失败，请确认后端服务正在运行。';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _runSearch() async {
+    final question = _questionController.text.trim();
+    if (question.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _searching = true;
+      _error = null;
+    });
+
+    try {
+      final result = await widget.apiService.search(
+        question: question,
+        groupId: _overview?.groups.isNotEmpty == true ? _overview!.groups.first.id : null,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _result = result;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = '检索失败，请检查后端查询接口。';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _searching = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final user = _dataService.getCurrentUser();
-    final groups = _dataService.getGroups();
-    final documents = _dataService.getDocuments();
-    final conversations = _dataService.getConversations();
-    final subscription = _dataService.getSubscriptionOverview();
+    if (_loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_error != null && _overview == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('小嘉审计助手'),
+          actions: [
+            TextButton(onPressed: widget.onLogout, child: const Text('退出')),
+          ],
+        ),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(_error!, textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                FilledButton(onPressed: _loadDashboard, child: const Text('重试加载')),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final overview = _overview!;
+    final result = _result ?? overview.featuredQuery;
 
     final pages = <_NavPage>[
       _NavPage(
         label: '工作台',
         icon: Icons.dashboard_outlined,
-        child: _buildWorkspace(context, user, groups, documents, subscription),
+        child: _buildWorkspace(
+          context,
+          overview.user,
+          overview.groups,
+          overview.documents,
+          overview.subscription,
+          result,
+        ),
       ),
       _NavPage(
         label: '对话',
         icon: Icons.chat_bubble_outline,
-        child: _buildChat(conversations),
+        child: _buildChat(overview.conversations),
       ),
       _NavPage(
         label: '我的',
         icon: Icons.person_outline,
-        child: _buildAccount(user, subscription),
+        child: _buildAccount(overview.user, overview.subscription),
       ),
     ];
 
@@ -62,7 +189,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
     if (compact) {
       return Scaffold(
-        appBar: AppBar(title: Text(pages[_selectedIndex].label)),
+        appBar: AppBar(
+          title: Text(pages[_selectedIndex].label),
+          actions: [
+            IconButton(onPressed: _loadDashboard, icon: const Icon(Icons.refresh)),
+            TextButton(onPressed: widget.onLogout, child: const Text('退出')),
+          ],
+        ),
         body: pages[_selectedIndex].child,
         bottomNavigationBar: NavigationBar(
           selectedIndex: _selectedIndex,
@@ -75,6 +208,13 @@ class _DashboardPageState extends State<DashboardPage> {
     }
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('小嘉审计助手'),
+        actions: [
+          IconButton(onPressed: _loadDashboard, icon: const Icon(Icons.refresh)),
+          TextButton(onPressed: widget.onLogout, child: const Text('退出')),
+        ],
+      ),
       body: Row(
         children: [
           NavigationRail(
@@ -98,6 +238,7 @@ class _DashboardPageState extends State<DashboardPage> {
     List<ProjectGroup> groups,
     List<KnowledgeDocument> documents,
     SubscriptionOverview subscription,
+    QueryResult result,
   ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -107,6 +248,10 @@ class _DashboardPageState extends State<DashboardPage> {
           Text('你好，${user.name}', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
           Text('当前角色：${user.role} · 试用到期：${user.trialEndsAt}'),
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ],
           const SizedBox(height: 24),
           Wrap(
             spacing: 16,
@@ -127,7 +272,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     _buildQueryPanel(),
                     const SizedBox(height: 16),
-                    _buildResultPanel(context),
+                    _buildResultPanel(context, result),
                     const SizedBox(height: 16),
                     _buildGroupPanel(groups),
                     const SizedBox(height: 16),
@@ -143,7 +288,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     children: [
                       Expanded(flex: 5, child: _buildQueryPanel()),
                       const SizedBox(width: 16),
-                      Expanded(flex: 6, child: _buildResultPanel(context)),
+                      Expanded(flex: 6, child: _buildResultPanel(context, result)),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -191,31 +336,33 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: () {
-              setState(() {
-                _result = _dataService.search(_questionController.text);
-              });
-            },
-            child: const Text('执行检索'),
+            onPressed: _searching ? null : _runSearch,
+            child: _searching
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('执行检索'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildResultPanel(BuildContext context) {
+  Widget _buildResultPanel(BuildContext context, QueryResult result) {
     return SectionCard(
       title: '检索结果',
       subtitle: '返回答案、引用条款与性能友好的检索路径。',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_result.answer),
+          Text(result.answer),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _result.pipeline.map((step) => Chip(label: Text(step))).toList(),
+            children: result.pipeline.map((step) => Chip(label: Text(step))).toList(),
           ),
           const SizedBox(height: 16),
           Wrap(
@@ -226,21 +373,21 @@ class _DashboardPageState extends State<DashboardPage> {
                 width: 180,
                 child: _MetricTile(
                   label: '检索模式',
-                  value: _result.retrievalStats.queryMode,
+                  value: result.retrievalStats.queryMode,
                 ),
               ),
               SizedBox(
                 width: 160,
                 child: _MetricTile(
                   label: '候选文本块',
-                  value: '${_result.retrievalStats.candidateChunks}',
+                  value: '${result.retrievalStats.candidateChunks}',
                 ),
               ),
               SizedBox(
                 width: 160,
                 child: _MetricTile(
                   label: '返回条款',
-                  value: '${_result.retrievalStats.returnedCitations}',
+                  value: '${result.retrievalStats.returnedCitations}',
                 ),
               ),
             ],
@@ -248,7 +395,7 @@ class _DashboardPageState extends State<DashboardPage> {
           const SizedBox(height: 16),
           Text('引用条款', style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 12),
-          ..._result.citations.map(
+          ...result.citations.map(
             (citation) => Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
@@ -275,7 +422,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
           ),
-          Text(_result.explanation, style: Theme.of(context).textTheme.bodySmall),
+          Text(result.explanation, style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
     );

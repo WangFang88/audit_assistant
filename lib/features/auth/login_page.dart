@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key, required this.onLogin});
+import '../../core/models/app_models.dart';
+import '../../core/services/api_service.dart';
 
-  final VoidCallback onLogin;
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key, required this.apiService, required this.onLogin});
+
+  final ApiService apiService;
+  final ValueChanged<AppUser> onLogin;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -12,12 +16,47 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _phoneController = TextEditingController(text: '13800138000');
   final _passwordController = TextEditingController(text: '123456');
+  bool _submitting = false;
+  String? _error;
 
   @override
   void dispose() {
     _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+
+    try {
+      final result = await widget.apiService.login(
+        phone: _phoneController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+      if (!mounted) {
+        return;
+      }
+      widget.onLogin(result.user);
+    } on ApiException catch (error) {
+      setState(() {
+        _error = error.message;
+      });
+    } catch (_) {
+      setState(() {
+        _error = '登录失败，请检查后端服务是否已启动。';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -51,16 +90,30 @@ class _LoginPageState extends State<LoginPage> {
                     TextField(
                       controller: _passwordController,
                       obscureText: true,
+                      onSubmitted: (_) => _submitting ? null : _submit(),
                       decoration: const InputDecoration(labelText: '密码'),
                     ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        _error!,
+                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      ),
+                    ],
                     const SizedBox(height: 20),
                     FilledButton(
-                      onPressed: widget.onLogin,
-                      child: const Text('登录并进入工作台'),
+                      onPressed: _submitting ? null : _submit,
+                      child: _submitting
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('登录并进入工作台'),
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      '演示版展示重写后的产品结构，后续将接入真实后端接口。',
+                      '请先启动 backend 服务，再通过手机号登录进入工作台。',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
