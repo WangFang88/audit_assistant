@@ -28,6 +28,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   int _selectedIndex = 0;
   bool _loading = true;
+  bool _switchingGroup = false;
   bool _searching = false;
   bool _chatLoading = false;
   bool _sendingMessage = false;
@@ -42,6 +43,7 @@ class _DashboardPageState extends State<DashboardPage> {
   List<KnowledgeDocument> _documents = const [];
   List<ExtractionJob> _extractJobs = const [];
   String? _selectedConversationId;
+  String? _selectedGroupId;
 
   @override
   void initState() {
@@ -56,36 +58,32 @@ class _DashboardPageState extends State<DashboardPage> {
     super.dispose();
   }
 
-  String? get _activeGroupId {
-    final groups = _overview?.groups;
-    if (groups == null || groups.isEmpty) {
-      return null;
-    }
-    return groups.first.id;
-  }
+  String? get _activeGroupId => _selectedGroupId;
 
   String get _activeConversationType {
-    final conversation = _conversations.where((item) => item.id == _selectedConversationId).firstOrNull;
+    final conversation = _selectedConversation;
     return conversation?.type == '群聊' ? 'group' : 'direct';
   }
 
-  Future<void> _loadDashboard() async {
+  ConversationSummary? get _selectedConversation {
+    for (final item in _conversations) {
+      if (item.id == _selectedConversationId) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _loadDashboard({String? preferredGroupId}) async {
     setState(() {
       _loading = true;
       _error = null;
     });
 
     try {
-      final overview = await widget.apiService.fetchDashboard();
-      final conversations = await widget.apiService.fetchConversations();
-      final groupId = overview.groups.isNotEmpty ? overview.groups.first.id : null;
-      final members = groupId == null ? const <GroupMember>[] : await widget.apiService.fetchMembers(groupId);
-      final documents = await widget.apiService.fetchDocuments(groupId: groupId);
-      final extractJobs = await widget.apiService.fetchExtractionJobs();
-      final selectedConversationId = conversations.isNotEmpty ? conversations.first.id : null;
-      final messages = selectedConversationId == null
-          ? const <ChatMessage>[]
-          : await widget.apiService.fetchMessages(selectedConversationId);
+      final overview = await widget.apiService.fetchDashboard(groupId: preferredGroupId);
+      final resolvedGroupId = _resolveGroupId(overview.groups, preferredGroupId);
+      final bundle = await _loadGroupBundle(resolvedGroupId);
 
       if (!mounted) {
         return;
@@ -93,13 +91,14 @@ class _DashboardPageState extends State<DashboardPage> {
 
       setState(() {
         _overview = overview;
+        _selectedGroupId = resolvedGroupId;
         _result = overview.featuredQuery;
-        _conversations = conversations;
-        _members = members;
-        _documents = documents;
-        _extractJobs = extractJobs;
-        _selectedConversationId = selectedConversationId;
-        _messages = messages;
+        _conversations = bundle.conversations;
+        _members = bundle.members;
+        _documents = bundle.documents;
+        _extractJobs = bundle.extractJobs;
+        _selectedConversationId = bundle.selectedConversationId;
+        _messages = bundle.messages;
       });
     } on ApiException catch (error) {
       if (!mounted) {
@@ -122,6 +121,106 @@ class _DashboardPageState extends State<DashboardPage> {
         });
       }
     }
+  }
+
+  Future<void> _switchGroup(String? groupId) async {
+    if (groupId == null || groupId == _selectedGroupId) {
+      return;
+    }
+
+    setState(() {
+      _switchingGroup = true;
+      _error = null;
+    });
+
+    try {
+      final overview = await widget.apiService.fetchDashboard(groupId: groupId);
+      final bundle = await _loadGroupBundle(groupId);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _overview = overview;
+        _selectedGroupId = groupId;
+        _result = overview.featuredQuery;
+        _conversations = bundle.conversations;
+        _members = bundle.members;
+        _documents = bundle.documents;
+        _extractJobs = bundle.extractJobs;
+        _selectedConversationId = bundle.selectedConversationId;
+        _messages = bundle.messages;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = '项目组切换失败。';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _switchingGroup = false;
+        });
+      }
+    }
+  }
+
+  Future<_GroupBundle> _loadGroupBundle(String? groupId) async {
+    final conversations = await widget.apiService.fetchConversations();
+    final members = groupId == null ? const <GroupMember>[] : await widget.apiService.fetchMembers(groupId);
+    final documents = await widget.apiService.fetchDocuments(groupId: groupId);
+    final extractJobs = await widget.apiService.fetchExtractionJobs();
+    final selectedConversationId = _pickConversationId(conversations, groupId);
+    final messages = selectedConversationId == null
+        ? const <ChatMessage>[]
+        : await widget.apiService.fetchMessages(selectedConversationId);
+
+    return _GroupBundle(
+      conversations: conversations,
+      members: members,
+      documents: documents,
+      extractJobs: extractJobs,
+      selectedConversationId: selectedConversationId,
+      messages: messages,
+    );
+  }
+
+  String? _resolveGroupId(List<ProjectGroup> groups, String? preferredGroupId) {
+    if (groups.isEmpty) {
+      return null;
+    }
+
+    for (final group in groups) {
+      if (group.id == preferredGroupId) {
+        return group.id;
+      }
+    }
+
+    return groups.first.id;
+  }
+
+  String? _pickConversationId(List<ConversationSummary> conversations, String? groupId) {
+    if (conversations.isEmpty) {
+      return null;
+    }
+
+    for (final conversation in conversations) {
+      if (conversation.type == '群聊' && groupId != null) {
+        return conversation.id;
+      }
+    }
+
+    return conversations.first.id;
   }
 
   Future<void> _runSearch() async {
@@ -360,11 +459,11 @@ class _DashboardPageState extends State<DashboardPage> {
     }
 
     try {
-      await widget.apiService.createGroup(
+      final newGroup = await widget.apiService.createGroup(
         name: nameController.text.trim(),
         organizationName: organizationController.text.trim(),
       );
-      await _loadDashboard();
+      await _loadDashboard(preferredGroupId: newGroup.id);
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -394,7 +493,7 @@ class _DashboardPageState extends State<DashboardPage> {
               TextField(controller: phoneController, decoration: const InputDecoration(labelText: '手机号')),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: selectedRole,
+                initialValue: selectedRole,
                 items: const [
                   DropdownMenuItem(value: '成员', child: Text('成员')),
                   DropdownMenuItem(value: '组长', child: Text('组长')),
@@ -445,7 +544,7 @@ class _DashboardPageState extends State<DashboardPage> {
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('移交组长'),
           content: DropdownButtonFormField<String>(
-            value: selectedUserId,
+            initialValue: selectedUserId,
             items: _members
                 .map((member) => DropdownMenuItem(
                       value: member.userId,
@@ -470,7 +569,7 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       await widget.apiService.transferLeader(
         groupId: _activeGroupId!,
-        targetUserId: selectedUserId,
+        targetUserId: selectedUserId!,
       );
       await _refreshMembers();
     } on ApiException catch (error) {
@@ -501,7 +600,7 @@ class _DashboardPageState extends State<DashboardPage> {
               TextField(controller: pathController, decoration: const InputDecoration(labelText: '文件服务器路径')),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: libraryType,
+                initialValue: libraryType,
                 items: const [
                   DropdownMenuItem(value: '公共库', child: Text('公共库')),
                   DropdownMenuItem(value: '私有库', child: Text('私有库')),
@@ -609,7 +708,7 @@ class _DashboardPageState extends State<DashboardPage> {
         appBar: AppBar(
           title: Text(pages[_selectedIndex].label),
           actions: [
-            IconButton(onPressed: _loadDashboard, icon: const Icon(Icons.refresh)),
+            IconButton(onPressed: () => _loadDashboard(preferredGroupId: _selectedGroupId), icon: const Icon(Icons.refresh)),
             TextButton(onPressed: widget.onLogout, child: const Text('退出')),
           ],
         ),
@@ -628,7 +727,7 @@ class _DashboardPageState extends State<DashboardPage> {
       appBar: AppBar(
         title: const Text('小嘉审计助手'),
         actions: [
-          IconButton(onPressed: _loadDashboard, icon: const Icon(Icons.refresh)),
+          IconButton(onPressed: () => _loadDashboard(preferredGroupId: _selectedGroupId), icon: const Icon(Icons.refresh)),
           TextButton(onPressed: widget.onLogout, child: const Text('退出')),
         ],
       ),
@@ -666,6 +765,31 @@ class _DashboardPageState extends State<DashboardPage> {
           Text('你好，${user.name}', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
           Text('当前角色：${user.role} · 试用到期：${user.trialEndsAt}'),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              SizedBox(
+                width: 320,
+                child: DropdownButtonFormField<String>(
+                  initialValue: _selectedGroupId,
+                  decoration: const InputDecoration(labelText: '当前项目组'),
+                  items: groups
+                      .map(
+                        (group) => DropdownMenuItem(
+                          value: group.id,
+                          child: Text('${group.name} · ${group.organizationName}'),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: _switchingGroup ? null : _switchGroup,
+                ),
+              ),
+              if (_switchingGroup) ...[
+                const SizedBox(width: 12),
+                const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+              ],
+            ],
+          ),
           if (_error != null) ...[
             const SizedBox(height: 12),
             Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
@@ -746,15 +870,15 @@ class _DashboardPageState extends State<DashboardPage> {
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: const [
-              Chip(label: Text('检索范围：公共库 + 当前项目组私有库')),
-              Chip(label: Text('大文件：导入时异步处理')),
-              Chip(label: Text('扫描件：仅必要时 OCR')),
+            children: [
+              Chip(label: Text('检索范围：公共库 + ${_activeGroupId == null ? '未选择项目组' : '当前项目组私有库'}')),
+              const Chip(label: Text('大文件：导入时异步处理')),
+              const Chip(label: Text('扫描件：仅必要时 OCR')),
             ],
           ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: _searching ? null : _runSearch,
+            onPressed: _searching || _switchingGroup ? null : _runSearch,
             child: _searching
                 ? const SizedBox(
                     height: 18,
@@ -851,6 +975,8 @@ class _DashboardPageState extends State<DashboardPage> {
           ...groups.map(
             (group) => ListTile(
               contentPadding: EdgeInsets.zero,
+              selected: group.id == _selectedGroupId,
+              onTap: () => _switchGroup(group.id),
               title: Text(group.name),
               subtitle: Text('${group.organizationName} · 成员 ${group.memberCount} 人 · 私有文件 ${group.privateDocumentCount} 个'),
               trailing: Text(group.lastQueryAt),
@@ -934,7 +1060,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildChat() {
-    final activeConversation = _conversations.where((item) => item.id == _selectedConversationId).firstOrNull;
+    final activeConversation = _selectedConversation;
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -944,7 +1070,7 @@ class _DashboardPageState extends State<DashboardPage> {
             width: 300,
             child: SectionCard(
               title: '对话列表',
-              subtitle: '已接入真实 conversations/messages 接口。',
+              subtitle: '已按当前项目组上下文刷新会话与消息。',
               child: Column(
                 children: _conversations
                     .map(
@@ -1075,6 +1201,24 @@ class _DashboardPageState extends State<DashboardPage> {
       ],
     );
   }
+}
+
+class _GroupBundle {
+  const _GroupBundle({
+    required this.conversations,
+    required this.members,
+    required this.documents,
+    required this.extractJobs,
+    required this.selectedConversationId,
+    required this.messages,
+  });
+
+  final List<ConversationSummary> conversations;
+  final List<GroupMember> members;
+  final List<KnowledgeDocument> documents;
+  final List<ExtractionJob> extractJobs;
+  final String? selectedConversationId;
+  final List<ChatMessage> messages;
 }
 
 class _NavPage {
