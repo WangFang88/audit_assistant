@@ -212,6 +212,7 @@ class ConversationSummary {
     required this.type,
     required this.lastMessage,
     required this.unreadCount,
+    required this.groupId,
   });
 
   final String id;
@@ -219,6 +220,7 @@ class ConversationSummary {
   final String type;
   final String lastMessage;
   final int unreadCount;
+  final String? groupId;
 
   factory ConversationSummary.fromJson(Map<String, dynamic> json) {
     final rawType = json['type'] as String? ?? '';
@@ -228,6 +230,7 @@ class ConversationSummary {
       type: rawType == 'group' ? '群聊' : rawType == 'direct' ? '私信' : rawType,
       lastMessage: json['lastMessage'] as String? ?? '',
       unreadCount: json['unreadCount'] as int? ?? 0,
+      groupId: json['groupId'] as String?,
     );
   }
 }

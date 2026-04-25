@@ -53,6 +53,7 @@ export declare class OverviewService {
         extractJobs: {
             id: string;
             documentId: string;
+            groupId: string | null;
             status: "processing" | "queued" | "completed";
             stage: "extract" | "ocr" | "chunk" | "index";
             progress: number;

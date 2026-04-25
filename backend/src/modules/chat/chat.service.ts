@@ -56,8 +56,14 @@ export class ChatService {
     },
   ];
 
-  listConversations() {
-    return this.conversations;
+  listConversations(groupId?: string) {
+    return this.conversations.filter((conversation) => {
+      if (conversation.type === 'direct') {
+        return true;
+      }
+
+      return groupId != null && conversation.groupId === groupId;
+    });
   }
 
   listMessages(conversationId: string) {

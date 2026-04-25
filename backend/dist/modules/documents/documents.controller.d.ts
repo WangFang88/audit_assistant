@@ -15,9 +15,10 @@ export declare class DocumentsController {
         fileType: "pdf" | "docx" | "xlsx" | "image";
         chunkStrategy: "structure-first" | "length-fallback";
     }[];
-    listExtractionJobs(): {
+    listExtractionJobs(groupId?: string): {
         id: string;
         documentId: string;
+        groupId: string | null;
         status: "processing" | "queued" | "completed";
         stage: "extract" | "ocr" | "chunk" | "index";
         progress: number;

@@ -11,8 +11,8 @@ export class DocumentsController {
   }
 
   @Get('extract-jobs')
-  listExtractionJobs() {
-    return this.documentsService.listExtractionJobs();
+  listExtractionJobs(@Query('groupId') groupId?: string) {
+    return this.documentsService.listExtractionJobs(groupId);
   }
 
   @Post('import-from-file-server')

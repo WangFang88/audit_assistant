@@ -26,9 +26,9 @@ export class OverviewService {
       groups,
       members: effectiveGroupId ? this.groupsService.listMembers(effectiveGroupId) : [],
       documents: this.documentsService.listDocuments(effectiveGroupId),
-      extractJobs: this.documentsService.listExtractionJobs(),
+      extractJobs: this.documentsService.listExtractionJobs(effectiveGroupId),
       subscription: this.subscriptionsService.getOverview(),
-      conversations: this.chatService.listConversations(),
+      conversations: this.chatService.listConversations(effectiveGroupId),
       featuredQuery: this.queryService.search({
         question: '请检索与专项资金使用和采购审批相关的制度依据。',
         groupId: effectiveGroupId,

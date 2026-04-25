@@ -19,8 +19,8 @@ let ChatController = class ChatController {
     constructor(chatService) {
         this.chatService = chatService;
     }
-    listConversations() {
-        return this.chatService.listConversations();
+    listConversations(groupId) {
+        return this.chatService.listConversations(groupId);
     }
     listMessages(conversationId) {
         return this.chatService.listMessages(conversationId);
@@ -32,8 +32,9 @@ let ChatController = class ChatController {
 exports.ChatController = ChatController;
 __decorate([
     (0, common_1.Get)('conversations'),
+    __param(0, (0, common_1.Query)('groupId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], ChatController.prototype, "listConversations", null);
 __decorate([

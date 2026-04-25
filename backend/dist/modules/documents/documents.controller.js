@@ -22,8 +22,8 @@ let DocumentsController = class DocumentsController {
     listDocuments(groupId) {
         return this.documentsService.listDocuments(groupId);
     }
-    listExtractionJobs() {
-        return this.documentsService.listExtractionJobs();
+    listExtractionJobs(groupId) {
+        return this.documentsService.listExtractionJobs(groupId);
     }
     importDocument(dto) {
         return this.documentsService.importDocument(dto);
@@ -39,8 +39,9 @@ __decorate([
 ], DocumentsController.prototype, "listDocuments", null);
 __decorate([
     (0, common_1.Get)('extract-jobs'),
+    __param(0, (0, common_1.Query)('groupId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], DocumentsController.prototype, "listExtractionJobs", null);
 __decorate([

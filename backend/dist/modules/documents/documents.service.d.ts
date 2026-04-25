@@ -20,6 +20,7 @@ type DocumentRecord = {
 type ExtractJobRecord = {
     id: string;
     documentId: string;
+    groupId: string | null;
     status: 'processing' | 'queued' | 'completed';
     stage: 'extract' | 'ocr' | 'chunk' | 'index';
     progress: number;
@@ -43,7 +44,7 @@ export declare class DocumentsService {
     private readonly extractJobs;
     private readonly chunks;
     listDocuments(groupId?: string): DocumentRecord[];
-    listExtractionJobs(): ExtractJobRecord[];
+    listExtractionJobs(groupId?: string): ExtractJobRecord[];
     getReadyChunks(groupId?: string): DocumentChunkRecord[];
     getDocumentById(documentId: string): DocumentRecord;
     importDocument(dto: ImportDocumentDto): {

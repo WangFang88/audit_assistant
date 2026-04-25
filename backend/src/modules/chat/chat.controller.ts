@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ChatService, SendMessageDto } from './chat.service';
 
 @Controller('chat')
@@ -6,8 +6,8 @@ export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Get('conversations')
-  listConversations() {
-    return this.chatService.listConversations();
+  listConversations(@Query('groupId') groupId?: string) {
+    return this.chatService.listConversations(groupId);
   }
 
   @Get('conversations/:conversationId/messages')

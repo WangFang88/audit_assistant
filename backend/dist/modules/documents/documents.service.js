@@ -80,6 +80,7 @@ let DocumentsService = class DocumentsService {
             {
                 id: 'job-1',
                 documentId: 'doc-3',
+                groupId: 'group-1',
                 status: 'processing',
                 stage: 'ocr',
                 progress: 45,
@@ -149,8 +150,13 @@ let DocumentsService = class DocumentsService {
             return groupId != null && document.groupId === groupId;
         });
     }
-    listExtractionJobs() {
-        return this.extractJobs;
+    listExtractionJobs(groupId) {
+        return this.extractJobs.filter((job) => {
+            if (job.groupId == null) {
+                return true;
+            }
+            return groupId != null && job.groupId === groupId;
+        });
     }
     getReadyChunks(groupId) {
         return this.chunks.filter((chunk) => {

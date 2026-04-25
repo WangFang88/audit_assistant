@@ -2,7 +2,7 @@ import { ChatService, SendMessageDto } from './chat.service';
 export declare class ChatController {
     private readonly chatService;
     constructor(chatService: ChatService);
-    listConversations(): ({
+    listConversations(groupId?: string): ({
         id: string;
         type: string;
         title: string;

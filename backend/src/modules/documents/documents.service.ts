@@ -34,6 +34,7 @@ type DocumentRecord = {
 type ExtractJobRecord = {
   id: string;
   documentId: string;
+  groupId: string | null;
   status: 'processing' | 'queued' | 'completed';
   stage: 'extract' | 'ocr' | 'chunk' | 'index';
   progress: number;
@@ -102,6 +103,7 @@ export class DocumentsService {
     {
       id: 'job-1',
       documentId: 'doc-3',
+      groupId: 'group-1',
       status: 'processing',
       stage: 'ocr',
       progress: 45,
@@ -174,8 +176,14 @@ export class DocumentsService {
     });
   }
 
-  listExtractionJobs() {
-    return this.extractJobs;
+  listExtractionJobs(groupId?: string) {
+    return this.extractJobs.filter((job) => {
+      if (job.groupId == null) {
+        return true;
+      }
+
+      return groupId != null && job.groupId === groupId;
+    });
   }
 
   getReadyChunks(groupId?: string) {

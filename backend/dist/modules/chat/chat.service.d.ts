@@ -7,7 +7,7 @@ declare class SendMessageDto {
 export declare class ChatService {
     private readonly conversations;
     private readonly messages;
-    listConversations(): ({
+    listConversations(groupId?: string): ({
         id: string;
         type: string;
         title: string;

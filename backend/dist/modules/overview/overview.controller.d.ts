@@ -43,6 +43,7 @@ export declare class OverviewController {
         extractJobs: {
             id: string;
             documentId: string;
+            groupId: string | null;
             status: "processing" | "queued" | "completed";
             stage: "extract" | "ocr" | "chunk" | "index";
             progress: number;

@@ -151,6 +151,9 @@ class _DashboardPageState extends State<DashboardPage> {
         _extractJobs = bundle.extractJobs;
         _selectedConversationId = bundle.selectedConversationId;
         _messages = bundle.messages;
+        if (_selectedIndex == 1 && _selectedConversationId == null) {
+          _selectedIndex = 0;
+        }
       });
     } on ApiException catch (error) {
       if (!mounted) {
@@ -176,10 +179,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<_GroupBundle> _loadGroupBundle(String? groupId) async {
-    final conversations = await widget.apiService.fetchConversations();
+    final conversations = await widget.apiService.fetchConversations(groupId: groupId);
     final members = groupId == null ? const <GroupMember>[] : await widget.apiService.fetchMembers(groupId);
     final documents = await widget.apiService.fetchDocuments(groupId: groupId);
-    final extractJobs = await widget.apiService.fetchExtractionJobs();
+    final extractJobs = await widget.apiService.fetchExtractionJobs(groupId: groupId);
     final selectedConversationId = _pickConversationId(conversations, groupId);
     final messages = selectedConversationId == null
         ? const <ChatMessage>[]
@@ -214,9 +217,11 @@ class _DashboardPageState extends State<DashboardPage> {
       return null;
     }
 
-    for (final conversation in conversations) {
-      if (conversation.type == '群聊' && groupId != null) {
-        return conversation.id;
+    if (groupId != null) {
+      for (final conversation in conversations) {
+        if (conversation.type == '群聊' && conversation.groupId == groupId) {
+          return conversation.id;
+        }
       }
     }
 
@@ -397,7 +402,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     try {
       final documents = await widget.apiService.fetchDocuments(groupId: _activeGroupId);
-      final jobs = await widget.apiService.fetchExtractionJobs();
+      final jobs = await widget.apiService.fetchExtractionJobs(groupId: _activeGroupId);
       if (!mounted) {
         return;
       }

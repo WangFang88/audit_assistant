@@ -43,8 +43,11 @@ class ApiService {
     return QueryResult.fromJson(json);
   }
 
-  Future<List<ConversationSummary>> fetchConversations() async {
-    final response = await _client.get(Uri.parse('$_baseUrl/chat/conversations'));
+  Future<List<ConversationSummary>> fetchConversations({String? groupId}) async {
+    final uri = Uri.parse('$_baseUrl/chat/conversations').replace(
+      queryParameters: groupId == null ? null : {'groupId': groupId},
+    );
+    final response = await _client.get(uri);
     final list = _decodeList(response);
     return list.map(ConversationSummary.fromJson).toList();
   }
@@ -104,8 +107,11 @@ class ApiService {
     return list.map(KnowledgeDocument.fromJson).toList();
   }
 
-  Future<List<ExtractionJob>> fetchExtractionJobs() async {
-    final response = await _client.get(Uri.parse('$_baseUrl/documents/extract-jobs'));
+  Future<List<ExtractionJob>> fetchExtractionJobs({String? groupId}) async {
+    final uri = Uri.parse('$_baseUrl/documents/extract-jobs').replace(
+      queryParameters: groupId == null ? null : {'groupId': groupId},
+    );
+    final response = await _client.get(uri);
     final list = _decodeList(response);
     return list.map(ExtractionJob.fromJson).toList();
   }
