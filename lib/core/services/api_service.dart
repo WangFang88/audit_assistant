@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,6 +14,8 @@ class ApiService {
   static const _accessTokenKey = 'auth.accessToken';
   static const _refreshTokenKey = 'auth.refreshToken';
   static const _userKey = 'auth.user';
+
+  VoidCallback? onUnauthorized;
 
   final http.Client _client;
   final String _baseUrl;
@@ -219,6 +222,7 @@ class ApiService {
       final message = body is Map<String, dynamic>
           ? (body['message']?.toString() ?? '请求失败')
           : '请求失败';
+      _handleUnauthorized(response.statusCode);
       throw ApiException(message);
     }
 
@@ -236,6 +240,7 @@ class ApiService {
       final message = body is Map<String, dynamic>
           ? (body['message']?.toString() ?? '请求失败')
           : '请求失败';
+      _handleUnauthorized(response.statusCode);
       throw ApiException(message);
     }
 
@@ -244,6 +249,13 @@ class ApiService {
     }
 
     return body.whereType<Map<String, dynamic>>().toList();
+  }
+
+  void _handleUnauthorized(int statusCode) {
+    if (statusCode == 401 || statusCode == 403) {
+      clearSession();
+      onUnauthorized?.call();
+    }
   }
 }
 

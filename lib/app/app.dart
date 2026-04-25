@@ -21,6 +21,7 @@ class _AuditAssistantAppState extends State<AuditAssistantApp> {
   @override
   void initState() {
     super.initState();
+    _apiService.onUnauthorized = _handleSessionExpired;
     _restoreSession();
   }
 
@@ -44,6 +45,17 @@ class _AuditAssistantAppState extends State<AuditAssistantApp> {
 
     setState(() {
       _currentUser = loginResponse.user;
+    });
+  }
+
+  void _handleSessionExpired() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _currentUser = null;
+      _restoringSession = false;
     });
   }
 
