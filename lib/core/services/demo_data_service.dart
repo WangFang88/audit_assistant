@@ -1,0 +1,119 @@
+import '../models/app_models.dart';
+
+class DemoDataService {
+  const DemoDataService();
+
+  AppUser getCurrentUser() {
+    return const AppUser(
+      id: 'user-1',
+      name: '审计专员',
+      phone: '13800138000',
+      role: '项目组长',
+      trialEndsAt: '2026-05-01',
+    );
+  }
+
+  List<ProjectGroup> getGroups() {
+    return const [
+      ProjectGroup(
+        id: 'group-1',
+        name: '某区财政局审计组',
+        organizationName: '某区财政局',
+        memberCount: 4,
+        privateDocumentCount: 2,
+        lastQueryAt: '今天 16:20',
+      ),
+    ];
+  }
+
+  List<KnowledgeDocument> getDocuments() {
+    return const [
+      KnowledgeDocument(
+        id: 'doc-1',
+        title: '某区财政专项资金管理办法',
+        libraryType: '公共库',
+        extractionMode: '文字抽取',
+        indexStatus: '已建索引',
+        chunkCount: 18,
+      ),
+      KnowledgeDocument(
+        id: 'doc-2',
+        title: '某区财政局内部采购管理制度',
+        libraryType: '私有库',
+        extractionMode: '文字抽取',
+        indexStatus: '已建索引',
+        chunkCount: 12,
+      ),
+      KnowledgeDocument(
+        id: 'doc-3',
+        title: '某医院设备管理台账扫描件',
+        libraryType: '私有库',
+        extractionMode: 'OCR',
+        indexStatus: '处理中',
+        chunkCount: 0,
+      ),
+    ];
+  }
+
+  QueryResult search(String question) {
+    final bool procurement = question.contains('采购');
+    final bool fund = question.contains('资金');
+
+    final citations = [
+      QueryCitation(
+        title: procurement ? '某区财政局内部采购管理制度' : '某区财政专项资金管理办法',
+        libraryType: procurement ? '私有库' : '公共库',
+        score: 0.93,
+        matchedChunk: procurement
+            ? '第四条：项目组内部采购须履行审批、比价、验收与留痕。'
+            : '第十二条：专项资金使用应符合预算用途，不得擅自改变资金性质。',
+        reason: '已基于已切分文本块完成关键词和语义融合检索。',
+      ),
+      QueryCitation(
+        title: fund ? '某区财政专项资金管理办法' : '财政监督检查工作规范',
+        libraryType: '公共库',
+        score: 0.88,
+        matchedChunk: fund
+            ? '第十五条：专项资金支出应专款专用，并留存完整依据。'
+            : '第八条：审计取证应保留审批、执行、验收全链路证据。',
+        reason: '先按库范围和元数据过滤，再从索引中命中相关条款。',
+      ),
+    ];
+
+    return QueryResult(
+      answer: '系统已优先检索公共库与当前项目组私有库中已抽取、已切分、已建索引的文本块，并返回最相关的制度依据。',
+      explanation: '当前方案不会在查询时解析原始大文件，超大文件会在导入阶段异步抽取与索引，因此查询响应更稳定。',
+      pipeline: const ['元数据过滤', '文本块关键词检索', '文本块语义检索', '结果融合与重排', '千问答案生成'],
+      citations: citations,
+    );
+  }
+
+  List<ConversationSummary> getConversations() {
+    return const [
+      ConversationSummary(
+        id: 'conv-group-1',
+        title: '某区财政局审计组群聊',
+        type: '群聊',
+        lastMessage: '请同步采购抽查结果。',
+        unreadCount: 2,
+      ),
+      ConversationSummary(
+        id: 'conv-direct-1',
+        title: '与法规顾问的私信',
+        type: '私信',
+        lastMessage: '我已整理出相关条款。',
+        unreadCount: 0,
+      ),
+    ];
+  }
+
+  SubscriptionOverview getSubscriptionOverview() {
+    return const SubscriptionOverview(
+      planName: '免费版',
+      priceLabel: '¥0 / 1天试用',
+      groupUsage: '项目组 1 / 1',
+      documentUsage: '私有文件 2 / 2',
+      queryUsage: '今日查询 6 / 10',
+    );
+  }
+}
