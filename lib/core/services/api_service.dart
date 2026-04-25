@@ -19,7 +19,7 @@ class ApiService {
       body: jsonEncode({'phone': phone, 'password': password}),
     );
 
-    final json = _decode(response);
+    final json = _decodeMap(response);
     return LoginResponse.fromJson(json);
   }
 
@@ -28,7 +28,7 @@ class ApiService {
       queryParameters: groupId == null ? null : {'groupId': groupId},
     );
     final response = await _client.get(uri);
-    final json = _decode(response);
+    final json = _decodeMap(response);
     return DashboardOverview.fromJson(json);
   }
 
@@ -39,11 +39,91 @@ class ApiService {
       body: jsonEncode({'question': question, 'groupId': groupId}),
     );
 
-    final json = _decode(response);
+    final json = _decodeMap(response);
     return QueryResult.fromJson(json);
   }
 
-  Map<String, dynamic> _decode(http.Response response) {
+  Future<List<ConversationSummary>> fetchConversations() async {
+    final response = await _client.get(Uri.parse('$_baseUrl/chat/conversations'));
+    final list = _decodeList(response);
+    return list.map(ConversationSummary.fromJson).toList();
+  }
+
+  Future<List<ChatMessage>> fetchMessages(String conversationId) async {
+    final response = await _client.get(
+      Uri.parse('$_baseUrl/chat/conversations/$conversationId/messages'),
+    );
+    final list = _decodeList(response);
+    return list.map(ChatMessage.fromJson).toList();
+  }
+
+  Future<ChatMessage> sendMessage({
+    required String conversationId,
+    required String conversationType,
+    required String content,
+    String? groupId,
+  }) async {
+    final response = await _client.post(
+      Uri.parse('$_baseUrl/chat/messages'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'conversationId': conversationId,
+        'conversationType': conversationType,
+        'content': content,
+        'groupId': groupId,
+      }),
+    );
+
+    final json = _decodeMap(response);
+    return ChatMessage.fromJson(json);
+  }
+
+  Future<List<GroupMember>> fetchMembers(String groupId) async {
+    final response = await _client.get(Uri.parse('$_baseUrl/groups/$groupId/members'));
+    final list = _decodeList(response);
+    return list.map(GroupMember.fromJson).toList();
+  }
+
+  Future<ProjectGroup> createGroup({required String name, required String organizationName}) async {
+    final response = await _client.post(
+      Uri.parse('$_baseUrl/groups'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name, 'organizationName': organizationName}),
+    );
+
+    final json = _decodeMap(response);
+    return ProjectGroup.fromJson(json);
+  }
+
+  Future<void> inviteMember({
+    required String groupId,
+    required String phone,
+    required String role,
+  }) async {
+    final backendRole = role == '组长' ? 'leader' : 'member';
+    final response = await _client.post(
+      Uri.parse('$_baseUrl/groups/$groupId/invites'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'phone': phone, 'role': backendRole}),
+    );
+
+    _decodeMap(response);
+  }
+
+  Future<void> transferLeader({
+    required String groupId,
+    required String targetUserId,
+  }) async {
+    final response = await _client.post(
+      Uri.parse('$_baseUrl/groups/$groupId/transfer-leader'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'targetUserId': targetUserId}),
+    );
+
+    _decodeMap(response);
+  }
+
+  Map<String, dynamic> _decodeMap(http.Response response) {
     final body = jsonDecode(response.body) as Object?;
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -58,6 +138,23 @@ class ApiService {
     }
 
     return body;
+  }
+
+  List<Map<String, dynamic>> _decodeList(http.Response response) {
+    final body = jsonDecode(response.body) as Object?;
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final message = body is Map<String, dynamic>
+          ? (body['message']?.toString() ?? '请求失败')
+          : '请求失败';
+      throw ApiException(message);
+    }
+
+    if (body is! List) {
+      throw const ApiException('接口返回格式错误');
+    }
+
+    return body.whereType<Map<String, dynamic>>().toList();
   }
 }
 

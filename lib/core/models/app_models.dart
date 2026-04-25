@@ -53,6 +53,35 @@ class ProjectGroup {
   }
 }
 
+class GroupMember {
+  const GroupMember({
+    required this.id,
+    required this.groupId,
+    required this.userId,
+    required this.name,
+    required this.phone,
+    required this.role,
+  });
+
+  final String id;
+  final String groupId;
+  final String userId;
+  final String name;
+  final String phone;
+  final String role;
+
+  factory GroupMember.fromJson(Map<String, dynamic> json) {
+    return GroupMember(
+      id: json['id'] as String? ?? '',
+      groupId: json['groupId'] as String? ?? '',
+      userId: json['userId'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      phone: json['phone'] as String? ?? '',
+      role: _mapMemberRole(json['role'] as String? ?? ''),
+    );
+  }
+}
+
 class KnowledgeDocument {
   const KnowledgeDocument({
     required this.id,
@@ -203,6 +232,32 @@ class ConversationSummary {
   }
 }
 
+class ChatMessage {
+  const ChatMessage({
+    required this.id,
+    required this.conversationId,
+    required this.senderName,
+    required this.content,
+    required this.sentAt,
+  });
+
+  final String id;
+  final String conversationId;
+  final String senderName;
+  final String content;
+  final String sentAt;
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    return ChatMessage(
+      id: json['id'] as String? ?? '',
+      conversationId: json['conversationId'] as String? ?? '',
+      senderName: json['senderName'] as String? ?? '',
+      content: json['content'] as String? ?? '',
+      sentAt: json['sentAt'] as String? ?? '',
+    );
+  }
+}
+
 class SubscriptionOverview {
   const SubscriptionOverview({
     required this.planName,
@@ -322,6 +377,17 @@ String _mapChunkStrategy(String value) {
       return '结构优先切分';
     case 'length-fallback':
       return '长度回退切分';
+    default:
+      return value;
+  }
+}
+
+String _mapMemberRole(String value) {
+  switch (value) {
+    case 'leader':
+      return '组长';
+    case 'member':
+      return '成员';
     default:
       return value;
   }
