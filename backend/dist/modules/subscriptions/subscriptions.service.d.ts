@@ -1,5 +1,35 @@
+type UsageSnapshot = {
+    groups: number;
+    privateDocuments: number;
+    dailyQueries: number;
+};
 export declare class SubscriptionsService {
+    private readonly currentPlanId;
+    private readonly trialEndsAt;
+    private readonly trialDays;
+    private usage;
     private readonly plans;
+    getCurrentPlan(): {
+        id: string;
+        name: string;
+        priceLabel: string;
+        limits: {
+            groupCount: number;
+            privateDocuments: number;
+            dailyQueries: number;
+            caseSearch: boolean;
+        };
+    };
+    getUsage(): {
+        groups: number;
+        privateDocuments: number;
+        dailyQueries: number;
+    };
+    syncUsage(usage: Partial<UsageSnapshot>): void;
+    assertCanCreateGroup(currentGroupCount: number): void;
+    assertCanImportPrivateDocument(currentPrivateDocumentCount: number): void;
+    assertCanRunQuery(currentDailyQueries: number): void;
+    consumeQuery(): void;
     getOverview(): {
         currentPlanId: string;
         trialEndsAt: string;
@@ -44,3 +74,4 @@ export declare class SubscriptionsService {
         };
     };
 }
+export {};

@@ -12,6 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ImportDocumentDto = exports.DocumentsService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const groups_service_1 = require("../groups/groups.service");
+const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 class ImportDocumentDto {
 }
 exports.ImportDocumentDto = ImportDocumentDto;
@@ -34,7 +36,9 @@ __decorate([
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "groupId", void 0);
 let DocumentsService = class DocumentsService {
-    constructor() {
+    constructor(groupsService, subscriptionsService) {
+        this.groupsService = groupsService;
+        this.subscriptionsService = subscriptionsService;
         this.documents = [
             {
                 id: 'doc-1',
@@ -189,6 +193,14 @@ let DocumentsService = class DocumentsService {
         return document;
     }
     importDocument(dto) {
+        if (dto.libraryType === 'private') {
+            if (!dto.groupId) {
+                throw new common_1.BadRequestException('私有库导入必须指定项目组');
+            }
+            this.groupsService.getGroupById(dto.groupId);
+            const currentPrivateDocuments = this.documents.filter((document) => document.libraryType === 'private').length;
+            this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
+        }
         const lowerSourcePath = dto.sourcePath.toLowerCase();
         const isScan = lowerSourcePath.endsWith('.png') ||
             lowerSourcePath.endsWith('.jpg') ||
@@ -203,20 +215,32 @@ let DocumentsService = class DocumentsService {
                     lowerSourcePath.endsWith('.jpeg')
                     ? 'image'
                     : 'pdf';
-        return {
-            id: 'doc-new',
+        const document = {
+            id: `doc-${this.documents.length + 1}`,
             title: dto.title,
             libraryType: dto.libraryType,
             sourcePath: dto.sourcePath,
+            chunkCount: 0,
             groupId: dto.groupId ?? null,
             fileType,
             extractionMode: isScan ? 'ocr' : 'text',
+            uploadedAt: '2026-04-26 12:30',
             indexStatus: 'queued',
             chunkStrategy: 'structure-first',
             parserTarget: 'multimodal-parser',
             embeddingTarget: 'bge-large-zh',
             vectorStoreTarget: 'pgvector',
             pipelineStage: 'queued',
+        };
+        this.documents.push(document);
+        if (dto.libraryType === 'private') {
+            const group = this.groupsService.getGroupById(dto.groupId);
+            group.privateDocumentCount += 1;
+            const privateDocumentCount = this.documents.filter((item) => item.libraryType === 'private').length;
+            this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
+        }
+        return {
+            ...document,
             notes: '导入后会执行文字抽取、多模态拆解、结构化切分与向量化入库，查询阶段不直接扫描原文件。',
         };
     }
@@ -236,6 +260,8 @@ let DocumentsService = class DocumentsService {
 };
 exports.DocumentsService = DocumentsService;
 exports.DocumentsService = DocumentsService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [groups_service_1.GroupsService,
+        subscriptions_service_1.SubscriptionsService])
 ], DocumentsService);
 //# sourceMappingURL=documents.service.js.map

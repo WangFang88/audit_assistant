@@ -29,19 +29,21 @@ export declare class DocumentsController {
         startedAt: string;
     }[];
     importDocument(dto: ImportDocumentDto): {
+        notes: string;
         id: string;
         title: string;
         libraryType: "public" | "private";
         sourcePath: string;
+        chunkCount: number;
+        indexStatus: "ready" | "processing" | "queued";
+        extractionMode: "text" | "ocr";
+        uploadedAt: string;
         groupId: string | null;
         fileType: "pdf" | "docx" | "xlsx" | "image";
-        extractionMode: string;
-        indexStatus: string;
-        chunkStrategy: string;
-        parserTarget: string;
-        embeddingTarget: string;
-        vectorStoreTarget: string;
-        pipelineStage: string;
-        notes: string;
+        chunkStrategy: "structure-first" | "length-fallback";
+        parserTarget: "multimodal-parser";
+        embeddingTarget: "bge-large-zh";
+        vectorStoreTarget: "pgvector";
+        pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
     };
 }

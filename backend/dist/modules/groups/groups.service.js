@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransferLeaderDto = exports.InviteMemberDto = exports.CreateGroupDto = exports.GroupsService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 class CreateGroupDto {
 }
 exports.CreateGroupDto = CreateGroupDto;
@@ -44,7 +45,8 @@ __decorate([
     __metadata("design:type", String)
 ], TransferLeaderDto.prototype, "targetUserId", void 0);
 let GroupsService = class GroupsService {
-    constructor() {
+    constructor(subscriptionsService) {
+        this.subscriptionsService = subscriptionsService;
         this.groups = [
             {
                 id: 'group-1',
@@ -94,7 +96,8 @@ let GroupsService = class GroupsService {
         return group;
     }
     createGroup(dto) {
-        return {
+        this.subscriptionsService.assertCanCreateGroup(this.groups.length);
+        const group = {
             id: `group-${this.groups.length + 1}`,
             name: dto.name,
             organizationName: dto.organizationName,
@@ -103,6 +106,17 @@ let GroupsService = class GroupsService {
             privateDocumentCount: 0,
             lastQueryAt: null,
         };
+        this.groups.push(group);
+        this.members.push({
+            id: `member-${this.members.length + 1}`,
+            groupId: group.id,
+            userId: 'user-1',
+            name: '审计专员',
+            phone: '13800138000',
+            role: 'leader',
+        });
+        this.subscriptionsService.syncUsage({ groups: this.groups.length });
+        return group;
     }
     listMembers(groupId) {
         this.getGroupById(groupId);
@@ -163,6 +177,7 @@ let GroupsService = class GroupsService {
 };
 exports.GroupsService = GroupsService;
 exports.GroupsService = GroupsService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [subscriptions_service_1.SubscriptionsService])
 ], GroupsService);
 //# sourceMappingURL=groups.service.js.map

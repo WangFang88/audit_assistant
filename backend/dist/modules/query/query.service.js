@@ -14,6 +14,7 @@ const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
 const documents_service_1 = require("../documents/documents.service");
 const groups_service_1 = require("../groups/groups.service");
+const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 class QueryRequestDto {
 }
 exports.QueryRequestDto = QueryRequestDto;
@@ -28,11 +29,14 @@ __decorate([
     __metadata("design:type", String)
 ], QueryRequestDto.prototype, "groupId", void 0);
 let QueryService = class QueryService {
-    constructor(documentsService, groupsService) {
+    constructor(documentsService, groupsService, subscriptionsService) {
         this.documentsService = documentsService;
         this.groupsService = groupsService;
+        this.subscriptionsService = subscriptionsService;
     }
     search(dto) {
+        const usage = this.subscriptionsService.getUsage();
+        this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
         const group = dto.groupId ? this.groupsService.getGroupById(dto.groupId) : null;
         const readyChunks = this.documentsService.getReadyChunks(dto.groupId);
         const scopeSummary = this.documentsService.getLibraryScopeSummary(dto.groupId);
@@ -63,6 +67,7 @@ let QueryService = class QueryService {
         const queryMode = tokens.length === 0 ? '语义优先' : '关键词 + 语义融合';
         const publicHits = candidates.filter((candidate) => candidate.libraryType === 'public').length;
         const privateHits = candidates.filter((candidate) => candidate.libraryType === 'private').length;
+        this.subscriptionsService.consumeQuery();
         return {
             question: dto.question,
             scope: {
@@ -103,6 +108,7 @@ exports.QueryService = QueryService;
 exports.QueryService = QueryService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [documents_service_1.DocumentsService,
-        groups_service_1.GroupsService])
+        groups_service_1.GroupsService,
+        subscriptions_service_1.SubscriptionsService])
 ], QueryService);
 //# sourceMappingURL=query.service.js.map

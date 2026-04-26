@@ -1,3 +1,4 @@
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 declare class CreateGroupDto {
     name: string;
     organizationName: string;
@@ -27,6 +28,8 @@ type MemberRecord = {
     role: 'leader' | 'member';
 };
 export declare class GroupsService {
+    private readonly subscriptionsService;
+    constructor(subscriptionsService: SubscriptionsService);
     private readonly groups;
     private readonly members;
     listGroups(): GroupRecord[];

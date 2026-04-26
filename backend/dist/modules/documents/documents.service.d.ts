@@ -1,3 +1,5 @@
+import { GroupsService } from '../groups/groups.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 declare class ImportDocumentDto {
     title: string;
     libraryType: 'public' | 'private';
@@ -44,6 +46,9 @@ type DocumentChunkRecord = {
     indexStatus: 'ready' | 'processing';
 };
 export declare class DocumentsService {
+    private readonly groupsService;
+    private readonly subscriptionsService;
+    constructor(groupsService: GroupsService, subscriptionsService: SubscriptionsService);
     private readonly documents;
     private readonly extractJobs;
     private readonly chunks;
@@ -52,20 +57,22 @@ export declare class DocumentsService {
     getReadyChunks(groupId?: string): DocumentChunkRecord[];
     getDocumentById(documentId: string): DocumentRecord;
     importDocument(dto: ImportDocumentDto): {
+        notes: string;
         id: string;
         title: string;
         libraryType: "public" | "private";
         sourcePath: string;
+        chunkCount: number;
+        indexStatus: "ready" | "processing" | "queued";
+        extractionMode: "text" | "ocr";
+        uploadedAt: string;
         groupId: string | null;
         fileType: "pdf" | "docx" | "xlsx" | "image";
-        extractionMode: string;
-        indexStatus: string;
-        chunkStrategy: string;
-        parserTarget: string;
-        embeddingTarget: string;
-        vectorStoreTarget: string;
-        pipelineStage: string;
-        notes: string;
+        chunkStrategy: "structure-first" | "length-fallback";
+        parserTarget: "multimodal-parser";
+        embeddingTarget: "bge-large-zh";
+        vectorStoreTarget: "pgvector";
+        pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
     };
     getLibraryScopeSummary(groupId?: string): {
         scopeMode: string;

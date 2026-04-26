@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { GroupsService } from '../groups/groups.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 class ImportDocumentDto {
   @IsString()
@@ -61,6 +63,11 @@ type DocumentChunkRecord = {
 
 @Injectable()
 export class DocumentsService {
+  constructor(
+    private readonly groupsService: GroupsService,
+    private readonly subscriptionsService: SubscriptionsService,
+  ) {}
+
   private readonly documents: DocumentRecord[] = [
     {
       id: 'doc-1',
@@ -226,6 +233,15 @@ export class DocumentsService {
   }
 
   importDocument(dto: ImportDocumentDto) {
+    if (dto.libraryType === 'private') {
+      if (!dto.groupId) {
+        throw new BadRequestException('私有库导入必须指定项目组');
+      }
+      this.groupsService.getGroupById(dto.groupId);
+      const currentPrivateDocuments = this.documents.filter((document) => document.libraryType === 'private').length;
+      this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
+    }
+
     const lowerSourcePath = dto.sourcePath.toLowerCase();
     const isScan =
       lowerSourcePath.endsWith('.png') ||
@@ -243,20 +259,34 @@ export class DocumentsService {
           ? 'image'
           : 'pdf';
 
-    return {
-      id: 'doc-new',
+    const document: DocumentRecord = {
+      id: `doc-${this.documents.length + 1}`,
       title: dto.title,
       libraryType: dto.libraryType,
       sourcePath: dto.sourcePath,
+      chunkCount: 0,
       groupId: dto.groupId ?? null,
       fileType,
       extractionMode: isScan ? 'ocr' : 'text',
-      indexStatus: 'queued',
-      chunkStrategy: 'structure-first',
-      parserTarget: 'multimodal-parser',
-      embeddingTarget: 'bge-large-zh',
-      vectorStoreTarget: 'pgvector',
-      pipelineStage: 'queued',
+      uploadedAt: '2026-04-26 12:30',
+      indexStatus: 'queued' as const,
+      chunkStrategy: 'structure-first' as const,
+      parserTarget: 'multimodal-parser' as const,
+      embeddingTarget: 'bge-large-zh' as const,
+      vectorStoreTarget: 'pgvector' as const,
+      pipelineStage: 'queued' as const,
+    };
+
+    this.documents.push(document);
+    if (dto.libraryType === 'private') {
+      const group = this.groupsService.getGroupById(dto.groupId!);
+      group.privateDocumentCount += 1;
+      const privateDocumentCount = this.documents.filter((item) => item.libraryType === 'private').length;
+      this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
+    }
+
+    return {
+      ...document,
       notes: '导入后会执行文字抽取、多模态拆解、结构化切分与向量化入库，查询阶段不直接扫描原文件。',
     };
   }

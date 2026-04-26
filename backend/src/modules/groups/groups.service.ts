@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { IsIn, IsString, MinLength } from 'class-validator';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 class CreateGroupDto {
   @IsString()
@@ -45,6 +46,8 @@ type MemberRecord = {
 
 @Injectable()
 export class GroupsService {
+  constructor(private readonly subscriptionsService: SubscriptionsService) {}
+
   private readonly groups: GroupRecord[] = [
     {
       id: 'group-1',
@@ -98,7 +101,9 @@ export class GroupsService {
   }
 
   createGroup(dto: CreateGroupDto) {
-    return {
+    this.subscriptionsService.assertCanCreateGroup(this.groups.length);
+
+    const group = {
       id: `group-${this.groups.length + 1}`,
       name: dto.name,
       organizationName: dto.organizationName,
@@ -107,6 +112,19 @@ export class GroupsService {
       privateDocumentCount: 0,
       lastQueryAt: null,
     };
+
+    this.groups.push(group);
+    this.members.push({
+      id: `member-${this.members.length + 1}`,
+      groupId: group.id,
+      userId: 'user-1',
+      name: '审计专员',
+      phone: '13800138000',
+      role: 'leader',
+    });
+    this.subscriptionsService.syncUsage({ groups: this.groups.length });
+
+    return group;
   }
 
   listMembers(groupId: string) {

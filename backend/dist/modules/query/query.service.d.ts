@@ -1,5 +1,6 @@
 import { DocumentsService } from '../documents/documents.service';
 import { GroupsService } from '../groups/groups.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 declare class QueryRequestDto {
     question: string;
     groupId?: string;
@@ -18,7 +19,8 @@ type CitationRecord = {
 export declare class QueryService {
     private readonly documentsService;
     private readonly groupsService;
-    constructor(documentsService: DocumentsService, groupsService: GroupsService);
+    private readonly subscriptionsService;
+    constructor(documentsService: DocumentsService, groupsService: GroupsService, subscriptionsService: SubscriptionsService);
     search(dto: QueryRequestDto): {
         question: string;
         scope: {

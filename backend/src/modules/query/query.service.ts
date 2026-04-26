@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { IsOptional, IsString, MinLength } from 'class-validator';
 import { DocumentsService } from '../documents/documents.service';
 import { GroupsService } from '../groups/groups.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 class QueryRequestDto {
   @IsString()
@@ -30,9 +31,13 @@ export class QueryService {
   constructor(
     private readonly documentsService: DocumentsService,
     private readonly groupsService: GroupsService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   search(dto: QueryRequestDto) {
+    const usage = this.subscriptionsService.getUsage();
+    this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
+
     const group = dto.groupId ? this.groupsService.getGroupById(dto.groupId) : null;
     const readyChunks = this.documentsService.getReadyChunks(dto.groupId);
     const scopeSummary = this.documentsService.getLibraryScopeSummary(dto.groupId);
@@ -69,6 +74,8 @@ export class QueryService {
     const queryMode = tokens.length === 0 ? '语义优先' : '关键词 + 语义融合';
     const publicHits = candidates.filter((candidate) => candidate.libraryType === 'public').length;
     const privateHits = candidates.filter((candidate) => candidate.libraryType === 'private').length;
+
+    this.subscriptionsService.consumeQuery();
 
     return {
       question: dto.question,
