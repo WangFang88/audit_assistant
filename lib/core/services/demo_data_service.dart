@@ -41,6 +41,8 @@ class DemoDataService {
         embeddingTarget: 'bge-large-zh',
         vectorStoreTarget: 'pgvector',
         pipelineStage: '已完成向量化',
+        sourcePath: '/policies/public/fiscal-rules.pdf',
+        uploadedAt: '2026-04-25 10:00',
       ),
       KnowledgeDocument(
         id: 'doc-2',
@@ -55,6 +57,8 @@ class DemoDataService {
         embeddingTarget: 'bge-large-zh',
         vectorStoreTarget: 'pgvector',
         pipelineStage: '已完成向量化',
+        sourcePath: '/groups/group-1/purchase-guideline.docx',
+        uploadedAt: '2026-04-25 14:00',
       ),
       KnowledgeDocument(
         id: 'doc-3',
@@ -69,6 +73,8 @@ class DemoDataService {
         embeddingTarget: 'bge-large-zh',
         vectorStoreTarget: 'pgvector',
         pipelineStage: 'OCR处理中',
+        sourcePath: '/groups/group-1/equipment-scan.pdf',
+        uploadedAt: '2026-04-25 15:30',
       ),
     ];
   }

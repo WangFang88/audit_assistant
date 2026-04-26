@@ -106,6 +106,8 @@ class KnowledgeDocument {
     required this.embeddingTarget,
     required this.vectorStoreTarget,
     required this.pipelineStage,
+    required this.sourcePath,
+    required this.uploadedAt,
   });
 
   final String id;
@@ -120,6 +122,8 @@ class KnowledgeDocument {
   final String embeddingTarget;
   final String vectorStoreTarget;
   final String pipelineStage;
+  final String sourcePath;
+  final String uploadedAt;
 
   factory KnowledgeDocument.fromJson(Map<String, dynamic> json) {
     return KnowledgeDocument(
@@ -135,6 +139,8 @@ class KnowledgeDocument {
       embeddingTarget: json['embeddingTarget'] as String? ?? '',
       vectorStoreTarget: json['vectorStoreTarget'] as String? ?? '',
       pipelineStage: _mapPipelineStage(json['pipelineStage'] as String? ?? ''),
+      sourcePath: json['sourcePath'] as String? ?? '',
+      uploadedAt: json['uploadedAt'] as String? ?? '',
     );
   }
 }
