@@ -162,6 +162,8 @@ class DemoDataService {
       planId: 'free',
       planName: '免费版',
       priceLabel: '¥0 / 1天试用',
+      status: 'trial',
+      statusLabel: '试用中',
       groupUsage: '项目组 1 / 1',
       documentUsage: '私有文件 2 / 2',
       queryUsage: '今日查询 6 / 10',

@@ -472,6 +472,8 @@ class SubscriptionOverview {
     required this.planId,
     required this.planName,
     required this.priceLabel,
+    required this.status,
+    required this.statusLabel,
     required this.groupUsage,
     required this.documentUsage,
     required this.queryUsage,
@@ -493,6 +495,8 @@ class SubscriptionOverview {
   final String planId;
   final String planName;
   final String priceLabel;
+  final String status;
+  final String statusLabel;
   final String groupUsage;
   final String documentUsage;
   final String queryUsage;
@@ -527,6 +531,8 @@ class SubscriptionOverview {
       planId: currentPlanId,
       planName: currentPlan['name'] as String? ?? '未设置套餐',
       priceLabel: currentPlan['priceLabel'] as String? ?? '--',
+      status: json['status'] as String? ?? 'trial',
+      statusLabel: json['statusLabel'] as String? ?? '试用中',
       groupUsage: '项目组 ${groups['used'] ?? 0} / ${groups['limit'] ?? 0}',
       documentUsage:
           '私有文件 ${privateDocuments['used'] ?? 0} / ${privateDocuments['limit'] ?? 0}',
@@ -559,6 +565,7 @@ class SubscriptionOrderSummary {
   const SubscriptionOrderSummary({
     required this.id,
     required this.planType,
+    required this.planLabel,
     required this.amount,
     required this.paidAt,
     required this.expiredAt,
@@ -566,6 +573,7 @@ class SubscriptionOrderSummary {
 
   final String id;
   final String planType;
+  final String planLabel;
   final String amount;
   final String paidAt;
   final String expiredAt;
@@ -574,6 +582,7 @@ class SubscriptionOrderSummary {
     return SubscriptionOrderSummary(
       id: json['id'] as String? ?? '',
       planType: json['planType'] as String? ?? '',
+      planLabel: json['planLabel'] as String? ?? json['planType'] as String? ?? '',
       amount: json['amount'] as String? ?? '',
       paidAt: json['paidAt'] as String? ?? '',
       expiredAt: json['expiredAt'] as String? ?? '',

@@ -11,6 +11,7 @@ type UsageSnapshot = {
     dailyQueries: number;
     dailyQueryDate: string;
 };
+type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'admin-preview';
 export declare class SubscriptionsService {
     private readonly localStateService;
     private readonly queryLogRepository;
@@ -36,6 +37,10 @@ export declare class SubscriptionsService {
     private formatDateTime;
     private addDays;
     private getCurrentPlanRank;
+    private getPlanLabel;
+    private isOrderActive;
+    private getSubscriptionStatus;
+    private getSubscriptionStatusLabel;
     private hasActiveHigherTierOrder;
     private rebuildDailyUsageFromLogs;
     private ensureDailyUsageIsCurrent;
@@ -67,9 +72,12 @@ export declare class SubscriptionsService {
         currentPlanId: "free" | "weekly" | "monthly" | "yearly";
         trialEndsAt: string;
         trialDays: number;
+        status: SubscriptionStatus;
+        statusLabel: string;
         latestOrder: {
             id: string;
             planType: "free" | "weekly" | "monthly" | "yearly";
+            planLabel: string;
             amount: string;
             paidAt: string;
             expiredAt: string;
@@ -77,6 +85,7 @@ export declare class SubscriptionsService {
         orderHistory: {
             id: string;
             planType: "free" | "weekly" | "monthly" | "yearly";
+            planLabel: string;
             amount: string;
             paidAt: string;
             expiredAt: string;

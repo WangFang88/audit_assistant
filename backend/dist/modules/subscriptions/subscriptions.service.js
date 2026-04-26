@@ -166,14 +166,40 @@ let SubscriptionsService = class SubscriptionsService {
     getCurrentPlanRank(planType) {
         return this.planRank[planType];
     }
+    getPlanLabel(planType) {
+        return this.plans.find((plan) => plan.id === planType)?.name ?? planType;
+    }
+    isOrderActive(order) {
+        return new Date(order.expiredAt.replace(' ', 'T')).getTime() > Date.now();
+    }
+    getSubscriptionStatus() {
+        if (this.isAdmin()) {
+            return 'admin-preview';
+        }
+        const latestOrder = this.getLatestSubscriptionOrder();
+        if (latestOrder) {
+            return this.isOrderActive(latestOrder) ? 'active' : 'expired';
+        }
+        return 'trial';
+    }
+    getSubscriptionStatusLabel(status) {
+        switch (status) {
+            case 'trial':
+                return '试用中';
+            case 'active':
+                return '生效中';
+            case 'expired':
+                return '已过期';
+            case 'admin-preview':
+                return '管理员预览';
+        }
+    }
     hasActiveHigherTierOrder(planType) {
         const latestOrder = this.getLatestSubscriptionOrder();
         if (!latestOrder) {
             return false;
         }
-        const now = new Date();
-        const expiredAt = new Date(latestOrder.expiredAt.replace(' ', 'T'));
-        if (expiredAt.getTime() <= now.getTime()) {
+        if (!this.isOrderActive(latestOrder)) {
             return false;
         }
         return this.getCurrentPlanRank(latestOrder.planType) > this.getCurrentPlanRank(planType);
@@ -291,15 +317,19 @@ let SubscriptionsService = class SubscriptionsService {
         this.ensureDailyUsageIsCurrent();
         const plan = this.getCurrentPlan();
         const latestOrder = this.getLatestSubscriptionOrder();
+        const status = this.getSubscriptionStatus();
         return {
             currentPlanId: latestOrder?.planType ?? this.currentPlanId,
             trialEndsAt: latestOrder?.expiredAt.slice(0, 10) ?? this.trialEndsAt,
             trialDays: this.trialDays,
+            status,
+            statusLabel: this.getSubscriptionStatusLabel(status),
             latestOrder: latestOrder == null
                 ? null
                 : {
                     id: latestOrder.id,
                     planType: latestOrder.planType,
+                    planLabel: this.getPlanLabel(latestOrder.planType),
                     amount: latestOrder.amount,
                     paidAt: latestOrder.paidAt,
                     expiredAt: latestOrder.expiredAt,
@@ -308,6 +338,7 @@ let SubscriptionsService = class SubscriptionsService {
                 .map((order) => ({
                 id: order.id,
                 planType: order.planType,
+                planLabel: this.getPlanLabel(order.planType),
                 amount: order.amount,
                 paidAt: order.paidAt,
                 expiredAt: order.expiredAt,

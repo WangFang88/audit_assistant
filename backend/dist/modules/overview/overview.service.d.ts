@@ -95,9 +95,12 @@ export declare class OverviewService {
             currentPlanId: "free" | "weekly" | "monthly" | "yearly";
             trialEndsAt: string;
             trialDays: number;
+            status: "admin-preview" | "trial" | "active" | "expired";
+            statusLabel: string;
             latestOrder: {
                 id: string;
                 planType: "free" | "weekly" | "monthly" | "yearly";
+                planLabel: string;
                 amount: string;
                 paidAt: string;
                 expiredAt: string;
@@ -105,6 +108,7 @@ export declare class OverviewService {
             orderHistory: {
                 id: string;
                 planType: "free" | "weekly" | "monthly" | "yearly";
+                planLabel: string;
                 amount: string;
                 paidAt: string;
                 expiredAt: string;
