@@ -20,6 +20,7 @@ exports.QueryModule = QueryModule = __decorate([
         imports: [documents_module_1.DocumentsModule, groups_module_1.GroupsModule],
         controllers: [query_controller_1.QueryController],
         providers: [query_service_1.QueryService],
+        exports: [query_service_1.QueryService],
     })
 ], QueryModule);
 //# sourceMappingURL=query.module.js.map

@@ -8,5 +8,6 @@ import { QueryService } from './query.service';
   imports: [DocumentsModule, GroupsModule],
   controllers: [QueryController],
   providers: [QueryService],
+  exports: [QueryService],
 })
 export class QueryModule {}
