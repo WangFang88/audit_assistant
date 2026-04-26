@@ -56,8 +56,8 @@ type PersistedConversationRecord = {
     type: 'group' | 'direct';
     title: string;
     groupId: string | null;
-    unreadCount: number;
-    lastMessage: string;
+    unreadCount?: number;
+    lastMessage?: string;
 };
 type PersistedMessageRecord = {
     id: string;

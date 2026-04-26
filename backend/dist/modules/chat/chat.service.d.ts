@@ -8,14 +8,6 @@ declare class SendMessageDto {
     content: string;
     groupId?: string;
 }
-type ConversationRecord = {
-    id: string;
-    type: 'group' | 'direct';
-    title: string;
-    groupId: string | null;
-    unreadCount: number;
-    lastMessage: string;
-};
 export declare class ChatService {
     private readonly authService;
     private readonly groupsService;
@@ -30,11 +22,21 @@ export declare class ChatService {
     private toGroupMessageSnapshot;
     private toPrivateMessageSnapshot;
     private getDirectConversationPeerUserId;
+    private getConversationUnreadCount;
+    private getConversationLastMessage;
+    private toPublicConversation;
     private toPublicMessage;
     private persistState;
     private assertCanAccessConversation;
     private getConversationById;
-    listConversations(groupId?: string): ConversationRecord[];
+    listConversations(groupId?: string): {
+        id: string;
+        type: "group" | "direct";
+        title: string;
+        groupId: string | null;
+        unreadCount: number;
+        lastMessage: string;
+    }[];
     listMessages(conversationId: string): {
         id: string;
         conversationId: string;

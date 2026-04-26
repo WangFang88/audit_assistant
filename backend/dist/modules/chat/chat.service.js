@@ -50,16 +50,12 @@ let ChatService = class ChatService {
                 type: 'group',
                 title: '某区财政局审计组群聊',
                 groupId: 'group-1',
-                unreadCount: 2,
-                lastMessage: '请同步采购抽查结果。',
             },
             {
                 id: 'conv-direct-1',
                 type: 'direct',
                 title: '与法规顾问的私信',
                 groupId: null,
-                unreadCount: 0,
-                lastMessage: '我已整理出相关条款。',
             },
         ];
         this.messages = [
@@ -86,7 +82,12 @@ let ChatService = class ChatService {
         ];
         const persistedState = this.localStateService.readState();
         if (persistedState.conversations) {
-            this.conversations.splice(0, this.conversations.length, ...persistedState.conversations);
+            this.conversations.splice(0, this.conversations.length, ...persistedState.conversations.map((conversation) => ({
+                id: conversation.id,
+                type: conversation.type,
+                title: conversation.title,
+                groupId: conversation.groupId,
+            })));
         }
         if (persistedState.messages) {
             this.messages.splice(0, this.messages.length, ...persistedState.messages.map((message) => ({
@@ -156,6 +157,23 @@ let ChatService = class ChatService {
         const peerMessage = this.messages.find((message) => message.conversationId === conversationId && message.senderUserId !== currentUserId);
         return peerMessage?.senderUserId ?? null;
     }
+    getConversationUnreadCount(conversationId) {
+        return this.messages.filter((message) => message.conversationId === conversationId && !message.readStatus).length;
+    }
+    getConversationLastMessage(conversationId) {
+        const conversationMessages = this.messages.filter((message) => message.conversationId === conversationId);
+        return conversationMessages[conversationMessages.length - 1]?.content ?? '';
+    }
+    toPublicConversation(conversation) {
+        return {
+            id: conversation.id,
+            type: conversation.type,
+            title: conversation.title,
+            groupId: conversation.groupId,
+            unreadCount: this.getConversationUnreadCount(conversation.id),
+            lastMessage: this.getConversationLastMessage(conversation.id),
+        };
+    }
     toPublicMessage(message) {
         return {
             id: message.id,
@@ -201,7 +219,12 @@ let ChatService = class ChatService {
                 readStatus: snapshot.readStatus,
             };
         });
-        this.localStateService.saveChatState(this.conversations, persistedMessages);
+        this.localStateService.saveChatState(this.conversations.map((conversation) => ({
+            id: conversation.id,
+            type: conversation.type,
+            title: conversation.title,
+            groupId: conversation.groupId,
+        })), persistedMessages);
     }
     assertCanAccessConversation(conversation, groupId) {
         if (conversation.type === 'direct') {
@@ -227,12 +250,14 @@ let ChatService = class ChatService {
         if (groupId != null) {
             this.groupsService.assertCanAccessGroup(groupId);
         }
-        return this.conversations.filter((conversation) => {
+        return this.conversations
+            .filter((conversation) => {
             if (conversation.type === 'direct') {
                 return true;
             }
             return groupId != null && conversation.groupId === groupId;
-        });
+        })
+            .map((conversation) => this.toPublicConversation(conversation));
     }
     listMessages(conversationId) {
         this.assertAdminCannotUseChat();
@@ -275,8 +300,6 @@ let ChatService = class ChatService {
             sentAt: message.sentAt,
             readStatus: message.readStatus,
         });
-        conversation.lastMessage = dto.content;
-        conversation.unreadCount = 0;
         this.persistState();
         return this.toPublicMessage(message);
     }
