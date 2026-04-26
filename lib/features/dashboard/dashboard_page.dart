@@ -481,6 +481,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> _showInviteDialog() async {
     if (_activeGroupId == null) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请先选择项目组后再邀请成员。')));
       return;
     }
 
@@ -538,7 +542,19 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _showTransferLeaderDialog() async {
-    if (_activeGroupId == null || _members.isEmpty) {
+    if (_activeGroupId == null) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请先选择项目组后再移交组长。')));
+      return;
+    }
+
+    if (_members.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('当前项目组暂无可移交成员。')));
       return;
     }
 
@@ -641,9 +657,16 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _showImportDocumentDialog() async {
+    if (_activeGroupId == null) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('当前未选择项目组，仅建议导入公共库资料。')));
+    }
+
     final titleController = TextEditingController();
     final pathController = TextEditingController();
-    String libraryType = '私有库';
+    String libraryType = _activeGroupId == null ? '公共库' : '私有库';
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -659,11 +682,11 @@ class _DashboardPageState extends State<DashboardPage> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: libraryType,
-                items: const [
-                  DropdownMenuItem(value: '公共库', child: Text('公共库')),
-                  DropdownMenuItem(value: '私有库', child: Text('私有库')),
+                items: [
+                  const DropdownMenuItem(value: '公共库', child: Text('公共库')),
+                  if (_activeGroupId != null) const DropdownMenuItem(value: '私有库', child: Text('私有库')),
                 ],
-                onChanged: (value) => setDialogState(() => libraryType = value ?? '私有库'),
+                onChanged: (value) => setDialogState(() => libraryType = value ?? (_activeGroupId == null ? '公共库' : '私有库')),
                 decoration: const InputDecoration(labelText: '入库范围'),
               ),
             ],
@@ -1113,13 +1136,21 @@ class _DashboardPageState extends State<DashboardPage> {
       action: Wrap(
         spacing: 8,
         children: [
-          FilledButton.tonal(onPressed: _showInviteDialog, child: const Text('邀请成员')),
+          FilledButton.tonal(onPressed: _activeGroupId == null ? null : _showInviteDialog, child: const Text('邀请成员')),
           FilledButton.tonal(onPressed: _showCreateGroupDialog, child: const Text('创建项目组')),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_activeGroupId == null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                '当前未选择项目组，成员邀请、组长移交与群聊协作将保持禁用。',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
           ...groups.map(
             (group) => ListTile(
               contentPadding: EdgeInsets.zero,
@@ -1135,8 +1166,8 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               Text('成员列表', style: Theme.of(context).textTheme.titleSmall),
               const Spacer(),
-              TextButton(onPressed: _membersLoading ? null : _refreshMembers, child: const Text('刷新成员')),
-              TextButton(onPressed: _showTransferLeaderDialog, child: const Text('移交组长')),
+              TextButton(onPressed: _activeGroupId == null || _membersLoading ? null : _refreshMembers, child: const Text('刷新成员')),
+              TextButton(onPressed: _activeGroupId == null ? null : _showTransferLeaderDialog, child: const Text('移交组长')),
             ],
           ),
           if (_membersLoading)
@@ -1170,7 +1201,7 @@ class _DashboardPageState extends State<DashboardPage> {
         spacing: 8,
         children: [
           FilledButton.tonal(onPressed: _documentsLoading ? null : _refreshDocuments, child: const Text('刷新任务')),
-          FilledButton.tonal(onPressed: _showImportDocumentDialog, child: const Text('导入文件')),
+          FilledButton.tonal(onPressed: _activeGroupId == null ? null : _showImportDocumentDialog, child: const Text('导入文件')),
         ],
       ),
       child: Column(
@@ -1251,6 +1282,27 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildChat() {
     final activeConversation = _selectedConversation;
+
+    if (_activeGroupId == null) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: SectionCard(
+          title: '对话',
+          subtitle: '请先进入项目组后再使用群聊与项目协作消息。',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '当前未选择项目组，因此不会加载群聊上下文、项目成员协作消息或私有库相关会话。',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+              const Chip(label: Text('当前状态：仅公共库浏览')),
+            ],
+          ),
+        ),
+      );
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
