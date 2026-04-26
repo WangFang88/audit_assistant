@@ -1238,13 +1238,16 @@ class _DashboardPageState extends State<DashboardPage> {
             runSpacing: 12,
             children: [
               Chip(label: Text('当前范围：${activeContext.queryScopeLabel}')),
-              Chip(label: Text(activeContext.groupName == null ? '未进入项目组' : '当前项目组：${activeContext.groupName}')),
+              Chip(label: Text(_isAdmin ? '当前视角：管理员公共库' : activeContext.groupName == null ? '未进入项目组' : '当前项目组：${activeContext.groupName}')),
               const Chip(label: Text('回答要求：可溯源')),
               Chip(label: Text('交付目标：${architectureTargets.deliveryMode}')),
             ],
           ),
           const SizedBox(height: 8),
-          Text(activeContext.isolationNotice, style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            _isAdmin ? '管理员仅检索公共库资料，不加载项目组成员、群聊协作与私有库上下文。' : activeContext.isolationNotice,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           if (_error != null) ...[
             const SizedBox(height: 12),
             Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
@@ -1431,7 +1434,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return SectionCard(
       title: '检索结果',
-      subtitle: '返回答案、引用条款、范围说明与当前原型的 RAG 元信息。',
+      subtitle: _isAdmin ? '返回答案、公共库引用条款与管理员检索元信息。' : '返回答案、引用条款、范围说明与当前原型的 RAG 元信息。',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1530,7 +1533,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(citation.title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                      Chip(label: Text(citation.libraryType == 'private' ? '项目组私有库' : '公共库')),
+                      Chip(label: Text(_isAdmin ? '公共库' : citation.libraryType == 'private' ? '项目组私有库' : '公共库')),
                       Chip(label: Text('命中 ${(citation.score * 100).toStringAsFixed(0)}%')),
                     ],
                   ),
@@ -1663,7 +1666,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildDocumentPanel(List<KnowledgeDocument> documents, List<ExtractionJob> extractJobs) {
     return SectionCard(
       title: '知识库管理',
-      subtitle: '导入后进入文字抽取、结构化切分与向量化入库链路。',
+      subtitle: _isAdmin ? '管理员仅管理公共库资料，导入后进入文字抽取、结构化切分与向量化入库链路。' : '导入后进入文字抽取、结构化切分与向量化入库链路。',
       action: Wrap(
         spacing: 8,
         children: [
