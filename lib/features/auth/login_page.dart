@@ -13,7 +13,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _phoneController = TextEditingController(text: '13800138000');
+  final _phoneController = TextEditingController(text: 'admin');
   final _passwordController = TextEditingController(text: '123456');
   bool _submitting = false;
   String? _error;
@@ -82,8 +82,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 24),
                     TextField(
                       controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(labelText: '手机号'),
+                      decoration: const InputDecoration(labelText: '账号 / 手机号'),
                     ),
                     const SizedBox(height: 16),
                     TextField(
@@ -112,7 +111,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      '请先启动 backend 服务，再通过手机号登录进入工作台。',
+                      '请先启动 backend 服务，再通过管理员账号或手机号登录进入工作台。默认管理员账号：admin。',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],

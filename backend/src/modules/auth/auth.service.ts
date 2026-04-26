@@ -1,8 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { IsMobilePhone, IsString, MinLength } from 'class-validator';
+import { IsString, MinLength } from 'class-validator';
 
 class LoginDto {
-  @IsMobilePhone('zh-CN')
+  @IsString()
+  @MinLength(3)
   phone!: string;
 
   @IsString()
