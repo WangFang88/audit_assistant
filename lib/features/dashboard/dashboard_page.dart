@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/models/app_models.dart';
@@ -794,6 +795,14 @@ class _DashboardPageState extends State<DashboardPage> {
     return TextSpan(children: spans, style: theme.textTheme.bodyMedium);
   }
 
+  Future<void> _copyChunkContent(String content) async {
+    await Clipboard.setData(ClipboardData(text: content));
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('文本块内容已复制。')));
+  }
+
   Future<void> _showDocumentChunksDialog(KnowledgeDocument document) async {
     try {
       final chunks = await widget.apiService.fetchDocumentChunks(document.id);
@@ -841,7 +850,21 @@ class _DashboardPageState extends State<DashboardPage> {
                                     ],
                                   ),
                                   const SizedBox(height: 10),
-                                  RichText(text: _buildHighlightedChunkText(context, chunk.content, chunk.keywords)),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: RichText(
+                                          text: _buildHighlightedChunkText(context, chunk.content, chunk.keywords),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      TextButton(
+                                        onPressed: () => _copyChunkContent(chunk.content),
+                                        child: const Text('复制文本块'),
+                                      ),
+                                    ],
+                                  ),
                                   const SizedBox(height: 10),
                                   Wrap(
                                     spacing: 8,
