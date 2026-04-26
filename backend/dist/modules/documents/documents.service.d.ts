@@ -67,7 +67,7 @@ export declare class DocumentsService {
     private buildChunksForDocument;
     private getUploadRoot;
     private sanitizeFileName;
-    private getFileTypeFromName;
+    private classifyUploadedFile;
     private saveUploadedFile;
     importDocument(dto: ImportDocumentDto, file?: Express.Multer.File): {
         notes: string;

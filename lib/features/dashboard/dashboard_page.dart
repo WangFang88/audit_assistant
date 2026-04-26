@@ -966,7 +966,6 @@ class _DashboardPageState extends State<DashboardPage> {
                       final result = await FilePicker.platform.pickFiles(
                         type: FileType.custom,
                         allowedExtensions: const ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'],
-                        withData: true,
                       );
                       if (result == null || result.files.isEmpty) {
                         return;
@@ -986,13 +985,6 @@ class _DashboardPageState extends State<DashboardPage> {
                     selectedFile == null ? '尚未选择文件' : '已选择：${selectedFile!.name}',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                  if (selectedFile?.path != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      selectedFile!.path!,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
                   const SizedBox(height: 8),
                   Text(
                     '支持上传 pdf、docx、xlsx、png、jpg、jpeg 文件。',

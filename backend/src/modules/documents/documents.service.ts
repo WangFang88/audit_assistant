@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { AuthService } from '../auth/auth.service';
@@ -492,19 +492,22 @@ export class DocumentsService {
     return fileName.replace(/[^a-zA-Z0-9._-\u4e00-\u9fa5]+/g, '-');
   }
 
-  private getFileTypeFromName(fileName: string): DocumentRecord['fileType'] {
+  private classifyUploadedFile(fileName: string) {
     const lowerName = fileName.toLowerCase();
     if (lowerName.endsWith('.docx')) {
-      return 'docx';
+      return { fileType: 'docx' as const, extractionMode: 'text' as const, pipelineStage: 'indexed' as const };
     }
     if (lowerName.endsWith('.xlsx')) {
-      return 'xlsx';
+      return { fileType: 'xlsx' as const, extractionMode: 'text' as const, pipelineStage: 'indexed' as const };
     }
     if (lowerName.endsWith('.png') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
-      return 'image';
+      return { fileType: 'image' as const, extractionMode: 'ocr' as const, pipelineStage: 'ocr' as const };
+    }
+    if (lowerName.endsWith('.scan.pdf')) {
+      return { fileType: 'pdf' as const, extractionMode: 'ocr' as const, pipelineStage: 'ocr' as const };
     }
     if (lowerName.endsWith('.pdf')) {
-      return 'pdf';
+      return { fileType: 'pdf' as const, extractionMode: 'text' as const, pipelineStage: 'indexed' as const };
     }
     throw new BadRequestException('仅支持上传 pdf、docx、xlsx、png、jpg、jpeg 文件');
   }
@@ -513,9 +516,7 @@ export class DocumentsService {
     const sanitizedFileName = this.sanitizeFileName(file.originalname || 'upload.bin');
     const extension = extname(sanitizedFileName) || '.bin';
     const uploadFolder = libraryType === 'private' ? join(this.getUploadRoot(), 'groups', groupId ?? 'unknown') : join(this.getUploadRoot(), 'public');
-    if (!existsSync(uploadFolder)) {
-      mkdirSync(uploadFolder, { recursive: true });
-    }
+    mkdirSync(uploadFolder, { recursive: true });
 
     const storedFileName = `${Date.now()}-${this.documents.length + 1}${extension}`;
     const storedFilePath = join(uploadFolder, storedFileName);
@@ -552,34 +553,25 @@ export class DocumentsService {
     }
 
     const storedFile = this.saveUploadedFile(file, dto.libraryType, dto.groupId);
-    const lowerSourcePath = storedFile.originalName.toLowerCase();
-    const fileType = this.getFileTypeFromName(storedFile.originalName);
-    const isScan =
-      lowerSourcePath.endsWith('.png') ||
-      lowerSourcePath.endsWith('.jpg') ||
-      lowerSourcePath.endsWith('.jpeg') ||
-      lowerSourcePath.endsWith('.scan.pdf');
-
-    const extractionMode: DocumentRecord['extractionMode'] = isScan ? 'ocr' : 'text';
+    const classification = this.classifyUploadedFile(storedFile.originalName);
     const hasRawText = dto.rawText != null && dto.rawText.trim().length > 0;
-    const generatedChunkCount = hasRawText ? 0 : 4;
 
     const document: DocumentRecord = {
       id: `doc-${this.documents.length + 1}`,
       title: dto.title,
       libraryType: dto.libraryType,
       sourcePath: storedFile.sourcePath,
-      chunkCount: generatedChunkCount,
+      chunkCount: 0,
       groupId: dto.groupId ?? null,
-      fileType,
-      extractionMode,
+      fileType: classification.fileType,
+      extractionMode: hasRawText ? 'text' : classification.extractionMode,
       uploadedAt: '2026-04-26 12:30',
       indexStatus: 'ready' as const,
       chunkStrategy: 'structure-first' as const,
       parserTarget: 'multimodal-parser' as const,
       embeddingTarget: 'bge-large-zh' as const,
       vectorStoreTarget: 'pgvector' as const,
-      pipelineStage: isScan ? 'ocr' as const : 'indexed' as const,
+      pipelineStage: hasRawText ? 'indexed' as const : classification.pipelineStage,
     };
 
     const generatedChunks = hasRawText ? this.buildChunksFromRawText(document, dto.rawText!) : this.buildChunksForDocument(document);

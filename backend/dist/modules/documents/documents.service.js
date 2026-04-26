@@ -431,19 +431,22 @@ let DocumentsService = class DocumentsService {
     sanitizeFileName(fileName) {
         return fileName.replace(/[^a-zA-Z0-9._-\u4e00-\u9fa5]+/g, '-');
     }
-    getFileTypeFromName(fileName) {
+    classifyUploadedFile(fileName) {
         const lowerName = fileName.toLowerCase();
         if (lowerName.endsWith('.docx')) {
-            return 'docx';
+            return { fileType: 'docx', extractionMode: 'text', pipelineStage: 'indexed' };
         }
         if (lowerName.endsWith('.xlsx')) {
-            return 'xlsx';
+            return { fileType: 'xlsx', extractionMode: 'text', pipelineStage: 'indexed' };
         }
         if (lowerName.endsWith('.png') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
-            return 'image';
+            return { fileType: 'image', extractionMode: 'ocr', pipelineStage: 'ocr' };
+        }
+        if (lowerName.endsWith('.scan.pdf')) {
+            return { fileType: 'pdf', extractionMode: 'ocr', pipelineStage: 'ocr' };
         }
         if (lowerName.endsWith('.pdf')) {
-            return 'pdf';
+            return { fileType: 'pdf', extractionMode: 'text', pipelineStage: 'indexed' };
         }
         throw new common_1.BadRequestException('仅支持上传 pdf、docx、xlsx、png、jpg、jpeg 文件');
     }
@@ -451,9 +454,7 @@ let DocumentsService = class DocumentsService {
         const sanitizedFileName = this.sanitizeFileName(file.originalname || 'upload.bin');
         const extension = (0, node_path_1.extname)(sanitizedFileName) || '.bin';
         const uploadFolder = libraryType === 'private' ? (0, node_path_1.join)(this.getUploadRoot(), 'groups', groupId ?? 'unknown') : (0, node_path_1.join)(this.getUploadRoot(), 'public');
-        if (!(0, node_fs_1.existsSync)(uploadFolder)) {
-            (0, node_fs_1.mkdirSync)(uploadFolder, { recursive: true });
-        }
+        (0, node_fs_1.mkdirSync)(uploadFolder, { recursive: true });
         const storedFileName = `${Date.now()}-${this.documents.length + 1}${extension}`;
         const storedFilePath = (0, node_path_1.join)(uploadFolder, storedFileName);
         (0, node_fs_1.writeFileSync)(storedFilePath, file.buffer);
@@ -483,31 +484,24 @@ let DocumentsService = class DocumentsService {
             this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
         }
         const storedFile = this.saveUploadedFile(file, dto.libraryType, dto.groupId);
-        const lowerSourcePath = storedFile.originalName.toLowerCase();
-        const fileType = this.getFileTypeFromName(storedFile.originalName);
-        const isScan = lowerSourcePath.endsWith('.png') ||
-            lowerSourcePath.endsWith('.jpg') ||
-            lowerSourcePath.endsWith('.jpeg') ||
-            lowerSourcePath.endsWith('.scan.pdf');
-        const extractionMode = isScan ? 'ocr' : 'text';
+        const classification = this.classifyUploadedFile(storedFile.originalName);
         const hasRawText = dto.rawText != null && dto.rawText.trim().length > 0;
-        const generatedChunkCount = hasRawText ? 0 : 4;
         const document = {
             id: `doc-${this.documents.length + 1}`,
             title: dto.title,
             libraryType: dto.libraryType,
             sourcePath: storedFile.sourcePath,
-            chunkCount: generatedChunkCount,
+            chunkCount: 0,
             groupId: dto.groupId ?? null,
-            fileType,
-            extractionMode,
+            fileType: classification.fileType,
+            extractionMode: hasRawText ? 'text' : classification.extractionMode,
             uploadedAt: '2026-04-26 12:30',
             indexStatus: 'ready',
             chunkStrategy: 'structure-first',
             parserTarget: 'multimodal-parser',
             embeddingTarget: 'bge-large-zh',
             vectorStoreTarget: 'pgvector',
-            pipelineStage: isScan ? 'ocr' : 'indexed',
+            pipelineStage: hasRawText ? 'indexed' : classification.pipelineStage,
         };
         const generatedChunks = hasRawText ? this.buildChunksFromRawText(document, dto.rawText) : this.buildChunksForDocument(document);
         document.chunkCount = generatedChunks.length;
