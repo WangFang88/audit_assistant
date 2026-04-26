@@ -963,19 +963,36 @@ class _DashboardPageState extends State<DashboardPage> {
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () async {
-                      final result = await FilePicker.platform.pickFiles(
-                        type: FileType.custom,
-                        allowedExtensions: const ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'],
-                      );
-                      if (result == null || result.files.isEmpty) {
-                        return;
-                      }
-                      setDialogState(() {
-                        selectedFile = result.files.single;
-                        if (titleController.text.trim().isEmpty) {
-                          titleController.text = result.files.single.name;
+                      try {
+                        final result = await FilePicker.platform.pickFiles(
+                          type: FileType.custom,
+                          allowedExtensions: const ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'],
+                          withData: true,
+                        );
+                        if (result == null || result.files.isEmpty) {
+                          return;
                         }
-                      });
+                        setDialogState(() {
+                          selectedFile = result.files.single;
+                          if (titleController.text.trim().isEmpty) {
+                            titleController.text = result.files.single.name;
+                          }
+                        });
+                      } on PlatformException catch (error) {
+                        if (!mounted) {
+                          return;
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('选择文件失败：${error.message ?? '请检查当前运行环境的文件选择权限。'}')),
+                        );
+                      } catch (_) {
+                        if (!mounted) {
+                          return;
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('选择文件失败，请重试一次或重启预览环境。')),
+                        );
+                      }
                     },
                     icon: const Icon(Icons.upload_file_outlined),
                     label: const Text('选择文件'),
