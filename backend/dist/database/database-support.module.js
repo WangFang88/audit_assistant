@@ -12,14 +12,15 @@ const auth_user_repository_1 = require("./repositories/auth-user.repository");
 const document_repository_1 = require("./repositories/document.repository");
 const message_repository_1 = require("./repositories/message.repository");
 const query_log_repository_1 = require("./repositories/query-log.repository");
+const subscription_repository_1 = require("./repositories/subscription.repository");
 const team_repository_1 = require("./repositories/team.repository");
 let DatabaseSupportModule = class DatabaseSupportModule {
 };
 exports.DatabaseSupportModule = DatabaseSupportModule;
 exports.DatabaseSupportModule = DatabaseSupportModule = __decorate([
     (0, common_1.Module)({
-        providers: [auth_user_repository_1.AuthUserRepository, document_repository_1.DocumentRepository, message_repository_1.MessageRepository, query_log_repository_1.QueryLogRepository, team_repository_1.TeamRepository],
-        exports: [auth_user_repository_1.AuthUserRepository, document_repository_1.DocumentRepository, message_repository_1.MessageRepository, query_log_repository_1.QueryLogRepository, team_repository_1.TeamRepository],
+        providers: [auth_user_repository_1.AuthUserRepository, document_repository_1.DocumentRepository, message_repository_1.MessageRepository, query_log_repository_1.QueryLogRepository, subscription_repository_1.SubscriptionRepository, team_repository_1.TeamRepository],
+        exports: [auth_user_repository_1.AuthUserRepository, document_repository_1.DocumentRepository, message_repository_1.MessageRepository, query_log_repository_1.QueryLogRepository, subscription_repository_1.SubscriptionRepository, team_repository_1.TeamRepository],
     })
 ], DatabaseSupportModule);
 //# sourceMappingURL=database-support.module.js.map

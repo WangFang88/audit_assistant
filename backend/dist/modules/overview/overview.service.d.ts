@@ -92,7 +92,7 @@ export declare class OverviewService {
             privateDocumentCount: number;
         };
         subscription: {
-            currentPlanId: string;
+            currentPlanId: "free" | "weekly" | "monthly" | "yearly";
             trialEndsAt: string;
             trialDays: number;
             usage: {

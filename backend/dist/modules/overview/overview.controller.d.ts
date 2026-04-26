@@ -82,7 +82,7 @@ export declare class OverviewController {
             privateDocumentCount: number;
         };
         subscription: {
-            currentPlanId: string;
+            currentPlanId: "free" | "weekly" | "monthly" | "yearly";
             trialEndsAt: string;
             trialDays: number;
             usage: {

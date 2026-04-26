@@ -1,5 +1,6 @@
 import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { QueryLogRepository, QueryLogSnapshot } from '../../database/repositories/query-log.repository';
+import { SubscriptionOrderSnapshot, SubscriptionRepository } from '../../database/repositories/subscription.repository';
 import { AuthService } from '../auth/auth.service';
 import { LocalStateService } from './local-state.service';
 
@@ -15,6 +16,7 @@ export class SubscriptionsService {
   constructor(
     private readonly localStateService: LocalStateService,
     private readonly queryLogRepository: QueryLogRepository,
+    private readonly subscriptionRepository: SubscriptionRepository,
     @Inject(forwardRef(() => AuthService)) private readonly authService: AuthService,
   ) {
     const persistedState = this.localStateService.readState();
@@ -30,6 +32,12 @@ export class SubscriptionsService {
         return this.queryLogRepository.mapEntity(entity);
       });
     }
+    if (persistedState.subscriptions) {
+      this.subscriptionOrders = persistedState.subscriptions.map((subscription) => {
+        const entity = this.subscriptionRepository.createEntity(subscription);
+        return this.subscriptionRepository.mapEntity(entity);
+      });
+    }
 
     this.ensureDailyUsageIsCurrent();
   }
@@ -38,6 +46,16 @@ export class SubscriptionsService {
   private readonly trialEndsAt = '2026-05-01';
   private readonly trialDays = 1;
   private queryLogs: QueryLogSnapshot[] = [];
+  private subscriptionOrders: SubscriptionOrderSnapshot[] = [
+    {
+      id: 'order-free-1',
+      userId: 'user-2',
+      planType: 'free',
+      amount: '0.00',
+      paidAt: '2026-04-25 09:00',
+      expiredAt: '2026-05-01 00:00',
+    },
+  ];
   private usage: UsageSnapshot = {
     groups: 1,
     privateDocuments: 2,
@@ -104,6 +122,16 @@ export class SubscriptionsService {
     this.localStateService.saveQueryLogs(this.queryLogs);
   }
 
+  private persistSubscriptions() {
+    this.localStateService.saveSubscriptions(this.subscriptionOrders);
+  }
+
+  private getLatestSubscriptionOrder() {
+    const currentUserId = this.authService.me().id;
+    const userOrders = this.subscriptionOrders.filter((order) => order.userId === currentUserId);
+    return userOrders[userOrders.length - 1] ?? null;
+  }
+
   private rebuildDailyUsageFromLogs() {
     const currentDateKey = this.getCurrentDateKey();
     const dailyQueries = this.queryLogs
@@ -143,6 +171,11 @@ export class SubscriptionsService {
           caseSearch: true,
         },
       };
+    }
+
+    const latestOrder = this.getLatestSubscriptionOrder();
+    if (latestOrder) {
+      return this.plans.find((plan) => plan.id === latestOrder.planType) ?? this.plans[0];
     }
 
     return this.plans.find((plan) => plan.id === this.currentPlanId) ?? this.plans[0];
@@ -193,13 +226,23 @@ export class SubscriptionsService {
     this.rebuildDailyUsageFromLogs();
   }
 
+  syncSubscriptionOrder(order: SubscriptionOrderSnapshot) {
+    const entity = this.subscriptionRepository.createEntity(order);
+    const snapshot = this.subscriptionRepository.mapEntity(entity);
+    const nextOrders = this.subscriptionOrders.filter((item) => item.id !== snapshot.id);
+    nextOrders.push(snapshot);
+    this.subscriptionOrders = nextOrders;
+    this.persistSubscriptions();
+  }
+
   getOverview() {
     this.ensureDailyUsageIsCurrent();
     const plan = this.getCurrentPlan();
+    const latestOrder = this.getLatestSubscriptionOrder();
 
     return {
-      currentPlanId: this.currentPlanId,
-      trialEndsAt: this.trialEndsAt,
+      currentPlanId: latestOrder?.planType ?? this.currentPlanId,
+      trialEndsAt: latestOrder?.expiredAt.slice(0, 10) ?? this.trialEndsAt,
       trialDays: this.trialDays,
       usage: {
         groups: { used: this.usage.groups, limit: plan.limits.groupCount },

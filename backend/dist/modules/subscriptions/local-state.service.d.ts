@@ -85,6 +85,14 @@ type PersistedQueryLogRecord = {
     queriedAt: string;
     consumedQuota: number;
 };
+type PersistedSubscriptionRecord = {
+    id: string;
+    userId: string;
+    planType: 'free' | 'weekly' | 'monthly' | 'yearly';
+    amount: string;
+    paidAt: string;
+    expiredAt: string;
+};
 type PersistedState = {
     groups?: PersistedGroupRecord[];
     members?: PersistedMemberRecord[];
@@ -95,6 +103,7 @@ type PersistedState = {
     messages?: PersistedMessageRecord[];
     users?: PersistedUserRecord[];
     queryLogs?: PersistedQueryLogRecord[];
+    subscriptions?: PersistedSubscriptionRecord[];
 };
 export declare class LocalStateService {
     private readonly filePath;
@@ -106,6 +115,7 @@ export declare class LocalStateService {
     saveChatState(conversations: PersistedConversationRecord[], messages: PersistedMessageRecord[]): void;
     saveUsers(users: PersistedUserRecord[]): void;
     saveQueryLogs(queryLogs: PersistedQueryLogRecord[]): void;
+    saveSubscriptions(subscriptions: PersistedSubscriptionRecord[]): void;
     private writeState;
 }
 export {};

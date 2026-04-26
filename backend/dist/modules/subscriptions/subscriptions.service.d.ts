@@ -1,4 +1,5 @@
 import { QueryLogRepository, QueryLogSnapshot } from '../../database/repositories/query-log.repository';
+import { SubscriptionOrderSnapshot, SubscriptionRepository } from '../../database/repositories/subscription.repository';
 import { AuthService } from '../auth/auth.service';
 import { LocalStateService } from './local-state.service';
 type UsageSnapshot = {
@@ -10,17 +11,21 @@ type UsageSnapshot = {
 export declare class SubscriptionsService {
     private readonly localStateService;
     private readonly queryLogRepository;
+    private readonly subscriptionRepository;
     private readonly authService;
-    constructor(localStateService: LocalStateService, queryLogRepository: QueryLogRepository, authService: AuthService);
+    constructor(localStateService: LocalStateService, queryLogRepository: QueryLogRepository, subscriptionRepository: SubscriptionRepository, authService: AuthService);
     private readonly currentPlanId;
     private readonly trialEndsAt;
     private readonly trialDays;
     private queryLogs;
+    private subscriptionOrders;
     private usage;
     private readonly plans;
     private isAdmin;
     private getCurrentDateKey;
     private persistQueryLogs;
+    private persistSubscriptions;
+    private getLatestSubscriptionOrder;
     private rebuildDailyUsageFromLogs;
     private ensureDailyUsageIsCurrent;
     getCurrentPlan(): {
@@ -45,8 +50,9 @@ export declare class SubscriptionsService {
     assertCanImportPrivateDocument(currentPrivateDocumentCount: number): void;
     assertCanRunQuery(currentDailyQueries: number): void;
     recordQueryLog(queryLog: QueryLogSnapshot): void;
+    syncSubscriptionOrder(order: SubscriptionOrderSnapshot): void;
     getOverview(): {
-        currentPlanId: string;
+        currentPlanId: "free" | "weekly" | "monthly" | "yearly";
         trialEndsAt: string;
         trialDays: number;
         usage: {

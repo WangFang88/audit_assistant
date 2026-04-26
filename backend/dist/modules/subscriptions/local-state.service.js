@@ -50,6 +50,9 @@ let LocalStateService = class LocalStateService {
     saveQueryLogs(queryLogs) {
         this.writeState({ queryLogs });
     }
+    saveSubscriptions(subscriptions) {
+        this.writeState({ subscriptions });
+    }
     writeState(partial) {
         const nextState = {
             ...this.readState(),
