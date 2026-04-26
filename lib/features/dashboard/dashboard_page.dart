@@ -1252,104 +1252,130 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildChat() {
     final activeConversation = _selectedConversation;
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 300,
-            child: SectionCard(
-              title: '对话列表',
-              subtitle: '已按当前项目组上下文刷新会话与消息。',
-              child: Column(
-                children: _conversations
-                    .map(
-                      (item) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        selected: item.id == _selectedConversationId,
-                        onTap: () => _loadConversationMessages(item.id),
-                        leading: CircleAvatar(child: Text(item.type == '群聊' ? '群' : '私')),
-                        title: Text(item.title),
-                        subtitle: Text(item.lastMessage),
-                        trailing: item.unreadCount > 0 ? Chip(label: Text('${item.unreadCount}')) : null,
-                      ),
-                    )
-                    .toList(),
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 960;
+        final conversationList = SectionCard(
+          title: '对话列表',
+          subtitle: '已按当前项目组上下文刷新会话与消息。',
+          child: SizedBox(
+            height: compact ? 320 : 560,
+            child: ListView(
+              children: _conversations
+                  .map(
+                    (item) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      selected: item.id == _selectedConversationId,
+                      onTap: () => _loadConversationMessages(item.id),
+                      leading: CircleAvatar(child: Text(item.type == '群聊' ? '群' : '私')),
+                      title: Text(item.title),
+                      subtitle: Text(item.lastMessage),
+                      trailing: item.unreadCount > 0 ? Chip(label: Text('${item.unreadCount}')) : null,
+                    ),
+                  )
+                  .toList(),
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: SectionCard(
-              title: activeConversation?.title ?? '消息详情',
-              subtitle: activeConversation == null ? '请选择一个会话。' : '支持读取和发送消息。',
-              child: Column(
-                children: [
-                  Expanded(
-                    child: _chatLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : ListView(
-                            children: _messages
-                                .map(
-                                  (message) => Align(
-                                    alignment: message.senderName == '当前用户'
-                                        ? Alignment.centerRight
-                                        : Alignment.centerLeft,
-                                    child: Container(
-                                      margin: const EdgeInsets.only(bottom: 12),
-                                      padding: const EdgeInsets.all(12),
-                                      constraints: const BoxConstraints(maxWidth: 420),
-                                      decoration: BoxDecoration(
-                                        color: message.senderName == '当前用户'
-                                            ? const Color(0xFFE8F1FF)
-                                            : const Color(0xFFF7F7FA),
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(message.senderName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                          const SizedBox(height: 6),
-                                          Text(message.content),
-                                          const SizedBox(height: 6),
-                                          Text(message.sentAt, style: Theme.of(context).textTheme.bodySmall),
-                                        ],
+        );
+
+        final messagePanel = SectionCard(
+          title: activeConversation?.title ?? '消息详情',
+          subtitle: activeConversation == null ? '请选择一个会话。' : '支持读取和发送消息。',
+          child: SizedBox(
+            height: compact ? 420 : 560,
+            child: Column(
+              children: [
+                Expanded(
+                  child: _chatLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _messages.isEmpty
+                          ? Center(
+                              child: Text(
+                                activeConversation == null ? '请选择一个会话。' : '当前暂无消息。',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            )
+                          : ListView(
+                              children: _messages
+                                  .map(
+                                    (message) => Align(
+                                      alignment: message.senderName == '当前用户'
+                                          ? Alignment.centerRight
+                                          : Alignment.centerLeft,
+                                      child: Container(
+                                        margin: const EdgeInsets.only(bottom: 12),
+                                        padding: const EdgeInsets.all(12),
+                                        constraints: const BoxConstraints(maxWidth: 420),
+                                        decoration: BoxDecoration(
+                                          color: message.senderName == '当前用户'
+                                              ? const Color(0xFFE8F1FF)
+                                              : const Color(0xFFF7F7FA),
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(message.senderName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                            const SizedBox(height: 6),
+                                            Text(message.content),
+                                            const SizedBox(height: 6),
+                                            Text(message.sentAt, style: Theme.of(context).textTheme.bodySmall),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _messageController,
-                          enabled: _selectedConversationId != null && !_sendingMessage,
-                          decoration: const InputDecoration(labelText: '输入消息'),
-                        ),
+                                  )
+                                  .toList(),
+                            ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        enabled: _selectedConversationId != null && !_sendingMessage,
+                        decoration: const InputDecoration(labelText: '输入消息'),
                       ),
-                      const SizedBox(width: 12),
-                      FilledButton(
-                        onPressed: _selectedConversationId == null || _sendingMessage ? null : _sendMessage,
-                        child: _sendingMessage
-                            ? const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Text('发送'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                    const SizedBox(width: 12),
+                    FilledButton(
+                      onPressed: _selectedConversationId == null || _sendingMessage ? null : _sendMessage,
+                      child: _sendingMessage
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('发送'),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: compact
+              ? Column(
+                  children: [
+                    conversationList,
+                    const SizedBox(height: 16),
+                    messagePanel,
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(width: 300, child: conversationList),
+                    const SizedBox(width: 16),
+                    Expanded(child: messagePanel),
+                  ],
+                ),
+        );
+      },
     );
   }
 
