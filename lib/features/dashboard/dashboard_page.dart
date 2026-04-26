@@ -101,6 +101,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   String get _activeConversationType {
     final conversation = _selectedConversation;
+    if (conversation?.isTeamAgent ?? false) {
+      return 'agent';
+    }
     return conversation?.type == '群聊' ? 'group' : 'direct';
   }
 
@@ -258,6 +261,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
     if (groupId != null) {
       for (final conversation in conversations) {
+        if (conversation.isTeamAgent && conversation.groupId == groupId) {
+          return conversation.id;
+        }
+      }
+      for (final conversation in conversations) {
         if (conversation.type == '群聊' && conversation.groupId == groupId) {
           return conversation.id;
         }
@@ -295,6 +303,7 @@ class _DashboardPageState extends State<DashboardPage> {
       final result = await widget.apiService.search(
         question: question,
         groupId: searchGroupId,
+        agentId: _overview?.activeTeamAgent?.id,
       );
       if (!mounted) {
         return;
@@ -1330,13 +1339,19 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               Chip(label: Text('当前范围：${activeContext.queryScopeLabel}')),
               Chip(label: Text(_isAdmin ? '当前视角：管理员公共库' : activeContext.groupName == null ? '未进入项目组' : '当前项目组：${activeContext.groupName}')),
+              if (!_isAdmin && activeContext.agentName != null) Chip(label: Text('项目组Agent：${activeContext.agentName}')),
+              if (!_isAdmin && activeContext.knowledgeScopeLabel.isNotEmpty) Chip(label: Text('知识范围：${activeContext.knowledgeScopeLabel}')),
               const Chip(label: Text('回答要求：可溯源')),
               Chip(label: Text('交付目标：${architectureTargets.deliveryMode}')),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            _isAdmin ? '管理员仅检索公共库资料，不加载项目组成员、群聊协作与私有库上下文。' : activeContext.isolationNotice,
+            _isAdmin
+                ? '管理员仅检索公共库资料，不加载项目组成员、群聊协作与私有库上下文。'
+                : activeContext.agentName == null
+                ? activeContext.isolationNotice
+                : '${activeContext.agentName} 仅在公共库与当前项目组私有库范围内检索，不跨项目组读取私有资料。',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           if (_error != null) ...[
@@ -1356,6 +1371,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ]
                 : [
                     _StatChip(label: subscription.planName, value: subscription.priceLabel),
+                    _StatChip(label: '项目组Agent', value: _overview?.activeTeamAgent?.name ?? '未启用'),
                     _StatChip(label: '项目组额度', value: subscription.groupUsage),
                     _StatChip(label: '私有文件额度', value: subscription.documentUsage),
                     _StatChip(label: '查询额度', value: subscription.queryUsage),
@@ -1462,8 +1478,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildQueryPanel(ActiveContext activeContext) {
     return SectionCard(
-      title: '统一查询',
-      subtitle: '先限定双库范围，再做混合检索，最后生成可溯源答案。',
+      title: activeContext.agentName == null ? '统一查询' : '${activeContext.agentName} 工作台',
+      subtitle: activeContext.agentName == null ? '先限定双库范围，再做混合检索，最后生成可溯源答案。' : '当前项目组 Agent 将先限定公共库与本组私有库范围，再做混合检索并返回可溯源答案。',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1481,6 +1497,8 @@ class _DashboardPageState extends State<DashboardPage> {
             runSpacing: 12,
             children: [
               Chip(label: Text('检索范围：${activeContext.queryScopeLabel}')),
+              if (activeContext.agentName != null) Chip(label: Text('当前Agent：${activeContext.agentName}')),
+              if (activeContext.knowledgeScopeLabel.isNotEmpty) Chip(label: Text('知识范围：${activeContext.knowledgeScopeLabel}')),
               Chip(label: Text(activeContext.isolationNotice)),
               const Chip(label: Text('检索策略：关键词 + 语义混合召回')),
               const Chip(label: Text('扫描件：仅必要时 OCR')),
@@ -1523,6 +1541,7 @@ class _DashboardPageState extends State<DashboardPage> {
             runSpacing: 12,
             children: [
               Chip(label: Text('结果范围：${result.scope.label}')),
+              if (result.agent != null) Chip(label: Text('命中Agent：${result.agent!.name}')),
               Chip(label: Text('目标模型：${result.ragMeta.generationProviderTarget}')),
               Chip(label: Text('检索模式：${result.ragMeta.retrievalMode}')),
               Chip(label: Text('原型状态：${result.ragMeta.prototypeMode}')),
@@ -1860,7 +1879,11 @@ class _DashboardPageState extends State<DashboardPage> {
         final groupPanel = _buildGroupPanel(_overview?.groups ?? const []);
         final conversationList = SectionCard(
           title: '对话列表',
-          subtitle: _activeGroupId == null ? '请先在上方项目组面板中创建或选择项目组。' : '已按当前项目组上下文刷新会话与消息。',
+          subtitle: _activeGroupId == null
+              ? '请先在上方项目组面板中创建或选择项目组。'
+              : _overview?.activeTeamAgent == null
+              ? '已按当前项目组上下文刷新会话与消息。'
+              : '已按当前项目组 Agent 优先展示会话与消息。',
           child: SizedBox(
             height: compact ? 320 : 560,
             child: _activeGroupId == null
@@ -1877,7 +1900,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             contentPadding: EdgeInsets.zero,
                             selected: item.id == _selectedConversationId,
                             onTap: () => _loadConversationMessages(item.id),
-                            leading: CircleAvatar(child: Text(item.type == '群聊' ? '群' : '私')),
+                            leading: CircleAvatar(child: Text(item.isTeamAgent ? '智' : item.type == '群聊' ? '群' : '私')),
                             title: Text(item.title),
                             subtitle: Text(item.lastMessage),
                             trailing: item.unreadCount > 0 ? Chip(label: Text('${item.unreadCount}')) : null,

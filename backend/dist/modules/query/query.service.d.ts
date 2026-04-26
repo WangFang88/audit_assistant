@@ -2,9 +2,11 @@ import { AuthService } from '../auth/auth.service';
 import { DocumentsService } from '../documents/documents.service';
 import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { TeamAgentsService } from '../team-agents/team-agents.service';
 declare class QueryRequestDto {
     question: string;
     groupId?: string;
+    agentId?: string;
 }
 type CitationRecord = {
     documentId: string;
@@ -22,9 +24,19 @@ export declare class QueryService {
     private readonly documentsService;
     private readonly groupsService;
     private readonly subscriptionsService;
-    constructor(authService: AuthService, documentsService: DocumentsService, groupsService: GroupsService, subscriptionsService: SubscriptionsService);
+    private readonly teamAgentsService;
+    constructor(authService: AuthService, documentsService: DocumentsService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, teamAgentsService: TeamAgentsService);
     search(dto: QueryRequestDto): {
         question: string;
+        agentMode: boolean;
+        agent: {
+            id: string;
+            name: string;
+            groupId: string;
+            capabilities: import("../team-agents/team-agents.service").TeamAgentCapability[];
+            defaultConversationId: string | null;
+            retrievalScope: "public_plus_group_private";
+        } | null;
         scope: {
             scopeMode: string;
             label: string;

@@ -53,11 +53,23 @@ type PersistedUsageSnapshot = {
 };
 type PersistedConversationRecord = {
     id: string;
-    type: 'group' | 'direct';
+    type: 'group' | 'direct' | 'agent';
     title: string;
     groupId: string | null;
     unreadCount?: number;
     lastMessage?: string;
+};
+type PersistedTeamAgentRecord = {
+    id: string;
+    groupId: string;
+    name: string;
+    status: 'active' | 'deleted';
+    capabilities: string[];
+    createdAt: string;
+    defaultConversationId: string | null;
+    config: {
+        retrievalScope: 'public_plus_group_private';
+    };
 };
 type PersistedMessageRecord = {
     id: string;
@@ -105,6 +117,7 @@ type PersistedState = {
     users?: PersistedUserRecord[];
     queryLogs?: PersistedQueryLogRecord[];
     subscriptions?: PersistedSubscriptionRecord[];
+    teamAgents?: PersistedTeamAgentRecord[];
 };
 export declare class LocalStateService {
     private readonly filePath;
@@ -117,6 +130,7 @@ export declare class LocalStateService {
     saveUsers(users: PersistedUserRecord[]): void;
     saveQueryLogs(queryLogs: PersistedQueryLogRecord[]): void;
     saveSubscriptions(subscriptions: PersistedSubscriptionRecord[]): void;
+    saveTeamAgents(teamAgents: PersistedTeamAgentRecord[]): void;
     private writeState;
 }
 export {};

@@ -1,6 +1,8 @@
 import { TeamRepository } from '../../database/repositories/team.repository';
 import { AuthService } from '../auth/auth.service';
+import { ChatService } from '../chat/chat.service';
 import { DocumentsService } from '../documents/documents.service';
+import { TeamAgentsService } from '../team-agents/team-agents.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 declare class CreateGroupDto {
@@ -37,7 +39,9 @@ export declare class GroupsService {
     private readonly localStateService;
     private readonly teamRepository;
     private readonly documentsService;
-    constructor(authService: AuthService, subscriptionsService: SubscriptionsService, localStateService: LocalStateService, teamRepository: TeamRepository, documentsService: DocumentsService);
+    private readonly chatService;
+    private readonly teamAgentsService;
+    constructor(authService: AuthService, subscriptionsService: SubscriptionsService, localStateService: LocalStateService, teamRepository: TeamRepository, documentsService: DocumentsService, chatService: ChatService, teamAgentsService: TeamAgentsService);
     private readonly groups;
     private readonly members;
     private toTeamSnapshot;

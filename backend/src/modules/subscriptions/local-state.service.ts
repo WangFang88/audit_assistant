@@ -62,11 +62,24 @@ type PersistedUsageSnapshot = {
 
 type PersistedConversationRecord = {
   id: string;
-  type: 'group' | 'direct';
+  type: 'group' | 'direct' | 'agent';
   title: string;
   groupId: string | null;
   unreadCount?: number;
   lastMessage?: string;
+};
+
+type PersistedTeamAgentRecord = {
+  id: string;
+  groupId: string;
+  name: string;
+  status: 'active' | 'deleted';
+  capabilities: string[];
+  createdAt: string;
+  defaultConversationId: string | null;
+  config: {
+    retrievalScope: 'public_plus_group_private';
+  };
 };
 
 type PersistedMessageRecord = {
@@ -119,6 +132,7 @@ type PersistedState = {
   users?: PersistedUserRecord[];
   queryLogs?: PersistedQueryLogRecord[];
   subscriptions?: PersistedSubscriptionRecord[];
+  teamAgents?: PersistedTeamAgentRecord[];
 };
 
 @Injectable()
@@ -172,6 +186,10 @@ export class LocalStateService {
 
   saveSubscriptions(subscriptions: PersistedSubscriptionRecord[]) {
     this.writeState({ subscriptions });
+  }
+
+  saveTeamAgents(teamAgents: PersistedTeamAgentRecord[]) {
+    this.writeState({ teamAgents });
   }
 
   private writeState(partial: PersistedState) {

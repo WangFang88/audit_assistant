@@ -5,6 +5,7 @@ import { DocumentsService } from '../documents/documents.service';
 import { GroupsService } from '../groups/groups.service';
 import { QueryService } from '../query/query.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { TeamAgentsService } from '../team-agents/team-agents.service';
 
 @Injectable()
 export class OverviewService {
@@ -15,6 +16,7 @@ export class OverviewService {
     private readonly queryService: QueryService,
     private readonly chatService: ChatService,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly teamAgentsService: TeamAgentsService,
   ) {}
 
   getDashboard(groupId?: string) {
@@ -23,12 +25,14 @@ export class OverviewService {
     const visibleGroups = isAdmin ? [] : this.groupsService.listGroups();
     const effectiveGroupId = isAdmin ? undefined : groupId ?? visibleGroups[0]?.id;
     const activeGroup = effectiveGroupId ? this.groupsService.getGroupById(effectiveGroupId) : null;
+    const activeTeamAgent = effectiveGroupId ? this.teamAgentsService.getVisibleAgentByGroupId(effectiveGroupId) : null;
     let featuredQuery;
 
     try {
       featuredQuery = this.queryService.search({
         question: '请检索与专项资金使用和采购审批相关的制度依据。',
         groupId: effectiveGroupId,
+        agentId: activeTeamAgent?.id,
       });
     } catch (error) {
       if (!(error instanceof BadRequestException)) {
@@ -37,6 +41,18 @@ export class OverviewService {
 
       featuredQuery = {
         question: '请检索与专项资金使用和采购审批相关的制度依据。',
+        agentMode: activeTeamAgent != null,
+        agent:
+          activeTeamAgent == null
+            ? null
+            : {
+                id: activeTeamAgent.id,
+                name: activeTeamAgent.name,
+                groupId: activeTeamAgent.groupId,
+                capabilities: activeTeamAgent.capabilities,
+                defaultConversationId: activeTeamAgent.defaultConversationId,
+                retrievalScope: activeTeamAgent.config.retrievalScope,
+              },
         scope: {
           scopeMode: effectiveGroupId == null ? 'public_only' : 'public_plus_current_group_private',
           label: effectiveGroupId == null ? '仅公共库' : '公共库 + 当前项目组私有库',
@@ -77,6 +93,10 @@ export class OverviewService {
       activeContext: {
         groupId: effectiveGroupId ?? null,
         groupName: activeGroup?.name ?? null,
+        agentId: activeTeamAgent?.id ?? null,
+        agentName: activeTeamAgent?.name ?? null,
+        agentCapabilities: activeTeamAgent?.capabilities ?? [],
+        knowledgeScopeLabel: activeTeamAgent == null ? '未启用项目组 Agent' : '公共库 + 当前项目组私有库',
         queryScopeLabel: effectiveGroupId == null ? '仅公共库' : '公共库 + 当前项目组私有库',
         isolationNotice:
           effectiveGroupId == null
@@ -119,6 +139,17 @@ export class OverviewService {
       libraryScope: this.documentsService.getLibraryScopeSummary(effectiveGroupId),
       subscription: this.subscriptionsService.getOverview(),
       conversations: isAdmin ? [] : this.chatService.listConversations(effectiveGroupId),
+      activeTeamAgent:
+        activeTeamAgent == null
+          ? null
+          : {
+              id: activeTeamAgent.id,
+              name: activeTeamAgent.name,
+              groupId: activeTeamAgent.groupId,
+              capabilities: activeTeamAgent.capabilities,
+              defaultConversationId: activeTeamAgent.defaultConversationId,
+              retrievalScope: activeTeamAgent.config.retrievalScope,
+            },
       featuredQuery,
     };
   }

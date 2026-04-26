@@ -163,12 +163,12 @@ class ApiService {
     return DashboardOverview.fromJson(json);
   }
 
-  Future<QueryResult> search({required String question, String? groupId}) async {
+  Future<QueryResult> search({required String question, String? groupId, String? agentId}) async {
     final response = await _requestWithRefresh(
       (headers) => _client.post(
         Uri.parse('$_baseUrl/query/search'),
         headers: headers,
-        body: jsonEncode({'question': question, 'groupId': groupId}),
+        body: jsonEncode({'question': question, 'groupId': groupId, 'agentId': agentId}),
       ),
       headers: {'Content-Type': 'application/json'},
     );

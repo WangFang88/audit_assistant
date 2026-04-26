@@ -16,6 +16,7 @@ const auth_service_1 = require("../auth/auth.service");
 const documents_service_1 = require("../documents/documents.service");
 const groups_service_1 = require("../groups/groups.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
+const team_agents_service_1 = require("../team-agents/team-agents.service");
 class QueryRequestDto {
 }
 exports.QueryRequestDto = QueryRequestDto;
@@ -29,25 +30,33 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], QueryRequestDto.prototype, "groupId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], QueryRequestDto.prototype, "agentId", void 0);
 let QueryService = class QueryService {
-    constructor(authService, documentsService, groupsService, subscriptionsService) {
+    constructor(authService, documentsService, groupsService, subscriptionsService, teamAgentsService) {
         this.authService = authService;
         this.documentsService = documentsService;
         this.groupsService = groupsService;
         this.subscriptionsService = subscriptionsService;
+        this.teamAgentsService = teamAgentsService;
     }
     search(dto) {
-        if (this.authService.isAdmin() && dto.groupId != null) {
+        if (this.authService.isAdmin() && (dto.groupId != null || dto.agentId != null)) {
             throw new common_1.ForbiddenException('管理员仅可检索公共库，不能按项目组范围检索');
         }
-        if (!this.authService.isAdmin() && dto.groupId != null) {
-            this.groupsService.assertCanAccessGroup(dto.groupId);
+        const resolvedGroupId = this.teamAgentsService.resolveGroupId(dto.agentId, dto.groupId);
+        if (!this.authService.isAdmin() && resolvedGroupId != null) {
+            this.groupsService.assertCanAccessGroup(resolvedGroupId);
         }
         const usage = this.subscriptionsService.getUsage();
         this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
-        const group = dto.groupId ? this.groupsService.getGroupById(dto.groupId) : null;
-        const readyChunks = this.documentsService.getReadyChunks(dto.groupId);
-        const scopeSummary = this.documentsService.getLibraryScopeSummary(dto.groupId);
+        const group = resolvedGroupId ? this.groupsService.getGroupById(resolvedGroupId) : null;
+        const teamAgent = resolvedGroupId ? this.teamAgentsService.getVisibleAgentByGroupId(resolvedGroupId) : null;
+        const readyChunks = this.documentsService.getReadyChunks(resolvedGroupId);
+        const scopeSummary = this.documentsService.getLibraryScopeSummary(resolvedGroupId);
         const lowerQuestion = dto.question.toLowerCase();
         const tokens = Array.from(new Set(lowerQuestion
             .split(/[\s，。、“”‘’；：,.;!?（）()【】\[\]\-]+/)
@@ -89,21 +98,32 @@ let QueryService = class QueryService {
         this.subscriptionsService.recordQueryLog({
             id: `query-log-${Date.now()}`,
             userId: this.authService.me().id,
-            teamId: dto.groupId ?? null,
+            teamId: resolvedGroupId ?? null,
             queryText: dto.question,
             queriedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
             consumedQuota: 1,
         });
         return {
             question: dto.question,
+            agentMode: dto.agentId != null,
+            agent: teamAgent == null
+                ? null
+                : {
+                    id: teamAgent.id,
+                    name: teamAgent.name,
+                    groupId: teamAgent.groupId,
+                    capabilities: teamAgent.capabilities,
+                    defaultConversationId: teamAgent.defaultConversationId,
+                    retrievalScope: teamAgent.config.retrievalScope,
+                },
             scope: {
                 scopeMode: scopeSummary.scopeMode,
-                label: dto.groupId == null ? '仅公共库' : '公共库 + 当前项目组私有库',
+                label: resolvedGroupId == null ? '仅公共库' : '公共库 + 当前项目组私有库',
                 publicLibrary: true,
-                privateLibrary: dto.groupId != null,
-                groupId: dto.groupId ?? null,
+                privateLibrary: resolvedGroupId != null,
+                groupId: resolvedGroupId ?? null,
                 groupName: group?.name ?? null,
-                isolationNotice: dto.groupId == null
+                isolationNotice: resolvedGroupId == null
                     ? '当前未选择项目组，仅检索公共基础库。'
                     : '仅检索当前项目组私有库，不跨项目组读取私有资料。',
             },
@@ -124,7 +144,7 @@ let QueryService = class QueryService {
             },
             answer: candidates.length == 0
                 ? '当前范围内尚未命中可用条款，请尝试补充更明确的关键词、条款号或切换项目组后重试。'
-                : dto.groupId == null
+                : resolvedGroupId == null
                     ? '系统已在公共基础库中基于持久化文本块完成范围过滤与混合检索，并返回可追溯的制度依据。'
                     : '系统已在公共基础库与当前项目组私有库中基于持久化文本块完成范围过滤与混合检索，并返回可追溯的制度依据。',
             citations: candidates,
@@ -138,6 +158,7 @@ exports.QueryService = QueryService = __decorate([
     __metadata("design:paramtypes", [auth_service_1.AuthService,
         documents_service_1.DocumentsService,
         groups_service_1.GroupsService,
-        subscriptions_service_1.SubscriptionsService])
+        subscriptions_service_1.SubscriptionsService,
+        team_agents_service_1.TeamAgentsService])
 ], QueryService);
 //# sourceMappingURL=query.service.js.map

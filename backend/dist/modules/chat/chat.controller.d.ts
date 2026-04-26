@@ -4,9 +4,10 @@ export declare class ChatController {
     constructor(chatService: ChatService);
     listConversations(groupId?: string): {
         id: string;
-        type: "group" | "direct";
+        type: "group" | "direct" | "agent";
         title: string;
         groupId: string | null;
+        isTeamAgent: boolean;
         unreadCount: number;
         lastMessage: string;
     }[];

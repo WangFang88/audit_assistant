@@ -4,11 +4,12 @@ import { AuthModule } from '../auth/auth.module';
 import { DocumentsModule } from '../documents/documents.module';
 import { GroupsModule } from '../groups/groups.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { TeamAgentsModule } from '../team-agents/team-agents.module';
 import { QueryController } from './query.controller';
 import { QueryService } from './query.service';
 
 @Module({
-  imports: [DatabaseSupportModule, AuthModule, DocumentsModule, GroupsModule, SubscriptionsModule],
+  imports: [DatabaseSupportModule, AuthModule, DocumentsModule, GroupsModule, SubscriptionsModule, TeamAgentsModule],
   controllers: [QueryController],
   providers: [QueryService],
   exports: [QueryService],

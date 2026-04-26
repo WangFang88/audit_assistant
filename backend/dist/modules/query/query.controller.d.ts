@@ -4,6 +4,15 @@ export declare class QueryController {
     constructor(queryService: QueryService);
     search(dto: QueryRequestDto): {
         question: string;
+        agentMode: boolean;
+        agent: {
+            id: string;
+            name: string;
+            groupId: string;
+            capabilities: import("../team-agents/team-agents.service").TeamAgentCapability[];
+            defaultConversationId: string | null;
+            retrievalScope: "public_plus_group_private";
+        } | null;
         scope: {
             scopeMode: string;
             label: string;

@@ -4,6 +4,7 @@ import { DocumentsService } from '../documents/documents.service';
 import { GroupsService } from '../groups/groups.service';
 import { QueryService } from '../query/query.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { TeamAgentsService } from '../team-agents/team-agents.service';
 export declare class OverviewService {
     private readonly authService;
     private readonly groupsService;
@@ -11,7 +12,8 @@ export declare class OverviewService {
     private readonly queryService;
     private readonly chatService;
     private readonly subscriptionsService;
-    constructor(authService: AuthService, groupsService: GroupsService, documentsService: DocumentsService, queryService: QueryService, chatService: ChatService, subscriptionsService: SubscriptionsService);
+    private readonly teamAgentsService;
+    constructor(authService: AuthService, groupsService: GroupsService, documentsService: DocumentsService, queryService: QueryService, chatService: ChatService, subscriptionsService: SubscriptionsService, teamAgentsService: TeamAgentsService);
     getDashboard(groupId?: string): {
         user: {
             id: string;
@@ -23,6 +25,10 @@ export declare class OverviewService {
         activeContext: {
             groupId: string | null;
             groupName: string | null;
+            agentId: string | null;
+            agentName: string | null;
+            agentCapabilities: import("../team-agents/team-agents.service").TeamAgentCapability[];
+            knowledgeScopeLabel: string;
             queryScopeLabel: string;
             isolationNotice: string;
         };
@@ -95,7 +101,7 @@ export declare class OverviewService {
             currentPlanId: "free" | "weekly" | "monthly" | "yearly";
             trialEndsAt: string;
             trialDays: number;
-            status: "trial" | "active" | "expired" | "admin-preview";
+            status: "active" | "trial" | "expired" | "admin-preview";
             statusLabel: string;
             latestOrder: {
                 id: string;
@@ -154,14 +160,32 @@ export declare class OverviewService {
         };
         conversations: {
             id: string;
-            type: "group" | "direct";
+            type: "group" | "direct" | "agent";
             title: string;
             groupId: string | null;
+            isTeamAgent: boolean;
             unreadCount: number;
             lastMessage: string;
         }[];
+        activeTeamAgent: {
+            id: string;
+            name: string;
+            groupId: string;
+            capabilities: import("../team-agents/team-agents.service").TeamAgentCapability[];
+            defaultConversationId: string | null;
+            retrievalScope: "public_plus_group_private";
+        } | null;
         featuredQuery: {
             question: string;
+            agentMode: boolean;
+            agent: {
+                id: string;
+                name: string;
+                groupId: string;
+                capabilities: import("../team-agents/team-agents.service").TeamAgentCapability[];
+                defaultConversationId: string | null;
+                retrievalScope: "public_plus_group_private";
+            } | null;
             scope: {
                 scopeMode: string;
                 label: string;

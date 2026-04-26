@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { TeamAgentRecord } from '../team-agents/team-agents.service';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import {
   GroupMessageSnapshot,
@@ -10,8 +11,8 @@ import { GroupsService } from '../groups/groups.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 
 class SendMessageDto {
-  @IsIn(['group', 'direct'])
-  conversationType!: 'group' | 'direct';
+  @IsIn(['group', 'direct', 'agent'])
+  conversationType!: 'group' | 'direct' | 'agent';
 
   @IsString()
   @MinLength(2)
@@ -28,7 +29,7 @@ class SendMessageDto {
 
 type ConversationRecord = {
   id: string;
-  type: 'group' | 'direct';
+  type: 'group' | 'direct' | 'agent';
   title: string;
   groupId: string | null;
 };
@@ -91,6 +92,12 @@ export class ChatService {
       groupId: 'group-1',
     },
     {
+      id: 'conv-agent-1',
+      type: 'agent',
+      title: '某区财政局审计组 Agent',
+      groupId: 'group-1',
+    },
+    {
       id: 'conv-direct-1',
       type: 'direct',
       title: '与法规顾问的私信',
@@ -118,6 +125,16 @@ export class ChatService {
       content: '我已整理出相关条款。',
       sentAt: '2026-04-25 15:20',
       readStatus: false,
+    },
+    {
+      id: 'msg-3',
+      conversationId: 'conv-agent-1',
+      senderUserId: 'user-2',
+      receiverUserId: null,
+      senderName: '审计组长',
+      content: '请结合当前项目私有制度，解释采购审批与专项资金使用的核查重点。',
+      sentAt: '2026-04-25 16:55',
+      readStatus: true,
     },
   ];
 
@@ -201,6 +218,7 @@ export class ChatService {
       type: conversation.type,
       title: conversation.title,
       groupId: conversation.groupId,
+      isTeamAgent: conversation.type === 'agent',
       unreadCount: this.getConversationUnreadCount(conversation.id),
       lastMessage: this.getConversationLastMessage(conversation.id),
     };
@@ -219,7 +237,7 @@ export class ChatService {
   private persistState() {
     const persistedMessages = this.messages.map((message) => {
       const conversation = this.getConversationById(message.conversationId);
-      if (conversation.type === 'group') {
+      if (conversation.type === 'group' || conversation.type === 'agent') {
         const entity = this.messageRepository.createGroupMessageEntity(
           this.toGroupMessageSnapshot(message, conversation.groupId ?? 'unknown-group'),
         );
@@ -305,6 +323,15 @@ export class ChatService {
 
         return groupId != null && conversation.groupId === groupId;
       })
+      .sort((a, b) => {
+        if (a.type === 'agent' && b.type !== 'agent') {
+          return -1;
+        }
+        if (a.type !== 'agent' && b.type === 'agent') {
+          return 1;
+        }
+        return 0;
+      })
       .map((conversation) => this.toPublicConversation(conversation));
   }
 
@@ -341,7 +368,7 @@ export class ChatService {
       senderName: currentUser.name,
       content: dto.content,
       sentAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
-      readStatus: conversation.type === 'group',
+      readStatus: conversation.type !== 'direct',
       conversationType: dto.conversationType,
       groupId: conversation.groupId,
     };
@@ -356,9 +383,67 @@ export class ChatService {
       sentAt: message.sentAt,
       readStatus: message.readStatus,
     });
+
+    if (conversation.type === 'agent') {
+      this.messages.push({
+        id: `msg-${this.messages.length + 1}`,
+        conversationId: message.conversationId,
+        senderUserId: 'team-agent',
+        receiverUserId: currentUser.id,
+        senderName: conversation.title,
+        content: '已收到本次提问。当前项目组 Agent 将在公共库与本组私有库范围内完成检索，并返回可溯源依据。',
+        sentAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+        readStatus: true,
+      });
+    }
+
     this.persistState();
 
     return this.toPublicMessage(message);
+  }
+
+  createAgentConversation(group: { id: string; name: string }) {
+    const existing = this.conversations.find((conversation) => conversation.type === 'agent' && conversation.groupId === group.id);
+    if (existing) {
+      existing.title = `${group.name} Agent`;
+      this.persistState();
+      return existing;
+    }
+
+    const conversation: ConversationRecord = {
+      id: `conv-agent-${group.id}`,
+      type: 'agent',
+      title: `${group.name} Agent`,
+      groupId: group.id,
+    };
+    this.conversations.push(conversation);
+    this.persistState();
+    return conversation;
+  }
+
+  removeGroupConversations(groupId: string) {
+    const removedConversationIds = new Set(
+      this.conversations.filter((conversation) => conversation.groupId === groupId).map((conversation) => conversation.id),
+    );
+    this.conversations.splice(
+      0,
+      this.conversations.length,
+      ...this.conversations.filter((conversation) => !removedConversationIds.has(conversation.id)),
+    );
+    this.messages.splice(
+      0,
+      this.messages.length,
+      ...this.messages.filter((message) => !removedConversationIds.has(message.conversationId)),
+    );
+    this.persistState();
+  }
+
+  syncGroupAgent(group: { id: string; name: string }, agent: TeamAgentRecord) {
+    const conversation = this.createAgentConversation(group);
+    if (agent.defaultConversationId !== conversation.id) {
+      agent.defaultConversationId = conversation.id;
+    }
+    return conversation.id;
   }
 }
 

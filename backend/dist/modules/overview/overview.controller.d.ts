@@ -13,6 +13,10 @@ export declare class OverviewController {
         activeContext: {
             groupId: string | null;
             groupName: string | null;
+            agentId: string | null;
+            agentName: string | null;
+            agentCapabilities: import("../team-agents/team-agents.service").TeamAgentCapability[];
+            knowledgeScopeLabel: string;
             queryScopeLabel: string;
             isolationNotice: string;
         };
@@ -85,7 +89,7 @@ export declare class OverviewController {
             currentPlanId: "free" | "weekly" | "monthly" | "yearly";
             trialEndsAt: string;
             trialDays: number;
-            status: "trial" | "active" | "expired" | "admin-preview";
+            status: "active" | "trial" | "expired" | "admin-preview";
             statusLabel: string;
             latestOrder: {
                 id: string;
@@ -144,14 +148,32 @@ export declare class OverviewController {
         };
         conversations: {
             id: string;
-            type: "group" | "direct";
+            type: "group" | "direct" | "agent";
             title: string;
             groupId: string | null;
+            isTeamAgent: boolean;
             unreadCount: number;
             lastMessage: string;
         }[];
+        activeTeamAgent: {
+            id: string;
+            name: string;
+            groupId: string;
+            capabilities: import("../team-agents/team-agents.service").TeamAgentCapability[];
+            defaultConversationId: string | null;
+            retrievalScope: "public_plus_group_private";
+        } | null;
         featuredQuery: {
             question: string;
+            agentMode: boolean;
+            agent: {
+                id: string;
+                name: string;
+                groupId: string;
+                capabilities: import("../team-agents/team-agents.service").TeamAgentCapability[];
+                defaultConversationId: string | null;
+                retrievalScope: "public_plus_group_private";
+            } | null;
             scope: {
                 scopeMode: string;
                 label: string;

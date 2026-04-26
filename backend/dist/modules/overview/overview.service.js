@@ -17,14 +17,16 @@ const documents_service_1 = require("../documents/documents.service");
 const groups_service_1 = require("../groups/groups.service");
 const query_service_1 = require("../query/query.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
+const team_agents_service_1 = require("../team-agents/team-agents.service");
 let OverviewService = class OverviewService {
-    constructor(authService, groupsService, documentsService, queryService, chatService, subscriptionsService) {
+    constructor(authService, groupsService, documentsService, queryService, chatService, subscriptionsService, teamAgentsService) {
         this.authService = authService;
         this.groupsService = groupsService;
         this.documentsService = documentsService;
         this.queryService = queryService;
         this.chatService = chatService;
         this.subscriptionsService = subscriptionsService;
+        this.teamAgentsService = teamAgentsService;
     }
     getDashboard(groupId) {
         const user = this.authService.me();
@@ -32,11 +34,13 @@ let OverviewService = class OverviewService {
         const visibleGroups = isAdmin ? [] : this.groupsService.listGroups();
         const effectiveGroupId = isAdmin ? undefined : groupId ?? visibleGroups[0]?.id;
         const activeGroup = effectiveGroupId ? this.groupsService.getGroupById(effectiveGroupId) : null;
+        const activeTeamAgent = effectiveGroupId ? this.teamAgentsService.getVisibleAgentByGroupId(effectiveGroupId) : null;
         let featuredQuery;
         try {
             featuredQuery = this.queryService.search({
                 question: '请检索与专项资金使用和采购审批相关的制度依据。',
                 groupId: effectiveGroupId,
+                agentId: activeTeamAgent?.id,
             });
         }
         catch (error) {
@@ -45,6 +49,17 @@ let OverviewService = class OverviewService {
             }
             featuredQuery = {
                 question: '请检索与专项资金使用和采购审批相关的制度依据。',
+                agentMode: activeTeamAgent != null,
+                agent: activeTeamAgent == null
+                    ? null
+                    : {
+                        id: activeTeamAgent.id,
+                        name: activeTeamAgent.name,
+                        groupId: activeTeamAgent.groupId,
+                        capabilities: activeTeamAgent.capabilities,
+                        defaultConversationId: activeTeamAgent.defaultConversationId,
+                        retrievalScope: activeTeamAgent.config.retrievalScope,
+                    },
                 scope: {
                     scopeMode: effectiveGroupId == null ? 'public_only' : 'public_plus_current_group_private',
                     label: effectiveGroupId == null ? '仅公共库' : '公共库 + 当前项目组私有库',
@@ -83,6 +98,10 @@ let OverviewService = class OverviewService {
             activeContext: {
                 groupId: effectiveGroupId ?? null,
                 groupName: activeGroup?.name ?? null,
+                agentId: activeTeamAgent?.id ?? null,
+                agentName: activeTeamAgent?.name ?? null,
+                agentCapabilities: activeTeamAgent?.capabilities ?? [],
+                knowledgeScopeLabel: activeTeamAgent == null ? '未启用项目组 Agent' : '公共库 + 当前项目组私有库',
                 queryScopeLabel: effectiveGroupId == null ? '仅公共库' : '公共库 + 当前项目组私有库',
                 isolationNotice: effectiveGroupId == null
                     ? isAdmin
@@ -124,6 +143,16 @@ let OverviewService = class OverviewService {
             libraryScope: this.documentsService.getLibraryScopeSummary(effectiveGroupId),
             subscription: this.subscriptionsService.getOverview(),
             conversations: isAdmin ? [] : this.chatService.listConversations(effectiveGroupId),
+            activeTeamAgent: activeTeamAgent == null
+                ? null
+                : {
+                    id: activeTeamAgent.id,
+                    name: activeTeamAgent.name,
+                    groupId: activeTeamAgent.groupId,
+                    capabilities: activeTeamAgent.capabilities,
+                    defaultConversationId: activeTeamAgent.defaultConversationId,
+                    retrievalScope: activeTeamAgent.config.retrievalScope,
+                },
             featuredQuery,
         };
     }
@@ -136,6 +165,7 @@ exports.OverviewService = OverviewService = __decorate([
         documents_service_1.DocumentsService,
         query_service_1.QueryService,
         chat_service_1.ChatService,
-        subscriptions_service_1.SubscriptionsService])
+        subscriptions_service_1.SubscriptionsService,
+        team_agents_service_1.TeamAgentsService])
 ], OverviewService);
 //# sourceMappingURL=overview.service.js.map

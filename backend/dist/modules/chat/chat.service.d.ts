@@ -1,13 +1,20 @@
+import { TeamAgentRecord } from '../team-agents/team-agents.service';
 import { MessageRepository } from '../../database/repositories/message.repository';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 declare class SendMessageDto {
-    conversationType: 'group' | 'direct';
+    conversationType: 'group' | 'direct' | 'agent';
     conversationId: string;
     content: string;
     groupId?: string;
 }
+type ConversationRecord = {
+    id: string;
+    type: 'group' | 'direct' | 'agent';
+    title: string;
+    groupId: string | null;
+};
 export declare class ChatService {
     private readonly authService;
     private readonly groupsService;
@@ -31,9 +38,10 @@ export declare class ChatService {
     private getConversationById;
     listConversations(groupId?: string): {
         id: string;
-        type: "group" | "direct";
+        type: "group" | "direct" | "agent";
         title: string;
         groupId: string | null;
+        isTeamAgent: boolean;
         unreadCount: number;
         lastMessage: string;
     }[];
@@ -51,5 +59,14 @@ export declare class ChatService {
         content: string;
         sentAt: string;
     };
+    createAgentConversation(group: {
+        id: string;
+        name: string;
+    }): ConversationRecord;
+    removeGroupConversations(groupId: string): void;
+    syncGroupAgent(group: {
+        id: string;
+        name: string;
+    }, agent: TeamAgentRecord): string;
 }
 export { SendMessageDto };

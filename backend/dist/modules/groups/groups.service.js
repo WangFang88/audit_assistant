@@ -17,7 +17,9 @@ const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
 const team_repository_1 = require("../../database/repositories/team.repository");
 const auth_service_1 = require("../auth/auth.service");
+const chat_service_1 = require("../chat/chat.service");
 const documents_service_1 = require("../documents/documents.service");
+const team_agents_service_1 = require("../team-agents/team-agents.service");
 const local_state_service_1 = require("../subscriptions/local-state.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 class CreateGroupDto {
@@ -52,12 +54,14 @@ __decorate([
     __metadata("design:type", String)
 ], TransferLeaderDto.prototype, "targetUserId", void 0);
 let GroupsService = class GroupsService {
-    constructor(authService, subscriptionsService, localStateService, teamRepository, documentsService) {
+    constructor(authService, subscriptionsService, localStateService, teamRepository, documentsService, chatService, teamAgentsService) {
         this.authService = authService;
         this.subscriptionsService = subscriptionsService;
         this.localStateService = localStateService;
         this.teamRepository = teamRepository;
         this.documentsService = documentsService;
+        this.chatService = chatService;
+        this.teamAgentsService = teamAgentsService;
         this.groups = [
             {
                 id: 'group-1',
@@ -193,6 +197,8 @@ let GroupsService = class GroupsService {
             phone: currentUser.phone,
             role: 'leader',
         });
+        const conversation = this.chatService.createAgentConversation(group);
+        this.teamAgentsService.createForGroup(group, conversation.id);
         this.persistState();
         this.subscriptionsService.syncUsage({ groups: this.groups.length });
         return group;
@@ -272,6 +278,8 @@ let GroupsService = class GroupsService {
         this.groups.splice(groupIndex, 1);
         this.members.splice(0, this.members.length, ...this.members.filter((member) => member.groupId !== groupId));
         this.documentsService.removeGroupDocuments(groupId);
+        this.chatService.removeGroupConversations(groupId);
+        this.teamAgentsService.deleteByGroupId(groupId);
         this.persistState();
         this.subscriptionsService.syncUsage({ groups: this.groups.length });
         return {
@@ -286,10 +294,14 @@ exports.GroupsService = GroupsService;
 exports.GroupsService = GroupsService = __decorate([
     (0, common_1.Injectable)(),
     __param(4, (0, common_1.Inject)((0, common_1.forwardRef)(() => documents_service_1.DocumentsService))),
+    __param(5, (0, common_1.Inject)((0, common_1.forwardRef)(() => chat_service_1.ChatService))),
+    __param(6, (0, common_1.Inject)((0, common_1.forwardRef)(() => team_agents_service_1.TeamAgentsService))),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
         subscriptions_service_1.SubscriptionsService,
         local_state_service_1.LocalStateService,
         team_repository_1.TeamRepository,
-        documents_service_1.DocumentsService])
+        documents_service_1.DocumentsService,
+        chat_service_1.ChatService,
+        team_agents_service_1.TeamAgentsService])
 ], GroupsService);
 //# sourceMappingURL=groups.service.js.map

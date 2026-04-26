@@ -4,6 +4,7 @@ import { AuthService } from '../auth/auth.service';
 import { DocumentsService } from '../documents/documents.service';
 import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { TeamAgentsService } from '../team-agents/team-agents.service';
 
 class QueryRequestDto {
   @IsString()
@@ -13,6 +14,10 @@ class QueryRequestDto {
   @IsOptional()
   @IsString()
   groupId?: string;
+
+  @IsOptional()
+  @IsString()
+  agentId?: string;
 }
 
 type CitationRecord = {
@@ -34,23 +39,26 @@ export class QueryService {
     private readonly documentsService: DocumentsService,
     private readonly groupsService: GroupsService,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly teamAgentsService: TeamAgentsService,
   ) {}
 
   search(dto: QueryRequestDto) {
-    if (this.authService.isAdmin() && dto.groupId != null) {
+    if (this.authService.isAdmin() && (dto.groupId != null || dto.agentId != null)) {
       throw new ForbiddenException('管理员仅可检索公共库，不能按项目组范围检索');
     }
 
-    if (!this.authService.isAdmin() && dto.groupId != null) {
-      this.groupsService.assertCanAccessGroup(dto.groupId);
+    const resolvedGroupId = this.teamAgentsService.resolveGroupId(dto.agentId, dto.groupId);
+    if (!this.authService.isAdmin() && resolvedGroupId != null) {
+      this.groupsService.assertCanAccessGroup(resolvedGroupId);
     }
 
     const usage = this.subscriptionsService.getUsage();
     this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
 
-    const group = dto.groupId ? this.groupsService.getGroupById(dto.groupId) : null;
-    const readyChunks = this.documentsService.getReadyChunks(dto.groupId);
-    const scopeSummary = this.documentsService.getLibraryScopeSummary(dto.groupId);
+    const group = resolvedGroupId ? this.groupsService.getGroupById(resolvedGroupId) : null;
+    const teamAgent = resolvedGroupId ? this.teamAgentsService.getVisibleAgentByGroupId(resolvedGroupId) : null;
+    const readyChunks = this.documentsService.getReadyChunks(resolvedGroupId);
+    const scopeSummary = this.documentsService.getLibraryScopeSummary(resolvedGroupId);
     const lowerQuestion = dto.question.toLowerCase();
     const tokens = Array.from(
       new Set(
@@ -103,7 +111,7 @@ export class QueryService {
     this.subscriptionsService.recordQueryLog({
       id: `query-log-${Date.now()}`,
       userId: this.authService.me().id,
-      teamId: dto.groupId ?? null,
+      teamId: resolvedGroupId ?? null,
       queryText: dto.question,
       queriedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
       consumedQuota: 1,
@@ -111,15 +119,27 @@ export class QueryService {
 
     return {
       question: dto.question,
+      agentMode: dto.agentId != null,
+      agent:
+        teamAgent == null
+          ? null
+          : {
+              id: teamAgent.id,
+              name: teamAgent.name,
+              groupId: teamAgent.groupId,
+              capabilities: teamAgent.capabilities,
+              defaultConversationId: teamAgent.defaultConversationId,
+              retrievalScope: teamAgent.config.retrievalScope,
+            },
       scope: {
         scopeMode: scopeSummary.scopeMode,
-        label: dto.groupId == null ? '仅公共库' : '公共库 + 当前项目组私有库',
+        label: resolvedGroupId == null ? '仅公共库' : '公共库 + 当前项目组私有库',
         publicLibrary: true,
-        privateLibrary: dto.groupId != null,
-        groupId: dto.groupId ?? null,
+        privateLibrary: resolvedGroupId != null,
+        groupId: resolvedGroupId ?? null,
         groupName: group?.name ?? null,
         isolationNotice:
-          dto.groupId == null
+          resolvedGroupId == null
             ? '当前未选择项目组，仅检索公共基础库。'
             : '仅检索当前项目组私有库，不跨项目组读取私有资料。',
       },
@@ -141,7 +161,7 @@ export class QueryService {
       answer:
         candidates.length == 0
           ? '当前范围内尚未命中可用条款，请尝试补充更明确的关键词、条款号或切换项目组后重试。'
-          : dto.groupId == null
+          : resolvedGroupId == null
             ? '系统已在公共基础库中基于持久化文本块完成范围过滤与混合检索，并返回可追溯的制度依据。'
             : '系统已在公共基础库与当前项目组私有库中基于持久化文本块完成范围过滤与混合检索，并返回可追溯的制度依据。',
       citations: candidates,

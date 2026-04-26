@@ -13,6 +13,7 @@ const auth_module_1 = require("../auth/auth.module");
 const documents_module_1 = require("../documents/documents.module");
 const groups_module_1 = require("../groups/groups.module");
 const subscriptions_module_1 = require("../subscriptions/subscriptions.module");
+const team_agents_module_1 = require("../team-agents/team-agents.module");
 const query_controller_1 = require("./query.controller");
 const query_service_1 = require("./query.service");
 let QueryModule = class QueryModule {
@@ -20,7 +21,7 @@ let QueryModule = class QueryModule {
 exports.QueryModule = QueryModule;
 exports.QueryModule = QueryModule = __decorate([
     (0, common_1.Module)({
-        imports: [database_support_module_1.DatabaseSupportModule, auth_module_1.AuthModule, documents_module_1.DocumentsModule, groups_module_1.GroupsModule, subscriptions_module_1.SubscriptionsModule],
+        imports: [database_support_module_1.DatabaseSupportModule, auth_module_1.AuthModule, documents_module_1.DocumentsModule, groups_module_1.GroupsModule, subscriptions_module_1.SubscriptionsModule, team_agents_module_1.TeamAgentsModule],
         controllers: [query_controller_1.QueryController],
         providers: [query_service_1.QueryService],
         exports: [query_service_1.QueryService],

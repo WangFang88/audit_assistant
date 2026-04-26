@@ -53,6 +53,9 @@ let LocalStateService = class LocalStateService {
     saveSubscriptions(subscriptions) {
         this.writeState({ subscriptions });
     }
+    saveTeamAgents(teamAgents) {
+        this.writeState({ teamAgents });
+    }
     writeState(partial) {
         const nextState = {
             ...this.readState(),

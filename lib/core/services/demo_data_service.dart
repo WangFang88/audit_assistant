@@ -133,11 +133,29 @@ class DemoDataService {
         prototypeMode: 'mock',
         answerTraceable: true,
       ),
+      agentMode: true,
+      agent: TeamAgentSummary(
+        id: 'team-agent-group-1',
+        name: '某区财政局审计组 Agent',
+        groupId: 'group-1',
+        capabilities: const ['query', 'article_explanation'],
+        defaultConversationId: 'conv-agent-1',
+        retrievalScope: 'public_plus_group_private',
+      ),
     );
   }
 
   List<ConversationSummary> getConversations() {
     return const [
+      ConversationSummary(
+        id: 'conv-agent-1',
+        title: '某区财政局审计组 Agent',
+        type: '项目组Agent',
+        lastMessage: '已收到本次提问。当前项目组 Agent 将在公共库与本组私有库范围内完成检索。',
+        unreadCount: 0,
+        groupId: 'group-1',
+        isTeamAgent: true,
+      ),
       ConversationSummary(
         id: 'conv-group-1',
         title: '某区财政局审计组群聊',
@@ -145,6 +163,7 @@ class DemoDataService {
         lastMessage: '请同步采购抽查结果。',
         unreadCount: 2,
         groupId: 'group-1',
+        isTeamAgent: false,
       ),
       ConversationSummary(
         id: 'conv-direct-1',
@@ -153,6 +172,7 @@ class DemoDataService {
         lastMessage: '我已整理出相关条款。',
         unreadCount: 0,
         groupId: null,
+        isTeamAgent: false,
       ),
     ];
   }

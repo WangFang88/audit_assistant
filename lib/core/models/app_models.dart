@@ -230,6 +230,8 @@ class QueryResult {
     required this.citations,
     required this.scope,
     required this.ragMeta,
+    required this.agentMode,
+    required this.agent,
   });
 
   final String answer;
@@ -239,6 +241,8 @@ class QueryResult {
   final List<QueryCitation> citations;
   final QueryScope scope;
   final QueryRagMeta ragMeta;
+  final bool agentMode;
+  final TeamAgentSummary? agent;
 
   factory QueryResult.fromJson(Map<String, dynamic> json) {
     return QueryResult(
@@ -256,6 +260,10 @@ class QueryResult {
           .toList(),
       scope: QueryScope.fromJson(json['scope'] as Map<String, dynamic>? ?? const {}),
       ragMeta: QueryRagMeta.fromJson(json['ragMeta'] as Map<String, dynamic>? ?? const {}),
+      agentMode: json['agentMode'] as bool? ?? false,
+      agent: (json['agent'] as Map<String, dynamic>?) == null
+          ? null
+          : TeamAgentSummary.fromJson(json['agent'] as Map<String, dynamic>),
     );
   }
 }
@@ -337,6 +345,7 @@ class ConversationSummary {
     required this.lastMessage,
     required this.unreadCount,
     required this.groupId,
+    required this.isTeamAgent,
   });
 
   final String id;
@@ -345,16 +354,18 @@ class ConversationSummary {
   final String lastMessage;
   final int unreadCount;
   final String? groupId;
+  final bool isTeamAgent;
 
   factory ConversationSummary.fromJson(Map<String, dynamic> json) {
     final rawType = json['type'] as String? ?? '';
     return ConversationSummary(
       id: json['id'] as String? ?? '',
       title: json['title'] as String? ?? '',
-      type: rawType == 'group' ? '群聊' : rawType == 'direct' ? '私信' : rawType,
+      type: rawType == 'group' ? '群聊' : rawType == 'direct' ? '私信' : rawType == 'agent' ? '项目组Agent' : rawType,
       lastMessage: json['lastMessage'] as String? ?? '',
       unreadCount: json['unreadCount'] as int? ?? 0,
       groupId: json['groupId'] as String?,
+      isTeamAgent: json['isTeamAgent'] as bool? ?? rawType == 'agent',
     );
   }
 }
@@ -602,6 +613,7 @@ class DashboardOverview {
     required this.activeContext,
     required this.roadmap,
     required this.architectureTargets,
+    required this.activeTeamAgent,
   });
 
   final AppUser user;
@@ -614,6 +626,7 @@ class DashboardOverview {
   final ActiveContext activeContext;
   final List<RoadmapItem> roadmap;
   final ArchitectureTargets architectureTargets;
+  final TeamAgentSummary? activeTeamAgent;
 
   factory DashboardOverview.fromJson(Map<String, dynamic> json) {
     return DashboardOverview(
@@ -645,6 +658,9 @@ class DashboardOverview {
           .toList(),
       architectureTargets:
           ArchitectureTargets.fromJson(json['architectureTargets'] as Map<String, dynamic>? ?? const {}),
+      activeTeamAgent: (json['activeTeamAgent'] as Map<String, dynamic>?) == null
+          ? null
+          : TeamAgentSummary.fromJson(json['activeTeamAgent'] as Map<String, dynamic>),
     );
   }
 }
@@ -654,17 +670,62 @@ class ActiveContext {
     required this.groupName,
     required this.queryScopeLabel,
     required this.isolationNotice,
+    required this.agentId,
+    required this.agentName,
+    required this.agentCapabilities,
+    required this.knowledgeScopeLabel,
   });
 
   final String? groupName;
   final String queryScopeLabel;
   final String isolationNotice;
+  final String? agentId;
+  final String? agentName;
+  final List<String> agentCapabilities;
+  final String knowledgeScopeLabel;
 
   factory ActiveContext.fromJson(Map<String, dynamic> json) {
     return ActiveContext(
       groupName: json['groupName'] as String?,
       queryScopeLabel: json['queryScopeLabel'] as String? ?? '',
       isolationNotice: json['isolationNotice'] as String? ?? '',
+      agentId: json['agentId'] as String?,
+      agentName: json['agentName'] as String?,
+      agentCapabilities: (json['agentCapabilities'] as List<dynamic>? ?? const [])
+          .map((item) => item.toString())
+          .toList(),
+      knowledgeScopeLabel: json['knowledgeScopeLabel'] as String? ?? '',
+    );
+  }
+}
+
+class TeamAgentSummary {
+  const TeamAgentSummary({
+    required this.id,
+    required this.name,
+    required this.groupId,
+    required this.capabilities,
+    required this.defaultConversationId,
+    required this.retrievalScope,
+  });
+
+  final String id;
+  final String name;
+  final String groupId;
+  final List<String> capabilities;
+  final String? defaultConversationId;
+  final String retrievalScope;
+
+  factory TeamAgentSummary.fromJson(Map<String, dynamic> json) {
+    return TeamAgentSummary(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      groupId: json['groupId'] as String? ?? '',
+      capabilities: (json['capabilities'] as List<dynamic>? ?? const [])
+          .map((item) => item.toString())
+          .toList(),
+      defaultConversationId: json['defaultConversationId'] as String?,
+      retrievalScope: json['retrievalScope'] as String? ?? '',
     );
   }
 }

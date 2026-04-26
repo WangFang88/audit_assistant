@@ -6,7 +6,7 @@ export declare class SubscriptionsController {
         currentPlanId: "free" | "weekly" | "monthly" | "yearly";
         trialEndsAt: string;
         trialDays: number;
-        status: "trial" | "active" | "expired" | "admin-preview";
+        status: "active" | "admin-preview" | "trial" | "expired";
         statusLabel: string;
         latestOrder: {
             id: string;

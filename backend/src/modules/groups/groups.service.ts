@@ -2,7 +2,9 @@ import { forwardRef, Inject, BadRequestException, ForbiddenException, Injectable
 import { IsIn, IsString, MinLength } from 'class-validator';
 import { TeamMemberSnapshot, TeamRepository, TeamSnapshot } from '../../database/repositories/team.repository';
 import { AuthService } from '../auth/auth.service';
+import { ChatService } from '../chat/chat.service';
 import { DocumentsService } from '../documents/documents.service';
+import { TeamAgentsService } from '../team-agents/team-agents.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
@@ -57,6 +59,10 @@ export class GroupsService {
     private readonly teamRepository: TeamRepository,
     @Inject(forwardRef(() => DocumentsService))
     private readonly documentsService: DocumentsService,
+    @Inject(forwardRef(() => ChatService))
+    private readonly chatService: ChatService,
+    @Inject(forwardRef(() => TeamAgentsService))
+    private readonly teamAgentsService: TeamAgentsService,
   ) {
     const persistedState = this.localStateService.readState();
     if (persistedState.groups) {
@@ -217,6 +223,9 @@ export class GroupsService {
       phone: currentUser.phone,
       role: 'leader',
     });
+
+    const conversation = this.chatService.createAgentConversation(group);
+    this.teamAgentsService.createForGroup(group, conversation.id);
     this.persistState();
     this.subscriptionsService.syncUsage({ groups: this.groups.length });
 
@@ -320,6 +329,8 @@ export class GroupsService {
       ...this.members.filter((member) => member.groupId !== groupId),
     );
     this.documentsService.removeGroupDocuments(groupId);
+    this.chatService.removeGroupConversations(groupId);
+    this.teamAgentsService.deleteByGroupId(groupId);
     this.persistState();
     this.subscriptionsService.syncUsage({ groups: this.groups.length });
 

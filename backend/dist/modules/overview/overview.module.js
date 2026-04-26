@@ -14,6 +14,7 @@ const documents_module_1 = require("../documents/documents.module");
 const groups_module_1 = require("../groups/groups.module");
 const query_module_1 = require("../query/query.module");
 const subscriptions_module_1 = require("../subscriptions/subscriptions.module");
+const team_agents_module_1 = require("../team-agents/team-agents.module");
 const overview_controller_1 = require("./overview.controller");
 const overview_service_1 = require("./overview.service");
 let OverviewModule = class OverviewModule {
@@ -28,6 +29,7 @@ exports.OverviewModule = OverviewModule = __decorate([
             query_module_1.QueryModule,
             chat_module_1.ChatModule,
             subscriptions_module_1.SubscriptionsModule,
+            team_agents_module_1.TeamAgentsModule,
         ],
         controllers: [overview_controller_1.OverviewController],
         providers: [overview_service_1.OverviewService],

@@ -16,6 +16,7 @@ const groups_module_1 = require("./modules/groups/groups.module");
 const overview_module_1 = require("./modules/overview/overview.module");
 const query_module_1 = require("./modules/query/query.module");
 const subscriptions_module_1 = require("./modules/subscriptions/subscriptions.module");
+const team_agents_module_1 = require("./modules/team-agents/team-agents.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -29,6 +30,7 @@ exports.AppModule = AppModule = __decorate([
             query_module_1.QueryModule,
             chat_module_1.ChatModule,
             subscriptions_module_1.SubscriptionsModule,
+            team_agents_module_1.TeamAgentsModule,
             overview_module_1.OverviewModule,
         ],
     })
