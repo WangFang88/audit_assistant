@@ -1336,14 +1336,13 @@ class _DashboardPageState extends State<DashboardPage> {
               if (singleColumn) {
                 return Column(
                   children: [
-                    _buildQueryPanel(activeContext),
-                    const SizedBox(height: 16),
-                    _buildResultPanel(context, result),
                     if (!_isAdmin) ...[
+                      _buildQueryPanel(activeContext),
+                      const SizedBox(height: 16),
+                      _buildResultPanel(context, result),
                       const SizedBox(height: 16),
                       _buildGroupPanel(groups),
                     ],
-                    const SizedBox(height: 16),
                     _buildDocumentPanel(documents, extractJobs),
                   ],
                 );
@@ -1351,18 +1350,16 @@ class _DashboardPageState extends State<DashboardPage> {
 
               return Column(
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(flex: 5, child: _buildQueryPanel(activeContext)),
-                      const SizedBox(width: 16),
-                      Expanded(flex: 6, child: _buildResultPanel(context, result)),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (_isAdmin)
-                    _buildDocumentPanel(documents, extractJobs)
-                  else
+                  if (!_isAdmin) ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(flex: 5, child: _buildQueryPanel(activeContext)),
+                        const SizedBox(width: 16),
+                        Expanded(flex: 6, child: _buildResultPanel(context, result)),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1371,6 +1368,8 @@ class _DashboardPageState extends State<DashboardPage> {
                         Expanded(child: _buildDocumentPanel(documents, extractJobs)),
                       ],
                     ),
+                  ] else
+                    _buildDocumentPanel(documents, extractJobs),
                 ],
               );
             },
