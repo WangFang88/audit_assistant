@@ -5,7 +5,6 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 declare class ImportDocumentDto {
     title: string;
     libraryType: 'public' | 'private';
-    sourcePath: string;
     rawText?: string;
     groupId?: string;
 }
@@ -66,7 +65,11 @@ export declare class DocumentsService {
     getDocumentById(documentId: string): DocumentRecord;
     private buildChunksFromRawText;
     private buildChunksForDocument;
-    importDocument(dto: ImportDocumentDto): {
+    private getUploadRoot;
+    private sanitizeFileName;
+    private getFileTypeFromName;
+    private saveUploadedFile;
+    importDocument(dto: ImportDocumentDto, file?: Express.Multer.File): {
         notes: string;
         id: string;
         title: string;

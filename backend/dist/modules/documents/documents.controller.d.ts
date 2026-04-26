@@ -41,7 +41,7 @@ export declare class DocumentsController {
         keywords: string[];
         indexStatus: "ready" | "processing";
     }[];
-    importDocument(dto: ImportDocumentDto): {
+    importDocument(file: Express.Multer.File | undefined, dto: ImportDocumentDto): {
         notes: string;
         id: string;
         title: string;

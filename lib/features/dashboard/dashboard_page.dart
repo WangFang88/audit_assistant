@@ -1,5 +1,6 @@
-import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/models/app_models.dart';
 import '../../core/services/api_service.dart';
@@ -942,24 +943,61 @@ class _DashboardPageState extends State<DashboardPage> {
     }
 
     final titleController = TextEditingController();
-    final pathController = TextEditingController();
     final rawTextController = TextEditingController();
     String libraryType = _isAdmin || _activeGroupId == null ? '公共库' : '私有库';
+    PlatformFile? selectedFile;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('从文件服务器导入'),
+          title: const Text('选择文件上传'),
           content: SizedBox(
             width: 520,
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TextField(controller: titleController, decoration: const InputDecoration(labelText: '文件标题')),
                   const SizedBox(height: 12),
-                  TextField(controller: pathController, decoration: const InputDecoration(labelText: '文件服务器路径')),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final result = await FilePicker.platform.pickFiles(
+                        type: FileType.custom,
+                        allowedExtensions: const ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'],
+                        withData: true,
+                      );
+                      if (result == null || result.files.isEmpty) {
+                        return;
+                      }
+                      setDialogState(() {
+                        selectedFile = result.files.single;
+                        if (titleController.text.trim().isEmpty) {
+                          titleController.text = result.files.single.name;
+                        }
+                      });
+                    },
+                    icon: const Icon(Icons.upload_file_outlined),
+                    label: const Text('选择文件'),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    selectedFile == null ? '尚未选择文件' : '已选择：${selectedFile!.name}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  if (selectedFile?.path != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      selectedFile!.path!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Text(
+                    '支持上传 pdf、docx、xlsx、png、jpg、jpeg 文件。',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: libraryType,
@@ -987,13 +1025,16 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('导入')),
+            FilledButton(
+              onPressed: selectedFile == null ? null : () => Navigator.pop(context, true),
+              child: const Text('导入'),
+            ),
           ],
         ),
       ),
     );
 
-    if (confirmed != true) {
+    if (confirmed != true || selectedFile == null) {
       return;
     }
 
@@ -1001,7 +1042,7 @@ class _DashboardPageState extends State<DashboardPage> {
       final result = await widget.apiService.importDocument(
         title: titleController.text.trim(),
         libraryType: libraryType,
-        sourcePath: pathController.text.trim(),
+        file: selectedFile!,
         rawText: rawTextController.text.trim().isEmpty ? null : rawTextController.text.trim(),
         groupId: libraryType == '私有库' ? _activeGroupId : null,
       );

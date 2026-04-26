@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentsService, ImportDocumentDto } from './documents.service';
 
 @Controller('documents')
@@ -20,8 +21,9 @@ export class DocumentsController {
     return this.documentsService.listDocumentChunks(documentId);
   }
 
-  @Post('import-from-file-server')
-  importDocument(@Body() dto: ImportDocumentDto) {
-    return this.documentsService.importDocument(dto);
+  @Post('import')
+  @UseInterceptors(FileInterceptor('file'))
+  importDocument(@UploadedFile() file: Express.Multer.File | undefined, @Body() dto: ImportDocumentDto) {
+    return this.documentsService.importDocument(dto, file);
   }
 }

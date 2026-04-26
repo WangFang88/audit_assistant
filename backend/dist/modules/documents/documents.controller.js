@@ -11,9 +11,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DocumentsController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
 const documents_service_1 = require("./documents.service");
 let DocumentsController = class DocumentsController {
     constructor(documentsService) {
@@ -28,8 +30,8 @@ let DocumentsController = class DocumentsController {
     listDocumentChunks(documentId) {
         return this.documentsService.listDocumentChunks(documentId);
     }
-    importDocument(dto) {
-        return this.documentsService.importDocument(dto);
+    importDocument(file, dto) {
+        return this.documentsService.importDocument(dto, file);
     }
 };
 exports.DocumentsController = DocumentsController;
@@ -55,10 +57,12 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], DocumentsController.prototype, "listDocumentChunks", null);
 __decorate([
-    (0, common_1.Post)('import-from-file-server'),
-    __param(0, (0, common_1.Body)()),
+    (0, common_1.Post)('import'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    __param(0, (0, common_1.UploadedFile)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [documents_service_1.ImportDocumentDto]),
+    __metadata("design:paramtypes", [Object, documents_service_1.ImportDocumentDto]),
     __metadata("design:returntype", void 0)
 ], DocumentsController.prototype, "importDocument", null);
 exports.DocumentsController = DocumentsController = __decorate([

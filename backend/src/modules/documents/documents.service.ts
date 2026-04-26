@@ -1,4 +1,6 @@
 import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { join, extname } from 'node:path';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
@@ -12,9 +14,6 @@ class ImportDocumentDto {
 
   @IsIn(['public', 'private'])
   libraryType!: 'public' | 'private';
-
-  @IsString()
-  sourcePath!: string;
 
   @IsOptional()
   @IsString()
@@ -485,7 +484,58 @@ export class DocumentsService {
     }));
   }
 
-  importDocument(dto: ImportDocumentDto) {
+  private getUploadRoot() {
+    return join(process.cwd(), '.data', 'uploads');
+  }
+
+  private sanitizeFileName(fileName: string) {
+    return fileName.replace(/[^a-zA-Z0-9._-\u4e00-\u9fa5]+/g, '-');
+  }
+
+  private getFileTypeFromName(fileName: string): DocumentRecord['fileType'] {
+    const lowerName = fileName.toLowerCase();
+    if (lowerName.endsWith('.docx')) {
+      return 'docx';
+    }
+    if (lowerName.endsWith('.xlsx')) {
+      return 'xlsx';
+    }
+    if (lowerName.endsWith('.png') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
+      return 'image';
+    }
+    if (lowerName.endsWith('.pdf')) {
+      return 'pdf';
+    }
+    throw new BadRequestException('仅支持上传 pdf、docx、xlsx、png、jpg、jpeg 文件');
+  }
+
+  private saveUploadedFile(file: Express.Multer.File, libraryType: 'public' | 'private', groupId?: string) {
+    const sanitizedFileName = this.sanitizeFileName(file.originalname || 'upload.bin');
+    const extension = extname(sanitizedFileName) || '.bin';
+    const uploadFolder = libraryType === 'private' ? join(this.getUploadRoot(), 'groups', groupId ?? 'unknown') : join(this.getUploadRoot(), 'public');
+    if (!existsSync(uploadFolder)) {
+      mkdirSync(uploadFolder, { recursive: true });
+    }
+
+    const storedFileName = `${Date.now()}-${this.documents.length + 1}${extension}`;
+    const storedFilePath = join(uploadFolder, storedFileName);
+    writeFileSync(storedFilePath, file.buffer);
+
+    const normalizedPath = libraryType === 'private'
+      ? `/uploads/groups/${groupId}/${storedFileName}`
+      : `/uploads/public/${storedFileName}`;
+
+    return {
+      sourcePath: normalizedPath,
+      originalName: sanitizedFileName,
+    };
+  }
+
+  importDocument(dto: ImportDocumentDto, file?: Express.Multer.File) {
+    if (!file || !file.buffer || file.size <= 0) {
+      throw new BadRequestException('请选择要上传的文件');
+    }
+
     if (this.authService.isAdmin()) {
       if (dto.libraryType !== 'public' || dto.groupId != null) {
         throw new ForbiddenException('管理员仅可导入公共库文件，不能写入项目组私有库');
@@ -501,22 +551,14 @@ export class DocumentsService {
       this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
     }
 
-    const lowerSourcePath = dto.sourcePath.toLowerCase();
+    const storedFile = this.saveUploadedFile(file, dto.libraryType, dto.groupId);
+    const lowerSourcePath = storedFile.originalName.toLowerCase();
+    const fileType = this.getFileTypeFromName(storedFile.originalName);
     const isScan =
       lowerSourcePath.endsWith('.png') ||
       lowerSourcePath.endsWith('.jpg') ||
       lowerSourcePath.endsWith('.jpeg') ||
       lowerSourcePath.endsWith('.scan.pdf');
-
-    const fileType: DocumentRecord['fileType'] = lowerSourcePath.endsWith('.docx')
-      ? 'docx'
-      : lowerSourcePath.endsWith('.xlsx')
-        ? 'xlsx'
-        : lowerSourcePath.endsWith('.png') ||
-            lowerSourcePath.endsWith('.jpg') ||
-            lowerSourcePath.endsWith('.jpeg')
-          ? 'image'
-          : 'pdf';
 
     const extractionMode: DocumentRecord['extractionMode'] = isScan ? 'ocr' : 'text';
     const hasRawText = dto.rawText != null && dto.rawText.trim().length > 0;
@@ -526,7 +568,7 @@ export class DocumentsService {
       id: `doc-${this.documents.length + 1}`,
       title: dto.title,
       libraryType: dto.libraryType,
-      sourcePath: dto.sourcePath,
+      sourcePath: storedFile.sourcePath,
       chunkCount: generatedChunkCount,
       groupId: dto.groupId ?? null,
       fileType,

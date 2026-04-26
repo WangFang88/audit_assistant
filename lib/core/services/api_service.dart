@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -92,6 +93,27 @@ class ApiService {
 
     authorizedHeaders = await _authorizedHeaders(headers: headers);
     return send(authorizedHeaders);
+  }
+
+  Future<http.Response> _multipartRequestWithRefresh(
+    Future<http.MultipartRequest> Function(Map<String, String> headers) build,
+  ) async {
+    var request = await build(await _authorizedHeaders());
+    var streamedResponse = await _client.send(request);
+    var response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode != 401 && response.statusCode != 403) {
+      return response;
+    }
+
+    final refreshed = await _refreshAccessToken();
+    if (!refreshed) {
+      return response;
+    }
+
+    request = await build(await _authorizedHeaders());
+    streamedResponse = await _client.send(request);
+    return http.Response.fromStream(streamedResponse);
   }
 
   Future<LoginResponse> login({required String phone, required String password}) async {
@@ -248,25 +270,25 @@ class ApiService {
   Future<ImportDocumentResult> importDocument({
     required String title,
     required String libraryType,
-    required String sourcePath,
+    required PlatformFile file,
     String? rawText,
     String? groupId,
   }) async {
     final backendLibraryType = libraryType == '公共库' ? 'public' : 'private';
-    final response = await _requestWithRefresh(
-      (headers) => _client.post(
-        Uri.parse('$_baseUrl/documents/import-from-file-server'),
-        headers: headers,
-        body: jsonEncode({
-          'title': title,
-          'libraryType': backendLibraryType,
-          'sourcePath': sourcePath,
-          'rawText': rawText,
-          'groupId': groupId,
-        }),
-      ),
-      headers: {'Content-Type': 'application/json'},
-    );
+    final response = await _multipartRequestWithRefresh((headers) async {
+      final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/documents/import'));
+      request.headers.addAll(headers);
+      request.fields['title'] = title;
+      request.fields['libraryType'] = backendLibraryType;
+      if (rawText != null && rawText.isNotEmpty) {
+        request.fields['rawText'] = rawText;
+      }
+      if (groupId != null && groupId.isNotEmpty) {
+        request.fields['groupId'] = groupId;
+      }
+      request.files.add(await _buildMultipartFile(file));
+      return request;
+    });
 
     final json = _decodeMap(response);
     return ImportDocumentResult.fromJson(json);
@@ -391,6 +413,21 @@ class ApiService {
     }
 
     return body.whereType<Map<String, dynamic>>().toList();
+  }
+
+  Future<http.MultipartFile> _buildMultipartFile(PlatformFile file) async {
+    final fileName = file.name.trim().isEmpty ? 'upload.bin' : file.name;
+    final fileBytes = file.bytes;
+    if (fileBytes != null) {
+      return http.MultipartFile.fromBytes('file', fileBytes, filename: fileName);
+    }
+
+    final filePath = file.path;
+    if (filePath == null || filePath.isEmpty) {
+      throw const ApiException('未获取到上传文件内容');
+    }
+
+    return http.MultipartFile.fromPath('file', filePath, filename: fileName);
   }
 
   void _handleUnauthorized(int statusCode) {

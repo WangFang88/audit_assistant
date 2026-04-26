@@ -14,6 +14,8 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ImportDocumentDto = exports.DocumentsService = void 0;
 const common_1 = require("@nestjs/common");
+const node_fs_1 = require("node:fs");
+const node_path_1 = require("node:path");
 const class_validator_1 = require("class-validator");
 const auth_service_1 = require("../auth/auth.service");
 const groups_service_1 = require("../groups/groups.service");
@@ -31,10 +33,6 @@ __decorate([
     (0, class_validator_1.IsIn)(['public', 'private']),
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "libraryType", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], ImportDocumentDto.prototype, "sourcePath", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
@@ -427,7 +425,50 @@ let DocumentsService = class DocumentsService {
             indexStatus: 'ready',
         }));
     }
-    importDocument(dto) {
+    getUploadRoot() {
+        return (0, node_path_1.join)(process.cwd(), '.data', 'uploads');
+    }
+    sanitizeFileName(fileName) {
+        return fileName.replace(/[^a-zA-Z0-9._-\u4e00-\u9fa5]+/g, '-');
+    }
+    getFileTypeFromName(fileName) {
+        const lowerName = fileName.toLowerCase();
+        if (lowerName.endsWith('.docx')) {
+            return 'docx';
+        }
+        if (lowerName.endsWith('.xlsx')) {
+            return 'xlsx';
+        }
+        if (lowerName.endsWith('.png') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
+            return 'image';
+        }
+        if (lowerName.endsWith('.pdf')) {
+            return 'pdf';
+        }
+        throw new common_1.BadRequestException('仅支持上传 pdf、docx、xlsx、png、jpg、jpeg 文件');
+    }
+    saveUploadedFile(file, libraryType, groupId) {
+        const sanitizedFileName = this.sanitizeFileName(file.originalname || 'upload.bin');
+        const extension = (0, node_path_1.extname)(sanitizedFileName) || '.bin';
+        const uploadFolder = libraryType === 'private' ? (0, node_path_1.join)(this.getUploadRoot(), 'groups', groupId ?? 'unknown') : (0, node_path_1.join)(this.getUploadRoot(), 'public');
+        if (!(0, node_fs_1.existsSync)(uploadFolder)) {
+            (0, node_fs_1.mkdirSync)(uploadFolder, { recursive: true });
+        }
+        const storedFileName = `${Date.now()}-${this.documents.length + 1}${extension}`;
+        const storedFilePath = (0, node_path_1.join)(uploadFolder, storedFileName);
+        (0, node_fs_1.writeFileSync)(storedFilePath, file.buffer);
+        const normalizedPath = libraryType === 'private'
+            ? `/uploads/groups/${groupId}/${storedFileName}`
+            : `/uploads/public/${storedFileName}`;
+        return {
+            sourcePath: normalizedPath,
+            originalName: sanitizedFileName,
+        };
+    }
+    importDocument(dto, file) {
+        if (!file || !file.buffer || file.size <= 0) {
+            throw new common_1.BadRequestException('请选择要上传的文件');
+        }
         if (this.authService.isAdmin()) {
             if (dto.libraryType !== 'public' || dto.groupId != null) {
                 throw new common_1.ForbiddenException('管理员仅可导入公共库文件，不能写入项目组私有库');
@@ -441,20 +482,13 @@ let DocumentsService = class DocumentsService {
             const currentPrivateDocuments = this.documents.filter((document) => document.libraryType === 'private').length;
             this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
         }
-        const lowerSourcePath = dto.sourcePath.toLowerCase();
+        const storedFile = this.saveUploadedFile(file, dto.libraryType, dto.groupId);
+        const lowerSourcePath = storedFile.originalName.toLowerCase();
+        const fileType = this.getFileTypeFromName(storedFile.originalName);
         const isScan = lowerSourcePath.endsWith('.png') ||
             lowerSourcePath.endsWith('.jpg') ||
             lowerSourcePath.endsWith('.jpeg') ||
             lowerSourcePath.endsWith('.scan.pdf');
-        const fileType = lowerSourcePath.endsWith('.docx')
-            ? 'docx'
-            : lowerSourcePath.endsWith('.xlsx')
-                ? 'xlsx'
-                : lowerSourcePath.endsWith('.png') ||
-                    lowerSourcePath.endsWith('.jpg') ||
-                    lowerSourcePath.endsWith('.jpeg')
-                    ? 'image'
-                    : 'pdf';
         const extractionMode = isScan ? 'ocr' : 'text';
         const hasRawText = dto.rawText != null && dto.rawText.trim().length > 0;
         const generatedChunkCount = hasRawText ? 0 : 4;
@@ -462,7 +496,7 @@ let DocumentsService = class DocumentsService {
             id: `doc-${this.documents.length + 1}`,
             title: dto.title,
             libraryType: dto.libraryType,
-            sourcePath: dto.sourcePath,
+            sourcePath: storedFile.sourcePath,
             chunkCount: generatedChunkCount,
             groupId: dto.groupId ?? null,
             fileType,
