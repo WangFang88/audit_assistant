@@ -522,6 +522,7 @@ class _DashboardPageState extends State<DashboardPage> {
       setState(() {
         _error = error.message;
       });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
       if (!mounted) {
         return;

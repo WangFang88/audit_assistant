@@ -25,6 +25,7 @@ export declare class SubscriptionsService {
     private usage;
     private readonly planPrices;
     private readonly planDurations;
+    private readonly planRank;
     private readonly plans;
     private isAdmin;
     private getCurrentDateKey;
@@ -34,6 +35,8 @@ export declare class SubscriptionsService {
     private getLatestSubscriptionOrder;
     private formatDateTime;
     private addDays;
+    private getCurrentPlanRank;
+    private hasActiveHigherTierOrder;
     private rebuildDailyUsageFromLogs;
     private ensureDailyUsageIsCurrent;
     getCurrentPlan(): {

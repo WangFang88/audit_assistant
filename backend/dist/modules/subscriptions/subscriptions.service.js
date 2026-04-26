@@ -62,6 +62,12 @@ let SubscriptionsService = class SubscriptionsService {
             monthly: 30,
             yearly: 365,
         };
+        this.planRank = {
+            free: 0,
+            weekly: 1,
+            monthly: 2,
+            yearly: 3,
+        };
         this.plans = [
             {
                 id: 'free',
@@ -157,6 +163,21 @@ let SubscriptionsService = class SubscriptionsService {
         nextDate.setUTCDate(nextDate.getUTCDate() + days);
         return nextDate;
     }
+    getCurrentPlanRank(planType) {
+        return this.planRank[planType];
+    }
+    hasActiveHigherTierOrder(planType) {
+        const latestOrder = this.getLatestSubscriptionOrder();
+        if (!latestOrder) {
+            return false;
+        }
+        const now = new Date();
+        const expiredAt = new Date(latestOrder.expiredAt.replace(' ', 'T'));
+        if (expiredAt.getTime() <= now.getTime()) {
+            return false;
+        }
+        return this.getCurrentPlanRank(latestOrder.planType) > this.getCurrentPlanRank(planType);
+    }
     rebuildDailyUsageFromLogs() {
         const currentDateKey = this.getCurrentDateKey();
         const dailyQueries = this.queryLogs
@@ -249,6 +270,9 @@ let SubscriptionsService = class SubscriptionsService {
     createSubscriptionOrder(dto) {
         if (this.isAdmin()) {
             throw new common_1.BadRequestException('管理员预览账号不支持创建订阅订单');
+        }
+        if (this.hasActiveHigherTierOrder(dto.planType)) {
+            throw new common_1.BadRequestException('当前高等级订阅仍在有效期内，暂不支持降级为更低套餐');
         }
         const now = new Date();
         const expiredAt = this.addDays(now, this.planDurations[dto.planType]);

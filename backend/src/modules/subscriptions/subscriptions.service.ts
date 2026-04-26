@@ -81,6 +81,13 @@ export class SubscriptionsService {
     yearly: 365,
   };
 
+  private readonly planRank: Record<'free' | 'weekly' | 'monthly' | 'yearly', number> = {
+    free: 0,
+    weekly: 1,
+    monthly: 2,
+    yearly: 3,
+  };
+
   private readonly plans = [
     {
       id: 'free',
@@ -162,6 +169,25 @@ export class SubscriptionsService {
     const nextDate = new Date(baseDate.getTime());
     nextDate.setUTCDate(nextDate.getUTCDate() + days);
     return nextDate;
+  }
+
+  private getCurrentPlanRank(planType: 'free' | 'weekly' | 'monthly' | 'yearly') {
+    return this.planRank[planType];
+  }
+
+  private hasActiveHigherTierOrder(planType: 'weekly' | 'monthly' | 'yearly') {
+    const latestOrder = this.getLatestSubscriptionOrder();
+    if (!latestOrder) {
+      return false;
+    }
+
+    const now = new Date();
+    const expiredAt = new Date(latestOrder.expiredAt.replace(' ', 'T'));
+    if (expiredAt.getTime() <= now.getTime()) {
+      return false;
+    }
+
+    return this.getCurrentPlanRank(latestOrder.planType) > this.getCurrentPlanRank(planType);
   }
 
   private rebuildDailyUsageFromLogs() {
@@ -270,6 +296,9 @@ export class SubscriptionsService {
   createSubscriptionOrder(dto: CreateSubscriptionOrderDto) {
     if (this.isAdmin()) {
       throw new BadRequestException('管理员预览账号不支持创建订阅订单');
+    }
+    if (this.hasActiveHigherTierOrder(dto.planType)) {
+      throw new BadRequestException('当前高等级订阅仍在有效期内，暂不支持降级为更低套餐');
     }
 
     const now = new Date();
