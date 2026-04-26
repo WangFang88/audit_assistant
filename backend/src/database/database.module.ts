@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConversationParticipantEntity } from './entities/conversation-participant.entity';
+import { ConversationEntity } from './entities/conversation.entity';
 import { GroupMessageEntity } from './entities/group-message.entity';
+import { MessageEntity } from './entities/message.entity';
 import { PrivateDocEntity } from './entities/private-doc.entity';
 import { PrivateMessageEntity } from './entities/private-message.entity';
 import { PublicDocEntity } from './entities/public-doc.entity';
 import { QueryLogEntity } from './entities/query-log.entity';
 import { SubscriptionEntity } from './entities/subscription.entity';
+import { TeamAgentEntity } from './entities/team-agent.entity';
 import { TeamMemberEntity } from './entities/team-member.entity';
 import { TeamEntity } from './entities/team.entity';
 import { UserEntity } from './entities/user.entity';
@@ -14,10 +18,14 @@ const entities = [
   UserEntity,
   TeamEntity,
   TeamMemberEntity,
+  TeamAgentEntity,
   PublicDocEntity,
   PrivateDocEntity,
   GroupMessageEntity,
   PrivateMessageEntity,
+  ConversationEntity,
+  ConversationParticipantEntity,
+  MessageEntity,
   SubscriptionEntity,
   QueryLogEntity,
 ];
