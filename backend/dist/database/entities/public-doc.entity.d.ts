@@ -4,6 +4,10 @@ export declare class PublicDocEntity {
     filePath: string;
     uploadedBy: string;
     uploadedAt: Date;
-    vectorStatus: string;
+    indexStatus: string;
+    fileType: string;
+    parserTarget: string;
+    embeddingTarget: string;
+    vectorStoreTarget: string;
     title: string;
 }

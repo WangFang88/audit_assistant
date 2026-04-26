@@ -1,11 +1,11 @@
 import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { join, extname } from 'node:path';
+import { DocumentMetadataSnapshot, DocumentRepository } from '../../database/repositories/document.repository';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { FileStorageService } from './file-storage.service';
 
 class ImportDocumentDto {
   @IsString()
@@ -30,6 +30,8 @@ type DocumentRecord = {
   title: string;
   libraryType: 'public' | 'private';
   sourcePath: string;
+  fileName: string;
+  uploadedBy: string;
   chunkCount: number;
   indexStatus: 'ready' | 'processing' | 'queued';
   extractionMode: 'text' | 'ocr';
@@ -75,10 +77,20 @@ export class DocumentsService {
     private readonly groupsService: GroupsService,
     private readonly localStateService: LocalStateService,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly documentRepository: DocumentRepository,
+    private readonly fileStorageService: FileStorageService,
   ) {
     const persistedState = this.localStateService.readState();
     if (persistedState.documents) {
-      this.documents.splice(0, this.documents.length, ...persistedState.documents);
+      this.documents.splice(
+        0,
+        this.documents.length,
+        ...persistedState.documents.map((document) => ({
+          ...document,
+          fileName: document.sourcePath.split('/').pop() ?? `${document.id}.bin`,
+          uploadedBy: document.libraryType === 'public' ? 'user-1' : 'user-2',
+        })),
+      );
     }
     if (persistedState.chunks) {
       this.chunks.splice(0, this.chunks.length, ...persistedState.chunks);
@@ -91,6 +103,8 @@ export class DocumentsService {
       title: '某区财政专项资金管理办法',
       libraryType: 'public',
       sourcePath: '/policies/public/fiscal-rules.pdf',
+      fileName: 'fiscal-rules.pdf',
+      uploadedBy: 'user-1',
       chunkCount: 4,
       indexStatus: 'ready',
       extractionMode: 'text',
@@ -108,6 +122,8 @@ export class DocumentsService {
       title: '某区财政局内部采购管理制度',
       libraryType: 'private',
       sourcePath: '/groups/group-1/purchase-guideline.docx',
+      fileName: 'purchase-guideline.docx',
+      uploadedBy: 'user-2',
       chunkCount: 4,
       indexStatus: 'ready',
       extractionMode: 'text',
@@ -125,6 +141,8 @@ export class DocumentsService {
       title: '某医院设备管理台账扫描件',
       libraryType: 'private',
       sourcePath: '/groups/group-1/equipment-scan.pdf',
+      fileName: 'equipment-scan.pdf',
+      uploadedBy: 'user-2',
       chunkCount: 0,
       indexStatus: 'processing',
       extractionMode: 'ocr',
@@ -496,12 +514,22 @@ export class DocumentsService {
     }));
   }
 
-  private getUploadRoot() {
-    return join(process.cwd(), '.data', 'uploads');
-  }
-
-  private sanitizeFileName(fileName: string) {
-    return fileName.replace(/[^a-zA-Z0-9._-\u4e00-\u9fa5]+/g, '-');
+  private toMetadataSnapshot(document: DocumentRecord): DocumentMetadataSnapshot {
+    return {
+      id: document.id,
+      title: document.title,
+      libraryType: document.libraryType,
+      sourcePath: document.sourcePath,
+      fileName: document.fileName,
+      uploadedBy: document.uploadedBy,
+      uploadedAt: document.uploadedAt,
+      indexStatus: document.indexStatus,
+      groupId: document.groupId,
+      fileType: document.fileType,
+      parserTarget: document.parserTarget,
+      embeddingTarget: document.embeddingTarget,
+      vectorStoreTarget: document.vectorStoreTarget,
+    };
   }
 
   private classifyUploadedFile(fileName: string) {
@@ -524,24 +552,13 @@ export class DocumentsService {
     throw new BadRequestException('仅支持上传 pdf、docx、xlsx、png、jpg、jpeg 文件');
   }
 
-  private saveUploadedFile(file: Express.Multer.File, libraryType: 'public' | 'private', groupId?: string) {
-    const sanitizedFileName = this.sanitizeFileName(file.originalname || 'upload.bin');
-    const extension = extname(sanitizedFileName) || '.bin';
-    const uploadFolder = libraryType === 'private' ? join(this.getUploadRoot(), 'groups', groupId ?? 'unknown') : join(this.getUploadRoot(), 'public');
-    mkdirSync(uploadFolder, { recursive: true });
-
-    const storedFileName = `${Date.now()}-${this.documents.length + 1}${extension}`;
-    const storedFilePath = join(uploadFolder, storedFileName);
-    writeFileSync(storedFilePath, file.buffer);
-
-    const normalizedPath = libraryType === 'private'
-      ? `/uploads/groups/${groupId}/${storedFileName}`
-      : `/uploads/public/${storedFileName}`;
-
-    return {
-      sourcePath: normalizedPath,
-      originalName: sanitizedFileName,
-    };
+  private saveUploadedFile(file: Express.Multer.File, libraryType: 'public' | 'private', documentId: string, groupId?: string) {
+    return this.fileStorageService.saveFile({
+      file,
+      libraryType,
+      documentId,
+      groupId,
+    });
   }
 
   importDocument(dto: ImportDocumentDto, file?: Express.Multer.File) {
@@ -564,15 +581,19 @@ export class DocumentsService {
       this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
     }
 
-    const storedFile = this.saveUploadedFile(file, dto.libraryType, dto.groupId);
+    const documentId = `doc-${this.documents.length + 1}`;
+    const storedFile = this.saveUploadedFile(file, dto.libraryType, documentId, dto.groupId);
     const classification = this.classifyUploadedFile(storedFile.originalName);
     const hasRawText = dto.rawText != null && dto.rawText.trim().length > 0;
+    const uploadedBy = this.authService.me().id;
 
     const document: DocumentRecord = {
-      id: `doc-${this.documents.length + 1}`,
+      id: documentId,
       title: dto.title,
       libraryType: dto.libraryType,
       sourcePath: storedFile.sourcePath,
+      fileName: storedFile.originalName,
+      uploadedBy,
       chunkCount: 0,
       groupId: dto.groupId ?? null,
       fileType: classification.fileType,
@@ -591,6 +612,12 @@ export class DocumentsService {
 
     this.documents.push(document);
     this.chunks.push(...generatedChunks);
+    const metadataSnapshot = this.toMetadataSnapshot(document);
+    if (document.libraryType === 'private') {
+      this.documentRepository.createPrivateDocEntity(metadataSnapshot);
+    } else {
+      this.documentRepository.createPublicDocEntity(metadataSnapshot);
+    }
     this.localStateService.saveDocuments(this.documents);
     this.localStateService.saveChunks(this.chunks);
     if (dto.libraryType === 'private') {

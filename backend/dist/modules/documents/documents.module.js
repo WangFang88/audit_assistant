@@ -8,19 +8,21 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DocumentsModule = void 0;
 const common_1 = require("@nestjs/common");
+const database_support_module_1 = require("../../database/database-support.module");
 const auth_module_1 = require("../auth/auth.module");
 const groups_module_1 = require("../groups/groups.module");
 const subscriptions_module_1 = require("../subscriptions/subscriptions.module");
 const documents_controller_1 = require("./documents.controller");
 const documents_service_1 = require("./documents.service");
+const file_storage_service_1 = require("./file-storage.service");
 let DocumentsModule = class DocumentsModule {
 };
 exports.DocumentsModule = DocumentsModule;
 exports.DocumentsModule = DocumentsModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule, (0, common_1.forwardRef)(() => groups_module_1.GroupsModule), subscriptions_module_1.SubscriptionsModule],
+        imports: [database_support_module_1.DatabaseSupportModule, auth_module_1.AuthModule, (0, common_1.forwardRef)(() => groups_module_1.GroupsModule), subscriptions_module_1.SubscriptionsModule],
         controllers: [documents_controller_1.DocumentsController],
-        providers: [documents_service_1.DocumentsService],
+        providers: [documents_service_1.DocumentsService, file_storage_service_1.FileStorageService],
         exports: [documents_service_1.DocumentsService],
     })
 ], DocumentsModule);

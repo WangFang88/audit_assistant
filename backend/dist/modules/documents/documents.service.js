@@ -14,13 +14,13 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ImportDocumentDto = exports.DocumentsService = void 0;
 const common_1 = require("@nestjs/common");
-const node_fs_1 = require("node:fs");
-const node_path_1 = require("node:path");
+const document_repository_1 = require("../../database/repositories/document.repository");
 const class_validator_1 = require("class-validator");
 const auth_service_1 = require("../auth/auth.service");
 const groups_service_1 = require("../groups/groups.service");
 const local_state_service_1 = require("../subscriptions/local-state.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
+const file_storage_service_1 = require("./file-storage.service");
 class ImportDocumentDto {
 }
 exports.ImportDocumentDto = ImportDocumentDto;
@@ -45,17 +45,21 @@ __decorate([
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "groupId", void 0);
 let DocumentsService = class DocumentsService {
-    constructor(authService, groupsService, localStateService, subscriptionsService) {
+    constructor(authService, groupsService, localStateService, subscriptionsService, documentRepository, fileStorageService) {
         this.authService = authService;
         this.groupsService = groupsService;
         this.localStateService = localStateService;
         this.subscriptionsService = subscriptionsService;
+        this.documentRepository = documentRepository;
+        this.fileStorageService = fileStorageService;
         this.documents = [
             {
                 id: 'doc-1',
                 title: '某区财政专项资金管理办法',
                 libraryType: 'public',
                 sourcePath: '/policies/public/fiscal-rules.pdf',
+                fileName: 'fiscal-rules.pdf',
+                uploadedBy: 'user-1',
                 chunkCount: 4,
                 indexStatus: 'ready',
                 extractionMode: 'text',
@@ -73,6 +77,8 @@ let DocumentsService = class DocumentsService {
                 title: '某区财政局内部采购管理制度',
                 libraryType: 'private',
                 sourcePath: '/groups/group-1/purchase-guideline.docx',
+                fileName: 'purchase-guideline.docx',
+                uploadedBy: 'user-2',
                 chunkCount: 4,
                 indexStatus: 'ready',
                 extractionMode: 'text',
@@ -90,6 +96,8 @@ let DocumentsService = class DocumentsService {
                 title: '某医院设备管理台账扫描件',
                 libraryType: 'private',
                 sourcePath: '/groups/group-1/equipment-scan.pdf',
+                fileName: 'equipment-scan.pdf',
+                uploadedBy: 'user-2',
                 chunkCount: 0,
                 indexStatus: 'processing',
                 extractionMode: 'ocr',
@@ -222,7 +230,11 @@ let DocumentsService = class DocumentsService {
         ];
         const persistedState = this.localStateService.readState();
         if (persistedState.documents) {
-            this.documents.splice(0, this.documents.length, ...persistedState.documents);
+            this.documents.splice(0, this.documents.length, ...persistedState.documents.map((document) => ({
+                ...document,
+                fileName: document.sourcePath.split('/').pop() ?? `${document.id}.bin`,
+                uploadedBy: document.libraryType === 'public' ? 'user-1' : 'user-2',
+            })));
         }
         if (persistedState.chunks) {
             this.chunks.splice(0, this.chunks.length, ...persistedState.chunks);
@@ -437,11 +449,22 @@ let DocumentsService = class DocumentsService {
             indexStatus: 'ready',
         }));
     }
-    getUploadRoot() {
-        return (0, node_path_1.join)(process.cwd(), '.data', 'uploads');
-    }
-    sanitizeFileName(fileName) {
-        return fileName.replace(/[^a-zA-Z0-9._-\u4e00-\u9fa5]+/g, '-');
+    toMetadataSnapshot(document) {
+        return {
+            id: document.id,
+            title: document.title,
+            libraryType: document.libraryType,
+            sourcePath: document.sourcePath,
+            fileName: document.fileName,
+            uploadedBy: document.uploadedBy,
+            uploadedAt: document.uploadedAt,
+            indexStatus: document.indexStatus,
+            groupId: document.groupId,
+            fileType: document.fileType,
+            parserTarget: document.parserTarget,
+            embeddingTarget: document.embeddingTarget,
+            vectorStoreTarget: document.vectorStoreTarget,
+        };
     }
     classifyUploadedFile(fileName) {
         const lowerName = fileName.toLowerCase();
@@ -462,21 +485,13 @@ let DocumentsService = class DocumentsService {
         }
         throw new common_1.BadRequestException('仅支持上传 pdf、docx、xlsx、png、jpg、jpeg 文件');
     }
-    saveUploadedFile(file, libraryType, groupId) {
-        const sanitizedFileName = this.sanitizeFileName(file.originalname || 'upload.bin');
-        const extension = (0, node_path_1.extname)(sanitizedFileName) || '.bin';
-        const uploadFolder = libraryType === 'private' ? (0, node_path_1.join)(this.getUploadRoot(), 'groups', groupId ?? 'unknown') : (0, node_path_1.join)(this.getUploadRoot(), 'public');
-        (0, node_fs_1.mkdirSync)(uploadFolder, { recursive: true });
-        const storedFileName = `${Date.now()}-${this.documents.length + 1}${extension}`;
-        const storedFilePath = (0, node_path_1.join)(uploadFolder, storedFileName);
-        (0, node_fs_1.writeFileSync)(storedFilePath, file.buffer);
-        const normalizedPath = libraryType === 'private'
-            ? `/uploads/groups/${groupId}/${storedFileName}`
-            : `/uploads/public/${storedFileName}`;
-        return {
-            sourcePath: normalizedPath,
-            originalName: sanitizedFileName,
-        };
+    saveUploadedFile(file, libraryType, documentId, groupId) {
+        return this.fileStorageService.saveFile({
+            file,
+            libraryType,
+            documentId,
+            groupId,
+        });
     }
     importDocument(dto, file) {
         if (!file || !file.buffer || file.size <= 0) {
@@ -495,14 +510,18 @@ let DocumentsService = class DocumentsService {
             const currentPrivateDocuments = this.documents.filter((document) => document.libraryType === 'private').length;
             this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
         }
-        const storedFile = this.saveUploadedFile(file, dto.libraryType, dto.groupId);
+        const documentId = `doc-${this.documents.length + 1}`;
+        const storedFile = this.saveUploadedFile(file, dto.libraryType, documentId, dto.groupId);
         const classification = this.classifyUploadedFile(storedFile.originalName);
         const hasRawText = dto.rawText != null && dto.rawText.trim().length > 0;
+        const uploadedBy = this.authService.me().id;
         const document = {
-            id: `doc-${this.documents.length + 1}`,
+            id: documentId,
             title: dto.title,
             libraryType: dto.libraryType,
             sourcePath: storedFile.sourcePath,
+            fileName: storedFile.originalName,
+            uploadedBy,
             chunkCount: 0,
             groupId: dto.groupId ?? null,
             fileType: classification.fileType,
@@ -519,6 +538,13 @@ let DocumentsService = class DocumentsService {
         document.chunkCount = generatedChunks.length;
         this.documents.push(document);
         this.chunks.push(...generatedChunks);
+        const metadataSnapshot = this.toMetadataSnapshot(document);
+        if (document.libraryType === 'private') {
+            this.documentRepository.createPrivateDocEntity(metadataSnapshot);
+        }
+        else {
+            this.documentRepository.createPublicDocEntity(metadataSnapshot);
+        }
         this.localStateService.saveDocuments(this.documents);
         this.localStateService.saveChunks(this.chunks);
         if (dto.libraryType === 'private') {
@@ -565,6 +591,8 @@ exports.DocumentsService = DocumentsService = __decorate([
     __metadata("design:paramtypes", [auth_service_1.AuthService,
         groups_service_1.GroupsService,
         local_state_service_1.LocalStateService,
-        subscriptions_service_1.SubscriptionsService])
+        subscriptions_service_1.SubscriptionsService,
+        document_repository_1.DocumentRepository,
+        file_storage_service_1.FileStorageService])
 ], DocumentsService);
 //# sourceMappingURL=documents.service.js.map

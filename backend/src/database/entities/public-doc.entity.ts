@@ -17,8 +17,20 @@ export class PublicDocEntity {
   @CreateDateColumn({ name: 'uploaded_at', type: 'timestamp' })
   uploadedAt!: Date;
 
-  @Column({ name: 'vector_status', type: 'varchar', length: 32, default: 'queued' })
-  vectorStatus!: string;
+  @Column({ name: 'index_status', type: 'varchar', length: 32, default: 'queued' })
+  indexStatus!: string;
+
+  @Column({ name: 'file_type', type: 'varchar', length: 32, default: 'pdf' })
+  fileType!: string;
+
+  @Column({ name: 'parser_target', type: 'varchar', length: 64, default: 'multimodal-parser' })
+  parserTarget!: string;
+
+  @Column({ name: 'embedding_target', type: 'varchar', length: 64, default: 'bge-large-zh' })
+  embeddingTarget!: string;
+
+  @Column({ name: 'vector_store_target', type: 'varchar', length: 64, default: 'pgvector' })
+  vectorStoreTarget!: string;
 
   @Column({ name: 'title', type: 'varchar', length: 255 })
   title!: string;

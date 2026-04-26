@@ -61,6 +61,8 @@ export declare class OverviewService {
             title: string;
             libraryType: "public" | "private";
             sourcePath: string;
+            fileName: string;
+            uploadedBy: string;
             chunkCount: number;
             indexStatus: "ready" | "processing" | "queued";
             extractionMode: "text" | "ocr";

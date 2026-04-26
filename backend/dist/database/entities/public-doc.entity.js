@@ -35,9 +35,25 @@ __decorate([
     __metadata("design:type", Date)
 ], PublicDocEntity.prototype, "uploadedAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'vector_status', type: 'varchar', length: 32, default: 'queued' }),
+    (0, typeorm_1.Column)({ name: 'index_status', type: 'varchar', length: 32, default: 'queued' }),
     __metadata("design:type", String)
-], PublicDocEntity.prototype, "vectorStatus", void 0);
+], PublicDocEntity.prototype, "indexStatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'file_type', type: 'varchar', length: 32, default: 'pdf' }),
+    __metadata("design:type", String)
+], PublicDocEntity.prototype, "fileType", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'parser_target', type: 'varchar', length: 64, default: 'multimodal-parser' }),
+    __metadata("design:type", String)
+], PublicDocEntity.prototype, "parserTarget", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'embedding_target', type: 'varchar', length: 64, default: 'bge-large-zh' }),
+    __metadata("design:type", String)
+], PublicDocEntity.prototype, "embeddingTarget", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'vector_store_target', type: 'varchar', length: 64, default: 'pgvector' }),
+    __metadata("design:type", String)
+], PublicDocEntity.prototype, "vectorStoreTarget", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: 'title', type: 'varchar', length: 255 }),
     __metadata("design:type", String)

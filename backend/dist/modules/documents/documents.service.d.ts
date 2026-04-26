@@ -1,7 +1,9 @@
+import { DocumentRepository } from '../../database/repositories/document.repository';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { FileStorageService } from './file-storage.service';
 declare class ImportDocumentDto {
     title: string;
     libraryType: 'public' | 'private';
@@ -13,6 +15,8 @@ type DocumentRecord = {
     title: string;
     libraryType: 'public' | 'private';
     sourcePath: string;
+    fileName: string;
+    uploadedBy: string;
     chunkCount: number;
     indexStatus: 'ready' | 'processing' | 'queued';
     extractionMode: 'text' | 'ocr';
@@ -52,7 +56,9 @@ export declare class DocumentsService {
     private readonly groupsService;
     private readonly localStateService;
     private readonly subscriptionsService;
-    constructor(authService: AuthService, groupsService: GroupsService, localStateService: LocalStateService, subscriptionsService: SubscriptionsService);
+    private readonly documentRepository;
+    private readonly fileStorageService;
+    constructor(authService: AuthService, groupsService: GroupsService, localStateService: LocalStateService, subscriptionsService: SubscriptionsService, documentRepository: DocumentRepository, fileStorageService: FileStorageService);
     private readonly documents;
     private readonly extractJobs;
     private readonly chunks;
@@ -65,8 +71,7 @@ export declare class DocumentsService {
     getDocumentById(documentId: string): DocumentRecord;
     private buildChunksFromRawText;
     private buildChunksForDocument;
-    private getUploadRoot;
-    private sanitizeFileName;
+    private toMetadataSnapshot;
     private classifyUploadedFile;
     private saveUploadedFile;
     importDocument(dto: ImportDocumentDto, file?: Express.Multer.File): {
@@ -75,6 +80,8 @@ export declare class DocumentsService {
         title: string;
         libraryType: "public" | "private";
         sourcePath: string;
+        fileName: string;
+        uploadedBy: string;
         chunkCount: number;
         indexStatus: "ready" | "processing" | "queued";
         extractionMode: "text" | "ocr";
