@@ -16,16 +16,6 @@ type ConversationRecord = {
     unreadCount: number;
     lastMessage: string;
 };
-type MessageRecord = {
-    id: string;
-    conversationId: string;
-    senderUserId: string;
-    receiverUserId: string | null;
-    senderName: string;
-    content: string;
-    sentAt: string;
-    readStatus: boolean;
-};
 export declare class ChatService {
     private readonly authService;
     private readonly groupsService;
@@ -34,25 +24,30 @@ export declare class ChatService {
     constructor(authService: AuthService, groupsService: GroupsService, localStateService: LocalStateService, messageRepository: MessageRepository);
     private readonly conversations;
     private readonly messages;
+    private resolveLegacySenderUserId;
+    private resolveLegacyReceiverUserId;
     private assertAdminCannotUseChat;
     private toGroupMessageSnapshot;
     private toPrivateMessageSnapshot;
+    private getDirectConversationPeerUserId;
+    private toPublicMessage;
     private persistState;
     private assertCanAccessConversation;
     private getConversationById;
     listConversations(groupId?: string): ConversationRecord[];
-    listMessages(conversationId: string): MessageRecord[];
-    sendMessage(dto: SendMessageDto): {
+    listMessages(conversationId: string): {
         id: string;
         conversationId: string;
-        senderUserId: string;
-        receiverUserId: string | null;
         senderName: string;
         content: string;
         sentAt: string;
-        readStatus: boolean;
-        conversationType: "group" | "direct";
-        groupId: string | null;
+    }[];
+    sendMessage(dto: SendMessageDto): {
+        id: string;
+        conversationId: string;
+        senderName: string;
+        content: string;
+        sentAt: string;
     };
 }
 export { SendMessageDto };

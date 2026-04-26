@@ -72,9 +72,12 @@ type PersistedConversationRecord = {
 type PersistedMessageRecord = {
   id: string;
   conversationId: string;
+  senderUserId?: string;
+  receiverUserId?: string | null;
   senderName: string;
   content: string;
   sentAt: string;
+  readStatus?: boolean;
 };
 
 type PersistedUserRecord = {

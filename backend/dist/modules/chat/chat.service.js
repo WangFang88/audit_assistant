@@ -90,12 +90,38 @@ let ChatService = class ChatService {
         }
         if (persistedState.messages) {
             this.messages.splice(0, this.messages.length, ...persistedState.messages.map((message) => ({
-                ...message,
-                senderUserId: 'unknown-user',
-                receiverUserId: null,
-                readStatus: false,
+                id: message.id,
+                conversationId: message.conversationId,
+                senderUserId: message.senderUserId ?? this.resolveLegacySenderUserId(message.senderName),
+                receiverUserId: message.receiverUserId ?? this.resolveLegacyReceiverUserId(message.conversationId, message.senderName),
+                senderName: message.senderName,
+                content: message.content,
+                sentAt: message.sentAt,
+                readStatus: message.readStatus ?? false,
             })));
         }
+    }
+    resolveLegacySenderUserId(senderName) {
+        const directConversation = this.conversations.find((conversation) => conversation.type === 'direct' && conversation.title.includes(senderName));
+        if (directConversation?.title.includes('法规顾问')) {
+            return 'user-4';
+        }
+        if (directConversation?.title.includes('审计助理')) {
+            return 'user-3';
+        }
+        if (directConversation?.title.includes('审计组长')) {
+            return 'user-2';
+        }
+        return senderName === '法规顾问' ? 'user-4' : senderName === '审计助理' ? 'user-3' : 'user-2';
+    }
+    resolveLegacyReceiverUserId(conversationId, senderName) {
+        const conversation = this.conversations.find((item) => item.id === conversationId);
+        if (conversation?.type !== 'direct') {
+            return null;
+        }
+        const senderUserId = this.resolveLegacySenderUserId(senderName);
+        const currentUserId = this.authService.me().id;
+        return senderUserId === currentUserId ? null : currentUserId;
     }
     assertAdminCannotUseChat() {
         if (!this.authService.isAdmin()) {
@@ -126,6 +152,19 @@ let ChatService = class ChatService {
             readStatus: message.readStatus,
         };
     }
+    getDirectConversationPeerUserId(conversationId, currentUserId) {
+        const peerMessage = this.messages.find((message) => message.conversationId === conversationId && message.senderUserId !== currentUserId);
+        return peerMessage?.senderUserId ?? null;
+    }
+    toPublicMessage(message) {
+        return {
+            id: message.id,
+            conversationId: message.conversationId,
+            senderName: message.senderName,
+            content: message.content,
+            sentAt: message.sentAt,
+        };
+    }
     persistState() {
         const persistedMessages = this.messages.map((message) => {
             const conversation = this.getConversationById(message.conversationId);
@@ -138,9 +177,12 @@ let ChatService = class ChatService {
                 return {
                     id: snapshot.id,
                     conversationId: snapshot.conversationId,
+                    senderUserId: snapshot.senderUserId,
+                    receiverUserId: null,
                     senderName: snapshot.senderName,
                     content: snapshot.content,
                     sentAt: snapshot.sentAt,
+                    readStatus: true,
                 };
             }
             const entity = this.messageRepository.createPrivateMessageEntity(this.toPrivateMessageSnapshot(message));
@@ -151,9 +193,12 @@ let ChatService = class ChatService {
             return {
                 id: snapshot.id,
                 conversationId: snapshot.conversationId,
+                senderUserId: snapshot.senderUserId,
+                receiverUserId: snapshot.receiverUserId,
                 senderName: snapshot.senderName,
                 content: snapshot.content,
                 sentAt: snapshot.sentAt,
+                readStatus: snapshot.readStatus,
             };
         });
         this.localStateService.saveChatState(this.conversations, persistedMessages);
@@ -193,7 +238,9 @@ let ChatService = class ChatService {
         this.assertAdminCannotUseChat();
         const conversation = this.getConversationById(conversationId);
         this.assertCanAccessConversation(conversation);
-        return this.messages.filter((message) => message.conversationId === conversationId);
+        return this.messages
+            .filter((message) => message.conversationId === conversationId)
+            .map((message) => this.toPublicMessage(message));
     }
     sendMessage(dto) {
         this.assertAdminCannotUseChat();
@@ -203,9 +250,8 @@ let ChatService = class ChatService {
         }
         this.assertCanAccessConversation(conversation, dto.groupId);
         const currentUser = this.authService.me();
-        const directMessages = this.messages.filter((message) => message.conversationId === dto.conversationId);
         const receiverUserId = conversation.type === 'direct'
-            ? directMessages.find((message) => message.senderUserId !== currentUser.id)?.senderUserId ?? currentUser.id
+            ? this.getDirectConversationPeerUserId(dto.conversationId, currentUser.id) ?? currentUser.id
             : null;
         const message = {
             id: `msg-${this.messages.length + 1}`,
@@ -232,7 +278,7 @@ let ChatService = class ChatService {
         conversation.lastMessage = dto.content;
         conversation.unreadCount = 0;
         this.persistState();
-        return message;
+        return this.toPublicMessage(message);
     }
 };
 exports.ChatService = ChatService;

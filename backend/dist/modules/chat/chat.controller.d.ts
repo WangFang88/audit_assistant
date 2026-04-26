@@ -13,23 +13,15 @@ export declare class ChatController {
     listMessages(conversationId: string): {
         id: string;
         conversationId: string;
-        senderUserId: string;
-        receiverUserId: string | null;
         senderName: string;
         content: string;
         sentAt: string;
-        readStatus: boolean;
     }[];
     sendMessage(dto: SendMessageDto): {
         id: string;
         conversationId: string;
-        senderUserId: string;
-        receiverUserId: string | null;
         senderName: string;
         content: string;
         sentAt: string;
-        readStatus: boolean;
-        conversationType: "group" | "direct";
-        groupId: string | null;
     };
 }
