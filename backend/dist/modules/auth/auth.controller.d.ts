@@ -1,4 +1,4 @@
-import { AuthService, LoginDto } from './auth.service';
+import { AuthService, LoginDto, RefreshTokenDto } from './auth.service';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
@@ -9,6 +9,17 @@ export declare class AuthController {
             phone: string;
             id: string;
             name: string;
+            role: string;
+            trialEndsAt: string;
+        };
+    };
+    refresh(dto: RefreshTokenDto): {
+        accessToken: string;
+        refreshToken: string;
+        user: {
+            id: string;
+            name: string;
+            phone: string;
             role: string;
             trialEndsAt: string;
         };

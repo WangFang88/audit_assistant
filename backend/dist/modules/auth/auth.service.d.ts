@@ -2,8 +2,12 @@ declare class LoginDto {
     phone: string;
     password: string;
 }
+declare class RefreshTokenDto {
+    refreshToken: string;
+}
 export declare class AuthService {
     private readonly accessToken;
+    private readonly refreshToken;
     private readonly currentUser;
     login(dto: LoginDto): {
         accessToken: string;
@@ -12,6 +16,17 @@ export declare class AuthService {
             phone: string;
             id: string;
             name: string;
+            role: string;
+            trialEndsAt: string;
+        };
+    };
+    refresh(dto: RefreshTokenDto): {
+        accessToken: string;
+        refreshToken: string;
+        user: {
+            id: string;
+            name: string;
+            phone: string;
             role: string;
             trialEndsAt: string;
         };
@@ -31,4 +46,4 @@ export declare class AuthService {
         trialEndsAt: string;
     };
 }
-export { LoginDto };
+export { LoginDto, RefreshTokenDto };

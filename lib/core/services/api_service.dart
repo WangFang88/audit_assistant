@@ -16,6 +16,7 @@ class ApiService {
   static const _userKey = 'auth.user';
 
   VoidCallback? onUnauthorized;
+  Future<void>? _refreshingSession;
 
   final http.Client _client;
   final String _baseUrl;
@@ -25,6 +26,15 @@ class ApiService {
     await prefs.setString(_accessTokenKey, loginResponse.accessToken);
     await prefs.setString(_refreshTokenKey, loginResponse.refreshToken);
     await prefs.setString(_userKey, jsonEncode(loginResponse.user.toJson()));
+  }
+
+  Future<String?> getRefreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(_refreshTokenKey);
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+    return token;
   }
 
   Future<AppUser?> restoreSession() async {
@@ -64,6 +74,26 @@ class ApiService {
     return merged;
   }
 
+  Future<http.Response> _requestWithRefresh(
+    Future<http.Response> Function(Map<String, String> headers) send, {
+    Map<String, String>? headers,
+  }) async {
+    var authorizedHeaders = await _authorizedHeaders(headers: headers);
+    var response = await send(authorizedHeaders);
+
+    if (response.statusCode != 401 && response.statusCode != 403) {
+      return response;
+    }
+
+    final refreshed = await _refreshAccessToken();
+    if (!refreshed) {
+      return response;
+    }
+
+    authorizedHeaders = await _authorizedHeaders(headers: headers);
+    return send(authorizedHeaders);
+  }
+
   Future<LoginResponse> login({required String phone, required String password}) async {
     final response = await _client.post(
       Uri.parse('$_baseUrl/auth/login'),
@@ -76,9 +106,11 @@ class ApiService {
   }
 
   Future<AppUser> fetchCurrentUser() async {
-    final response = await _client.get(
-      Uri.parse('$_baseUrl/auth/me'),
-      headers: await _authorizedHeaders(),
+    final response = await _requestWithRefresh(
+      (headers) => _client.get(
+        Uri.parse('$_baseUrl/auth/me'),
+        headers: headers,
+      ),
     );
     final json = _decodeMap(response);
     final user = AppUser.fromJson(json);
@@ -91,16 +123,21 @@ class ApiService {
     final uri = Uri.parse('$_baseUrl/overview/dashboard').replace(
       queryParameters: groupId == null ? null : {'groupId': groupId},
     );
-    final response = await _client.get(uri, headers: await _authorizedHeaders());
+    final response = await _requestWithRefresh(
+      (headers) => _client.get(uri, headers: headers),
+    );
     final json = _decodeMap(response);
     return DashboardOverview.fromJson(json);
   }
 
   Future<QueryResult> search({required String question, String? groupId}) async {
-    final response = await _client.post(
-      Uri.parse('$_baseUrl/query/search'),
-      headers: await _authorizedHeaders(headers: {'Content-Type': 'application/json'}),
-      body: jsonEncode({'question': question, 'groupId': groupId}),
+    final response = await _requestWithRefresh(
+      (headers) => _client.post(
+        Uri.parse('$_baseUrl/query/search'),
+        headers: headers,
+        body: jsonEncode({'question': question, 'groupId': groupId}),
+      ),
+      headers: {'Content-Type': 'application/json'},
     );
 
     final json = _decodeMap(response);
@@ -111,15 +148,19 @@ class ApiService {
     final uri = Uri.parse('$_baseUrl/chat/conversations').replace(
       queryParameters: groupId == null ? null : {'groupId': groupId},
     );
-    final response = await _client.get(uri, headers: await _authorizedHeaders());
+    final response = await _requestWithRefresh(
+      (headers) => _client.get(uri, headers: headers),
+    );
     final list = _decodeList(response);
     return list.map(ConversationSummary.fromJson).toList();
   }
 
   Future<List<ChatMessage>> fetchMessages(String conversationId) async {
-    final response = await _client.get(
-      Uri.parse('$_baseUrl/chat/conversations/$conversationId/messages'),
-      headers: await _authorizedHeaders(),
+    final response = await _requestWithRefresh(
+      (headers) => _client.get(
+        Uri.parse('$_baseUrl/chat/conversations/$conversationId/messages'),
+        headers: headers,
+      ),
     );
     final list = _decodeList(response);
     return list.map(ChatMessage.fromJson).toList();
@@ -131,15 +172,18 @@ class ApiService {
     required String content,
     String? groupId,
   }) async {
-    final response = await _client.post(
-      Uri.parse('$_baseUrl/chat/messages'),
-      headers: await _authorizedHeaders(headers: {'Content-Type': 'application/json'}),
-      body: jsonEncode({
-        'conversationId': conversationId,
-        'conversationType': conversationType,
-        'content': content,
-        'groupId': groupId,
-      }),
+    final response = await _requestWithRefresh(
+      (headers) => _client.post(
+        Uri.parse('$_baseUrl/chat/messages'),
+        headers: headers,
+        body: jsonEncode({
+          'conversationId': conversationId,
+          'conversationType': conversationType,
+          'content': content,
+          'groupId': groupId,
+        }),
+      ),
+      headers: {'Content-Type': 'application/json'},
     );
 
     final json = _decodeMap(response);
@@ -147,19 +191,24 @@ class ApiService {
   }
 
   Future<List<GroupMember>> fetchMembers(String groupId) async {
-    final response = await _client.get(
-      Uri.parse('$_baseUrl/groups/$groupId/members'),
-      headers: await _authorizedHeaders(),
+    final response = await _requestWithRefresh(
+      (headers) => _client.get(
+        Uri.parse('$_baseUrl/groups/$groupId/members'),
+        headers: headers,
+      ),
     );
     final list = _decodeList(response);
     return list.map(GroupMember.fromJson).toList();
   }
 
   Future<ProjectGroup> createGroup({required String name, required String organizationName}) async {
-    final response = await _client.post(
-      Uri.parse('$_baseUrl/groups'),
-      headers: await _authorizedHeaders(headers: {'Content-Type': 'application/json'}),
-      body: jsonEncode({'name': name, 'organizationName': organizationName}),
+    final response = await _requestWithRefresh(
+      (headers) => _client.post(
+        Uri.parse('$_baseUrl/groups'),
+        headers: headers,
+        body: jsonEncode({'name': name, 'organizationName': organizationName}),
+      ),
+      headers: {'Content-Type': 'application/json'},
     );
 
     final json = _decodeMap(response);
@@ -170,7 +219,9 @@ class ApiService {
     final uri = Uri.parse('$_baseUrl/documents').replace(
       queryParameters: groupId == null ? null : {'groupId': groupId},
     );
-    final response = await _client.get(uri, headers: await _authorizedHeaders());
+    final response = await _requestWithRefresh(
+      (headers) => _client.get(uri, headers: headers),
+    );
     final list = _decodeList(response);
     return list.map(KnowledgeDocument.fromJson).toList();
   }
@@ -179,7 +230,9 @@ class ApiService {
     final uri = Uri.parse('$_baseUrl/documents/extract-jobs').replace(
       queryParameters: groupId == null ? null : {'groupId': groupId},
     );
-    final response = await _client.get(uri, headers: await _authorizedHeaders());
+    final response = await _requestWithRefresh(
+      (headers) => _client.get(uri, headers: headers),
+    );
     final list = _decodeList(response);
     return list.map(ExtractionJob.fromJson).toList();
   }
@@ -191,15 +244,18 @@ class ApiService {
     String? groupId,
   }) async {
     final backendLibraryType = libraryType == '公共库' ? 'public' : 'private';
-    final response = await _client.post(
-      Uri.parse('$_baseUrl/documents/import-from-file-server'),
-      headers: await _authorizedHeaders(headers: {'Content-Type': 'application/json'}),
-      body: jsonEncode({
-        'title': title,
-        'libraryType': backendLibraryType,
-        'sourcePath': sourcePath,
-        'groupId': groupId,
-      }),
+    final response = await _requestWithRefresh(
+      (headers) => _client.post(
+        Uri.parse('$_baseUrl/documents/import-from-file-server'),
+        headers: headers,
+        body: jsonEncode({
+          'title': title,
+          'libraryType': backendLibraryType,
+          'sourcePath': sourcePath,
+          'groupId': groupId,
+        }),
+      ),
+      headers: {'Content-Type': 'application/json'},
     );
 
     final json = _decodeMap(response);
@@ -212,10 +268,13 @@ class ApiService {
     required String role,
   }) async {
     final backendRole = role == '组长' ? 'leader' : 'member';
-    final response = await _client.post(
-      Uri.parse('$_baseUrl/groups/$groupId/invites'),
-      headers: await _authorizedHeaders(headers: {'Content-Type': 'application/json'}),
-      body: jsonEncode({'phone': phone, 'role': backendRole}),
+    final response = await _requestWithRefresh(
+      (headers) => _client.post(
+        Uri.parse('$_baseUrl/groups/$groupId/invites'),
+        headers: headers,
+        body: jsonEncode({'phone': phone, 'role': backendRole}),
+      ),
+      headers: {'Content-Type': 'application/json'},
     );
 
     _decodeMap(response);
@@ -225,21 +284,57 @@ class ApiService {
     required String groupId,
     required String targetUserId,
   }) async {
-    final response = await _client.post(
-      Uri.parse('$_baseUrl/groups/$groupId/transfer-leader'),
-      headers: await _authorizedHeaders(headers: {'Content-Type': 'application/json'}),
-      body: jsonEncode({'targetUserId': targetUserId}),
+    final response = await _requestWithRefresh(
+      (headers) => _client.post(
+        Uri.parse('$_baseUrl/groups/$groupId/transfer-leader'),
+        headers: headers,
+        body: jsonEncode({'targetUserId': targetUserId}),
+      ),
+      headers: {'Content-Type': 'application/json'},
     );
 
     _decodeMap(response);
   }
 
   Future<void> removeMember({required String groupId, required String memberId}) async {
-    final response = await _client.delete(
-      Uri.parse('$_baseUrl/groups/$groupId/members/$memberId'),
-      headers: await _authorizedHeaders(),
+    final response = await _requestWithRefresh(
+      (headers) => _client.delete(
+        Uri.parse('$_baseUrl/groups/$groupId/members/$memberId'),
+        headers: headers,
+      ),
     );
     _decodeMap(response);
+  }
+
+  Future<void> _refreshSession() async {
+    final refreshToken = await getRefreshToken();
+    if (refreshToken == null) {
+      throw const ApiException('缺少 refresh token');
+    }
+
+    final response = await _client.post(
+      Uri.parse('$_baseUrl/auth/refresh'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'refreshToken': refreshToken}),
+    );
+
+    final json = _decodeMap(response);
+    await persistLogin(LoginResponse.fromJson(json));
+  }
+
+  Future<bool> _refreshAccessToken() async {
+    _refreshingSession ??= _refreshSession().whenComplete(() {
+      _refreshingSession = null;
+    });
+
+    try {
+      await _refreshingSession;
+      return true;
+    } on ApiException {
+      await clearSession();
+      onUnauthorized?.call();
+      return false;
+    }
   }
 
   Map<String, dynamic> _decodeMap(http.Response response) {

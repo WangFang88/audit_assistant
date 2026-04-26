@@ -23,6 +23,9 @@ let AuthController = class AuthController {
     login(dto) {
         return this.authService.login(dto);
     }
+    refresh(dto) {
+        return this.authService.refresh(dto);
+    }
     me() {
         return this.authService.me();
     }
@@ -36,6 +39,14 @@ __decorate([
     __metadata("design:paramtypes", [auth_service_1.LoginDto]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "login", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Post)('refresh'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_service_1.RefreshTokenDto]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "refresh", null);
 __decorate([
     (0, common_1.Get)('me'),
     __metadata("design:type", Function),

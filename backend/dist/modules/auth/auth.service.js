@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LoginDto = exports.AuthService = void 0;
+exports.RefreshTokenDto = exports.LoginDto = exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
 class LoginDto {
@@ -24,9 +24,18 @@ __decorate([
     (0, class_validator_1.MinLength)(6),
     __metadata("design:type", String)
 ], LoginDto.prototype, "password", void 0);
+class RefreshTokenDto {
+}
+exports.RefreshTokenDto = RefreshTokenDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(6),
+    __metadata("design:type", String)
+], RefreshTokenDto.prototype, "refreshToken", void 0);
 let AuthService = class AuthService {
     constructor() {
         this.accessToken = 'demo-access-token';
+        this.refreshToken = 'demo-refresh-token';
         this.currentUser = {
             id: 'user-1',
             name: '审计专员',
@@ -38,11 +47,21 @@ let AuthService = class AuthService {
     login(dto) {
         return {
             accessToken: this.accessToken,
-            refreshToken: 'demo-refresh-token',
+            refreshToken: this.refreshToken,
             user: {
                 ...this.currentUser,
                 phone: dto.phone,
             },
+        };
+    }
+    refresh(dto) {
+        if (dto.refreshToken != this.refreshToken) {
+            throw new common_1.UnauthorizedException('Refresh token 无效');
+        }
+        return {
+            accessToken: this.accessToken,
+            refreshToken: this.refreshToken,
+            user: this.currentUser,
         };
     }
     validateAccessToken(token) {

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { IsMobilePhone, IsString, MinLength } from 'class-validator';
 
 class LoginDto {
@@ -10,9 +10,16 @@ class LoginDto {
   password!: string;
 }
 
+class RefreshTokenDto {
+  @IsString()
+  @MinLength(6)
+  refreshToken!: string;
+}
+
 @Injectable()
 export class AuthService {
   private readonly accessToken = 'demo-access-token';
+  private readonly refreshToken = 'demo-refresh-token';
 
   private readonly currentUser = {
     id: 'user-1',
@@ -25,11 +32,23 @@ export class AuthService {
   login(dto: LoginDto) {
     return {
       accessToken: this.accessToken,
-      refreshToken: 'demo-refresh-token',
+      refreshToken: this.refreshToken,
       user: {
         ...this.currentUser,
         phone: dto.phone,
       },
+    };
+  }
+
+  refresh(dto: RefreshTokenDto) {
+    if (dto.refreshToken != this.refreshToken) {
+      throw new UnauthorizedException('Refresh token 无效');
+    }
+
+    return {
+      accessToken: this.accessToken,
+      refreshToken: this.refreshToken,
+      user: this.currentUser,
     };
   }
 
@@ -46,4 +65,4 @@ export class AuthService {
   }
 }
 
-export { LoginDto };
+export { LoginDto, RefreshTokenDto };
