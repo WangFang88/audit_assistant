@@ -18,19 +18,23 @@ export class OverviewService {
   ) {}
 
   getDashboard(groupId?: string) {
+    const user = this.authService.me();
+    const isAdmin = user.role === 'admin';
     const groups = this.groupsService.listGroups();
-    const effectiveGroupId = groupId ?? groups[0]?.id;
+    const effectiveGroupId = isAdmin ? undefined : groupId ?? groups[0]?.id;
     const activeGroup = effectiveGroupId ? this.groupsService.getGroupById(effectiveGroupId) : null;
 
     return {
-      user: this.authService.me(),
+      user,
       activeContext: {
         groupId: effectiveGroupId ?? null,
         groupName: activeGroup?.name ?? null,
         queryScopeLabel: effectiveGroupId == null ? '仅公共库' : '公共库 + 当前项目组私有库',
         isolationNotice:
           effectiveGroupId == null
-            ? '当前未进入项目组，仅可检索公共基础库。'
+            ? isAdmin
+              ? '当前为管理员视角，仅管理公共基础库，不加入项目组。'
+              : '当前未进入项目组，仅可检索公共基础库。'
             : '当前仅检索本项目组私有资料，不跨项目组读取私有库。',
       },
       roadmap: [
@@ -66,7 +70,7 @@ export class OverviewService {
       extractJobs: this.documentsService.listExtractionJobs(effectiveGroupId),
       libraryScope: this.documentsService.getLibraryScopeSummary(effectiveGroupId),
       subscription: this.subscriptionsService.getOverview(),
-      conversations: this.chatService.listConversations(effectiveGroupId),
+      conversations: isAdmin ? [] : this.chatService.listConversations(effectiveGroupId),
       featuredQuery: this.queryService.search({
         question: '请检索与专项资金使用和采购审批相关的制度依据。',
         groupId: effectiveGroupId,

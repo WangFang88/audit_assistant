@@ -11,10 +11,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubscriptionsService = void 0;
 const common_1 = require("@nestjs/common");
+const auth_service_1 = require("../auth/auth.service");
 const local_state_service_1 = require("./local-state.service");
 let SubscriptionsService = class SubscriptionsService {
-    constructor(localStateService) {
+    constructor(localStateService, authService) {
         this.localStateService = localStateService;
+        this.authService = authService;
         this.currentPlanId = 'free';
         this.trialEndsAt = '2026-05-01';
         this.trialDays = 1;
@@ -79,6 +81,9 @@ let SubscriptionsService = class SubscriptionsService {
         }
         this.ensureDailyUsageIsCurrent();
     }
+    isAdmin() {
+        return this.authService.me().role === 'admin';
+    }
     getCurrentDateKey() {
         return new Date().toISOString().slice(0, 10);
     }
@@ -95,6 +100,19 @@ let SubscriptionsService = class SubscriptionsService {
         this.localStateService.saveUsage(this.usage);
     }
     getCurrentPlan() {
+        if (this.isAdmin()) {
+            return {
+                id: 'admin-preview',
+                name: '管理员预览',
+                priceLabel: '¥0 / 管理员预览',
+                limits: {
+                    groupCount: 999,
+                    privateDocuments: 999,
+                    dailyQueries: 9999,
+                    caseSearch: true,
+                },
+            };
+        }
         return this.plans.find((plan) => plan.id === this.currentPlanId) ?? this.plans[0];
     }
     getUsage() {
@@ -171,6 +189,7 @@ let SubscriptionsService = class SubscriptionsService {
 exports.SubscriptionsService = SubscriptionsService;
 exports.SubscriptionsService = SubscriptionsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [local_state_service_1.LocalStateService])
+    __metadata("design:paramtypes", [local_state_service_1.LocalStateService,
+        auth_service_1.AuthService])
 ], SubscriptionsService);
 //# sourceMappingURL=subscriptions.service.js.map

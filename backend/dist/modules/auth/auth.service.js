@@ -74,6 +74,9 @@ let AuthService = class AuthService {
     me() {
         return this.currentUser;
     }
+    isAdmin() {
+        return this.currentUser.role === 'admin';
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([

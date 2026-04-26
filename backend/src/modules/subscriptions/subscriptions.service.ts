@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { AuthService } from '../auth/auth.service';
 import { LocalStateService } from './local-state.service';
 
 type UsageSnapshot = {
@@ -10,7 +11,10 @@ type UsageSnapshot = {
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private readonly localStateService: LocalStateService) {
+  constructor(
+    private readonly localStateService: LocalStateService,
+    private readonly authService: AuthService,
+  ) {
     const persistedState = this.localStateService.readState();
     if (persistedState.usage) {
       this.usage = {
@@ -79,6 +83,10 @@ export class SubscriptionsService {
     },
   ];
 
+  private isAdmin() {
+    return this.authService.me().role === 'admin';
+  }
+
   private getCurrentDateKey() {
     return new Date().toISOString().slice(0, 10);
   }
@@ -98,6 +106,20 @@ export class SubscriptionsService {
   }
 
   getCurrentPlan() {
+    if (this.isAdmin()) {
+      return {
+        id: 'admin-preview',
+        name: '管理员预览',
+        priceLabel: '¥0 / 管理员预览',
+        limits: {
+          groupCount: 999,
+          privateDocuments: 999,
+          dailyQueries: 9999,
+          caseSearch: true,
+        },
+      };
+    }
+
     return this.plans.find((plan) => plan.id === this.currentPlanId) ?? this.plans[0];
   }
 

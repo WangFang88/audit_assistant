@@ -64,6 +64,10 @@ export class AuthService {
   me() {
     return this.currentUser;
   }
+
+  isAdmin() {
+    return this.currentUser.role === 'admin';
+  }
 }
 
 export { LoginDto, RefreshTokenDto };

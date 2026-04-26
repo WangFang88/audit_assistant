@@ -1,3 +1,4 @@
+import { AuthService } from '../auth/auth.service';
 import { LocalStateService } from './local-state.service';
 type UsageSnapshot = {
     groups: number;
@@ -7,12 +8,14 @@ type UsageSnapshot = {
 };
 export declare class SubscriptionsService {
     private readonly localStateService;
-    constructor(localStateService: LocalStateService);
+    private readonly authService;
+    constructor(localStateService: LocalStateService, authService: AuthService);
     private readonly currentPlanId;
     private readonly trialEndsAt;
     private readonly trialDays;
     private usage;
     private readonly plans;
+    private isAdmin;
     private getCurrentDateKey;
     private ensureDailyUsageIsCurrent;
     getCurrentPlan(): {

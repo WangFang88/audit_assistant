@@ -61,8 +61,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
   String? get _activeGroupId => _selectedGroupId;
 
-  bool get _canImportPublicDocuments {
+  bool get _isAdmin {
     return widget.currentUser.role == '管理员' || widget.currentUser.role == 'admin';
+  }
+
+  bool get _canImportPublicDocuments {
+    return _isAdmin;
   }
 
   bool get _hasReachedGroupLimit {
@@ -228,7 +232,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   String? _resolveGroupId(List<ProjectGroup> groups, String? preferredGroupId) {
-    if (groups.isEmpty) {
+    if (_isAdmin || groups.isEmpty) {
       return null;
     }
 
@@ -1125,25 +1129,34 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           Text('你好，${user.name}', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
-          Text('当前角色：${user.role} · 试用到期：${user.trialEndsAt} · 全功能试用 ${subscription.trialDays} 天'),
+          Text(
+            _isAdmin
+                ? '当前角色：管理员 · 当前视角：公共库管理'
+                : '当前角色：${user.role} · 试用到期：${user.trialEndsAt} · 全功能试用 ${subscription.trialDays} 天',
+          ),
           const SizedBox(height: 16),
           Row(
             children: [
               SizedBox(
                 width: 320,
-                child: DropdownButtonFormField<String>(
-                  initialValue: _selectedGroupId,
-                  decoration: const InputDecoration(labelText: '当前项目组'),
-                  items: groups
-                      .map(
-                        (group) => DropdownMenuItem(
-                          value: group.id,
-                          child: Text('${group.name} · ${group.organizationName}'),
-                        ),
+                child: _isAdmin
+                    ? const InputDecorator(
+                        decoration: InputDecoration(labelText: '当前视角'),
+                        child: Text('管理员公共库'),
                       )
-                      .toList(),
-                  onChanged: _switchingGroup ? null : _switchGroup,
-                ),
+                    : DropdownButtonFormField<String>(
+                        initialValue: _selectedGroupId,
+                        decoration: const InputDecoration(labelText: '当前项目组'),
+                        items: groups
+                            .map(
+                              (group) => DropdownMenuItem(
+                                value: group.id,
+                                child: Text('${group.name} · ${group.organizationName}'),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: _switchingGroup ? null : _switchGroup,
+                      ),
               ),
               if (_switchingGroup) ...[
                 const SizedBox(width: 12),
@@ -1573,9 +1586,11 @@ class _DashboardPageState extends State<DashboardPage> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
-                _canImportPublicDocuments
-                    ? '当前未选择项目组，可导入公共库资料；如需导入私有资料，请先进入项目组。'
-                    : '当前未选择项目组，公共库仅允许管理员导入；如需导入私有资料，请先进入项目组。',
+                _isAdmin
+                    ? '当前为管理员视角，仅管理公共库资料，不加入项目组。'
+                    : _canImportPublicDocuments
+                        ? '当前未选择项目组，可导入公共库资料；如需导入私有资料，请先进入项目组。'
+                        : '当前未选择项目组，公共库仅允许管理员导入；如需导入私有资料，请先进入项目组。',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

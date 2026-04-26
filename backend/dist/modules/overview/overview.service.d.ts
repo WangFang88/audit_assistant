@@ -21,7 +21,7 @@ export declare class OverviewService {
             trialEndsAt: string;
         };
         activeContext: {
-            groupId: string;
+            groupId: string | null;
             groupName: string | null;
             queryScopeLabel: string;
             isolationNotice: string;

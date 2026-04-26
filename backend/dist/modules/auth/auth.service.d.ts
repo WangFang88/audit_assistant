@@ -45,5 +45,6 @@ export declare class AuthService {
         role: string;
         trialEndsAt: string;
     };
+    isAdmin(): boolean;
 }
 export { LoginDto, RefreshTokenDto };

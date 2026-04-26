@@ -11,7 +11,7 @@ export declare class OverviewController {
             trialEndsAt: string;
         };
         activeContext: {
-            groupId: string;
+            groupId: string | null;
             groupName: string | null;
             queryScopeLabel: string;
             isolationNotice: string;
