@@ -745,6 +745,9 @@ class _DashboardPageState extends State<DashboardPage> {
           _extractJobs,
           overview.subscription,
           result,
+          overview.activeContext,
+          overview.roadmap,
+          overview.architectureTargets,
         ),
       ),
       _NavPage(
@@ -814,6 +817,9 @@ class _DashboardPageState extends State<DashboardPage> {
     List<ExtractionJob> extractJobs,
     SubscriptionOverview subscription,
     QueryResult result,
+    ActiveContext activeContext,
+    List<RoadmapItem> roadmap,
+    ArchitectureTargets architectureTargets,
   ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -822,7 +828,7 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           Text('你好，${user.name}', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
-          Text('当前角色：${user.role} · 试用到期：${user.trialEndsAt}'),
+          Text('当前角色：${user.role} · 试用到期：${user.trialEndsAt} · 全功能试用 ${subscription.trialDays} 天'),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -848,6 +854,19 @@ class _DashboardPageState extends State<DashboardPage> {
               ],
             ],
           ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              Chip(label: Text('当前范围：${activeContext.queryScopeLabel}')),
+              Chip(label: Text(activeContext.groupName == null ? '未进入项目组' : '当前项目组：${activeContext.groupName}')),
+              const Chip(label: Text('回答要求：可溯源')),
+              Chip(label: Text('交付目标：${architectureTargets.deliveryMode}')),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(activeContext.isolationNotice, style: Theme.of(context).textTheme.bodySmall),
           if (_error != null) ...[
             const SizedBox(height: 12),
             Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
@@ -863,6 +882,54 @@ class _DashboardPageState extends State<DashboardPage> {
               _StatChip(label: '查询额度', value: subscription.queryUsage),
             ],
           ),
+          const SizedBox(height: 16),
+          SectionCard(
+            title: '订阅限制与路线',
+            subtitle: '免费版限制、版本规划与目标架构。',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: subscription.planHighlights.map((item) => Chip(label: Text(item))).toList(),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    SizedBox(width: 180, child: _MetricTile(label: '周订阅', value: subscription.weeklyPrice)),
+                    SizedBox(width: 180, child: _MetricTile(label: '月订阅', value: subscription.monthlyPrice)),
+                    SizedBox(width: 180, child: _MetricTile(label: '年订阅', value: subscription.yearlyPrice)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text('版本路线', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                ...roadmap.map(
+                  (item) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('${item.version} · ${item.title}'),
+                    subtitle: Text('${item.deadline} · ${item.ragFocus}'),
+                  ),
+                ),
+                const Divider(height: 24),
+                Text('目标架构', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    Chip(label: Text('生成模型：${architectureTargets.generationProviderTarget}')),
+                    Chip(label: Text('向量库：${architectureTargets.vectorStoreTarget}')),
+                    Chip(label: Text('检索模式：${architectureTargets.retrievalMode}')),
+                    Chip(label: Text('解析链路：${architectureTargets.parserTarget}')),
+                  ],
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 24),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -870,7 +937,7 @@ class _DashboardPageState extends State<DashboardPage> {
               if (singleColumn) {
                 return Column(
                   children: [
-                    _buildQueryPanel(),
+                    _buildQueryPanel(activeContext),
                     const SizedBox(height: 16),
                     _buildResultPanel(context, result),
                     const SizedBox(height: 16),
@@ -886,7 +953,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(flex: 5, child: _buildQueryPanel()),
+                      Expanded(flex: 5, child: _buildQueryPanel(activeContext)),
                       const SizedBox(width: 16),
                       Expanded(flex: 6, child: _buildResultPanel(context, result)),
                     ],
@@ -909,10 +976,10 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildQueryPanel() {
+  Widget _buildQueryPanel(ActiveContext activeContext) {
     return SectionCard(
       title: '统一查询',
-      subtitle: '先过滤，再检索，再生成；优先命中已切分文本块。',
+      subtitle: '先限定双库范围，再做混合检索，最后生成可溯源答案。',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -929,8 +996,9 @@ class _DashboardPageState extends State<DashboardPage> {
             spacing: 12,
             runSpacing: 12,
             children: [
-              Chip(label: Text('检索范围：公共库 + ${_activeGroupId == null ? '未选择项目组' : '当前项目组私有库'}')),
-              const Chip(label: Text('大文件：导入时异步处理')),
+              Chip(label: Text('检索范围：${activeContext.queryScopeLabel}')),
+              Chip(label: Text(activeContext.isolationNotice)),
+              const Chip(label: Text('检索策略：关键词 + 语义混合召回')),
               const Chip(label: Text('扫描件：仅必要时 OCR')),
             ],
           ),
@@ -953,10 +1021,24 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildResultPanel(BuildContext context, QueryResult result) {
     return SectionCard(
       title: '检索结果',
-      subtitle: '返回答案、引用条款与性能友好的检索路径。',
+      subtitle: '返回答案、引用条款、范围说明与当前原型的 RAG 元信息。',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              Chip(label: Text('结果范围：${result.scope.label}')),
+              Chip(label: Text('目标模型：${result.ragMeta.generationProviderTarget}')),
+              Chip(label: Text('检索模式：${result.ragMeta.retrievalMode}')),
+              Chip(label: Text('原型状态：${result.ragMeta.prototypeMode}')),
+              Chip(label: Text(result.ragMeta.answerTraceable ? '回答可溯源' : '回答未溯源')),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(result.scope.isolationNotice, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 16),
           Text(result.answer),
           const SizedBox(height: 16),
           Wrap(
@@ -977,6 +1059,14 @@ class _DashboardPageState extends State<DashboardPage> {
               SizedBox(
                 width: 160,
                 child: _MetricTile(label: '返回条款', value: '${result.retrievalStats.returnedCitations}'),
+              ),
+              SizedBox(
+                width: 160,
+                child: _MetricTile(label: '公共库命中', value: '${result.retrievalStats.publicLibraryHits}'),
+              ),
+              SizedBox(
+                width: 160,
+                child: _MetricTile(label: '私有库命中', value: '${result.retrievalStats.privateLibraryHits}'),
               ),
             ],
           ),
@@ -1074,8 +1164,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildDocumentPanel(List<KnowledgeDocument> documents, List<ExtractionJob> extractJobs) {
     return SectionCard(
-      title: '知识库文件',
-      subtitle: '导入即抽取文字、结构化切分、预建索引。',
+      title: '知识库管理',
+      subtitle: '导入后进入文字抽取、结构化切分与向量化入库链路。',
       action: Wrap(
         spacing: 8,
         children: [
@@ -1086,29 +1176,65 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_activeGroupId == null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                '当前未选择项目组，私有库导入仅作为能力说明；如需导入私有资料，请先进入项目组。',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
           if (_documentsLoading)
             const Padding(
               padding: EdgeInsets.only(bottom: 12),
               child: LinearProgressIndicator(),
             ),
           ...documents.map(
-            (document) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(document.title),
-              subtitle: Text('${document.libraryType} · ${document.fileType} · ${document.extractionMode} · ${document.indexStatus}'),
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
+            (document) => Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE3E8F2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(document.chunkCount == 0 ? '--' : '${document.chunkCount} 块'),
-                  const SizedBox(height: 4),
-                  Text(document.chunkStrategy, style: const TextStyle(fontSize: 12)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(document.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                      Chip(label: Text(document.libraryType)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text('${document.fileType} · ${document.extractionMode} · ${document.indexStatus}'),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      Chip(label: Text('切分：${document.chunkStrategy}')),
+                      Chip(label: Text('阶段：${document.pipelineStage}')),
+                      Chip(label: Text('解析：${document.parserTarget}')),
+                      Chip(label: Text('向量模型：${document.embeddingTarget}')),
+                      Chip(label: Text('向量库：${document.vectorStoreTarget}')),
+                      Chip(label: Text(document.chunkCount == 0 ? '文本块：待生成' : '文本块：${document.chunkCount}')),
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
           const Divider(height: 24),
           Text('抽取任务', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 8),
+          Text(
+            '当前任务状态用于展示目标 RAG 入库流水线，后续可替换为真实 OCR、切分与向量化任务。',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           const SizedBox(height: 8),
           ...extractJobs.map(
             (job) => ListTile(

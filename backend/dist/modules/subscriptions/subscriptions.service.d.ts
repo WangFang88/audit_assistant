@@ -3,6 +3,7 @@ export declare class SubscriptionsService {
     getOverview(): {
         currentPlanId: string;
         trialEndsAt: string;
+        trialDays: number;
         usage: {
             groups: {
                 used: number;
@@ -17,6 +18,14 @@ export declare class SubscriptionsService {
                 limit: number;
             };
         };
+        limits: {
+            maxGroups: number;
+            maxPrivateDocuments: number;
+            dailyQueryLimit: number;
+            caseSearchEnabled: boolean;
+            riskTablePreviewLimit: number;
+        };
+        planHighlights: string[];
         plans: {
             id: string;
             name: string;
@@ -28,5 +37,10 @@ export declare class SubscriptionsService {
                 caseSearch: boolean;
             };
         }[];
+        pricing: {
+            weekly: string;
+            monthly: string;
+            yearly: string;
+        };
     };
 }

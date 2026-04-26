@@ -16,6 +16,10 @@ type DocumentRecord = {
     groupId: string | null;
     fileType: 'pdf' | 'docx' | 'xlsx' | 'image';
     chunkStrategy: 'structure-first' | 'length-fallback';
+    parserTarget: 'multimodal-parser';
+    embeddingTarget: 'bge-large-zh';
+    vectorStoreTarget: 'pgvector';
+    pipelineStage: 'indexed' | 'extracting' | 'ocr' | 'chunking' | 'vectorizing' | 'queued';
 };
 type ExtractJobRecord = {
     id: string;
@@ -57,7 +61,18 @@ export declare class DocumentsService {
         extractionMode: string;
         indexStatus: string;
         chunkStrategy: string;
+        parserTarget: string;
+        embeddingTarget: string;
+        vectorStoreTarget: string;
+        pipelineStage: string;
         notes: string;
+    };
+    getLibraryScopeSummary(groupId?: string): {
+        scopeMode: string;
+        includesPublicLibrary: boolean;
+        includesPrivateLibrary: boolean;
+        publicDocumentCount: number;
+        privateDocumentCount: number;
     };
 }
 export { ImportDocumentDto };

@@ -102,6 +102,10 @@ class KnowledgeDocument {
     required this.chunkCount,
     required this.fileType,
     required this.chunkStrategy,
+    required this.parserTarget,
+    required this.embeddingTarget,
+    required this.vectorStoreTarget,
+    required this.pipelineStage,
   });
 
   final String id;
@@ -112,6 +116,10 @@ class KnowledgeDocument {
   final int chunkCount;
   final String fileType;
   final String chunkStrategy;
+  final String parserTarget;
+  final String embeddingTarget;
+  final String vectorStoreTarget;
+  final String pipelineStage;
 
   factory KnowledgeDocument.fromJson(Map<String, dynamic> json) {
     return KnowledgeDocument(
@@ -123,6 +131,10 @@ class KnowledgeDocument {
       chunkCount: json['chunkCount'] as int? ?? 0,
       fileType: (json['fileType'] as String? ?? '').toUpperCase(),
       chunkStrategy: _mapChunkStrategy(json['chunkStrategy'] as String? ?? ''),
+      parserTarget: json['parserTarget'] as String? ?? '',
+      embeddingTarget: json['embeddingTarget'] as String? ?? '',
+      vectorStoreTarget: json['vectorStoreTarget'] as String? ?? '',
+      pipelineStage: _mapPipelineStage(json['pipelineStage'] as String? ?? ''),
     );
   }
 }
@@ -169,6 +181,8 @@ class QueryResult {
     required this.pipeline,
     required this.retrievalStats,
     required this.citations,
+    required this.scope,
+    required this.ragMeta,
   });
 
   final String answer;
@@ -176,6 +190,8 @@ class QueryResult {
   final List<String> pipeline;
   final QueryRetrievalStats retrievalStats;
   final List<QueryCitation> citations;
+  final QueryScope scope;
+  final QueryRagMeta ragMeta;
 
   factory QueryResult.fromJson(Map<String, dynamic> json) {
     return QueryResult(
@@ -191,6 +207,8 @@ class QueryResult {
           .whereType<Map<String, dynamic>>()
           .map(QueryCitation.fromJson)
           .toList(),
+      scope: QueryScope.fromJson(json['scope'] as Map<String, dynamic>? ?? const {}),
+      ragMeta: QueryRagMeta.fromJson(json['ragMeta'] as Map<String, dynamic>? ?? const {}),
     );
   }
 }
@@ -200,17 +218,66 @@ class QueryRetrievalStats {
     required this.queryMode,
     required this.candidateChunks,
     required this.returnedCitations,
+    required this.publicLibraryHits,
+    required this.privateLibraryHits,
   });
 
   final String queryMode;
   final int candidateChunks;
   final int returnedCitations;
+  final int publicLibraryHits;
+  final int privateLibraryHits;
 
   factory QueryRetrievalStats.fromJson(Map<String, dynamic> json) {
     return QueryRetrievalStats(
       queryMode: json['queryMode'] as String? ?? '',
       candidateChunks: json['candidateChunks'] as int? ?? 0,
       returnedCitations: json['returnedCitations'] as int? ?? 0,
+      publicLibraryHits: json['publicLibraryHits'] as int? ?? 0,
+      privateLibraryHits: json['privateLibraryHits'] as int? ?? 0,
+    );
+  }
+}
+
+class QueryScope {
+  const QueryScope({
+    required this.label,
+    required this.groupName,
+    required this.isolationNotice,
+  });
+
+  final String label;
+  final String? groupName;
+  final String isolationNotice;
+
+  factory QueryScope.fromJson(Map<String, dynamic> json) {
+    return QueryScope(
+      label: json['label'] as String? ?? '',
+      groupName: json['groupName'] as String?,
+      isolationNotice: json['isolationNotice'] as String? ?? '',
+    );
+  }
+}
+
+class QueryRagMeta {
+  const QueryRagMeta({
+    required this.retrievalMode,
+    required this.generationProviderTarget,
+    required this.prototypeMode,
+    required this.answerTraceable,
+  });
+
+  final String retrievalMode;
+  final String generationProviderTarget;
+  final String prototypeMode;
+  final bool answerTraceable;
+
+  factory QueryRagMeta.fromJson(Map<String, dynamic> json) {
+    return QueryRagMeta(
+      retrievalMode: json['retrievalMode'] as String? ?? '',
+      generationProviderTarget: json['generationProviderTarget'] as String? ?? '',
+      prototypeMode: json['prototypeMode'] as String? ?? '',
+      answerTraceable: json['answerTraceable'] as bool? ?? false,
     );
   }
 }
@@ -312,6 +379,10 @@ class ImportDocumentResult {
     required this.indexStatus,
     required this.chunkStrategy,
     required this.notes,
+    required this.parserTarget,
+    required this.embeddingTarget,
+    required this.vectorStoreTarget,
+    required this.pipelineStage,
   });
 
   final String id;
@@ -324,6 +395,10 @@ class ImportDocumentResult {
   final String indexStatus;
   final String chunkStrategy;
   final String notes;
+  final String parserTarget;
+  final String embeddingTarget;
+  final String vectorStoreTarget;
+  final String pipelineStage;
 
   factory ImportDocumentResult.fromJson(Map<String, dynamic> json) {
     return ImportDocumentResult(
@@ -337,6 +412,10 @@ class ImportDocumentResult {
       indexStatus: _mapIndexStatus(json['indexStatus'] as String? ?? ''),
       chunkStrategy: _mapChunkStrategy(json['chunkStrategy'] as String? ?? ''),
       notes: json['notes'] as String? ?? '',
+      parserTarget: json['parserTarget'] as String? ?? '',
+      embeddingTarget: json['embeddingTarget'] as String? ?? '',
+      vectorStoreTarget: json['vectorStoreTarget'] as String? ?? '',
+      pipelineStage: _mapPipelineStage(json['pipelineStage'] as String? ?? ''),
     );
   }
 }
@@ -348,6 +427,11 @@ class SubscriptionOverview {
     required this.groupUsage,
     required this.documentUsage,
     required this.queryUsage,
+    required this.planHighlights,
+    required this.trialDays,
+    required this.weeklyPrice,
+    required this.monthlyPrice,
+    required this.yearlyPrice,
   });
 
   final String planName;
@@ -355,12 +439,18 @@ class SubscriptionOverview {
   final String groupUsage;
   final String documentUsage;
   final String queryUsage;
+  final List<String> planHighlights;
+  final int trialDays;
+  final String weeklyPrice;
+  final String monthlyPrice;
+  final String yearlyPrice;
 
   factory SubscriptionOverview.fromJson(Map<String, dynamic> json) {
     final usage = json['usage'] as Map<String, dynamic>? ?? const {};
     final groups = usage['groups'] as Map<String, dynamic>? ?? const {};
     final privateDocuments = usage['privateDocuments'] as Map<String, dynamic>? ?? const {};
     final dailyQueries = usage['dailyQueries'] as Map<String, dynamic>? ?? const {};
+    final pricing = json['pricing'] as Map<String, dynamic>? ?? const {};
     final plans = json['plans'] as List<dynamic>? ?? const [];
     final currentPlanId = json['currentPlanId'] as String? ?? '';
     final currentPlan = plans.whereType<Map<String, dynamic>>().firstWhere(
@@ -375,6 +465,13 @@ class SubscriptionOverview {
       documentUsage:
           '私有文件 ${privateDocuments['used'] ?? 0} / ${privateDocuments['limit'] ?? 0}',
       queryUsage: '今日查询 ${dailyQueries['used'] ?? 0} / ${dailyQueries['limit'] ?? 0}',
+      planHighlights: (json['planHighlights'] as List<dynamic>? ?? const [])
+          .map((item) => item.toString())
+          .toList(),
+      trialDays: json['trialDays'] as int? ?? 0,
+      weeklyPrice: pricing['weekly'] as String? ?? '--',
+      monthlyPrice: pricing['monthly'] as String? ?? '--',
+      yearlyPrice: pricing['yearly'] as String? ?? '--',
     );
   }
 }
@@ -388,6 +485,9 @@ class DashboardOverview {
     required this.conversations,
     required this.subscription,
     required this.featuredQuery,
+    required this.activeContext,
+    required this.roadmap,
+    required this.architectureTargets,
   });
 
   final AppUser user;
@@ -397,6 +497,9 @@ class DashboardOverview {
   final List<ConversationSummary> conversations;
   final SubscriptionOverview subscription;
   final QueryResult featuredQuery;
+  final ActiveContext activeContext;
+  final List<RoadmapItem> roadmap;
+  final ArchitectureTargets architectureTargets;
 
   factory DashboardOverview.fromJson(Map<String, dynamic> json) {
     return DashboardOverview(
@@ -421,6 +524,82 @@ class DashboardOverview {
           SubscriptionOverview.fromJson(json['subscription'] as Map<String, dynamic>? ?? const {}),
       featuredQuery:
           QueryResult.fromJson(json['featuredQuery'] as Map<String, dynamic>? ?? const {}),
+      activeContext: ActiveContext.fromJson(json['activeContext'] as Map<String, dynamic>? ?? const {}),
+      roadmap: (json['roadmap'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(RoadmapItem.fromJson)
+          .toList(),
+      architectureTargets:
+          ArchitectureTargets.fromJson(json['architectureTargets'] as Map<String, dynamic>? ?? const {}),
+    );
+  }
+}
+
+class ActiveContext {
+  const ActiveContext({
+    required this.groupName,
+    required this.queryScopeLabel,
+    required this.isolationNotice,
+  });
+
+  final String? groupName;
+  final String queryScopeLabel;
+  final String isolationNotice;
+
+  factory ActiveContext.fromJson(Map<String, dynamic> json) {
+    return ActiveContext(
+      groupName: json['groupName'] as String?,
+      queryScopeLabel: json['queryScopeLabel'] as String? ?? '',
+      isolationNotice: json['isolationNotice'] as String? ?? '',
+    );
+  }
+}
+
+class RoadmapItem {
+  const RoadmapItem({
+    required this.version,
+    required this.title,
+    required this.deadline,
+    required this.ragFocus,
+  });
+
+  final String version;
+  final String title;
+  final String deadline;
+  final String ragFocus;
+
+  factory RoadmapItem.fromJson(Map<String, dynamic> json) {
+    return RoadmapItem(
+      version: json['version'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      deadline: json['deadline'] as String? ?? '',
+      ragFocus: json['ragFocus'] as String? ?? '',
+    );
+  }
+}
+
+class ArchitectureTargets {
+  const ArchitectureTargets({
+    required this.generationProviderTarget,
+    required this.vectorStoreTarget,
+    required this.retrievalMode,
+    required this.parserTarget,
+    required this.deliveryMode,
+  });
+
+  final String generationProviderTarget;
+  final String vectorStoreTarget;
+  final String retrievalMode;
+  final String parserTarget;
+  final String deliveryMode;
+
+  factory ArchitectureTargets.fromJson(Map<String, dynamic> json) {
+    return ArchitectureTargets(
+      generationProviderTarget: json['generationProviderTarget'] as String? ?? '',
+      vectorStoreTarget: json['vectorStoreTarget'] as String? ?? '',
+      retrievalMode: json['retrievalMode'] as String? ?? '',
+      parserTarget: json['parserTarget'] as String? ?? '',
+      deliveryMode: json['deliveryMode'] as String? ?? '',
     );
   }
 }
@@ -505,6 +684,25 @@ String _mapJobStage(String value) {
       return '文本切分';
     case 'index':
       return '建立索引';
+    default:
+      return value;
+  }
+}
+
+String _mapPipelineStage(String value) {
+  switch (value) {
+    case 'indexed':
+      return '已完成向量化';
+    case 'extracting':
+      return '文字抽取中';
+    case 'ocr':
+      return 'OCR处理中';
+    case 'chunking':
+      return '结构化切分中';
+    case 'vectorizing':
+      return '向量化中';
+    case 'queued':
+      return '等待入库';
     default:
       return value;
   }

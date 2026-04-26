@@ -14,6 +14,10 @@ export declare class DocumentsController {
         groupId: string | null;
         fileType: "pdf" | "docx" | "xlsx" | "image";
         chunkStrategy: "structure-first" | "length-fallback";
+        parserTarget: "multimodal-parser";
+        embeddingTarget: "bge-large-zh";
+        vectorStoreTarget: "pgvector";
+        pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
     }[];
     listExtractionJobs(groupId?: string): {
         id: string;
@@ -34,6 +38,10 @@ export declare class DocumentsController {
         extractionMode: string;
         indexStatus: string;
         chunkStrategy: string;
+        parserTarget: string;
+        embeddingTarget: string;
+        vectorStoreTarget: string;
+        pipelineStage: string;
         notes: string;
     };
 }

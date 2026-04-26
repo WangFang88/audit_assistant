@@ -53,12 +53,31 @@ export class SubscriptionsService {
     return {
       currentPlanId: 'free',
       trialEndsAt: '2026-05-01',
+      trialDays: 1,
       usage: {
         groups: { used: 1, limit: 1 },
         privateDocuments: { used: 2, limit: 2 },
         dailyQueries: { used: 6, limit: 10 },
       },
+      limits: {
+        maxGroups: 1,
+        maxPrivateDocuments: 2,
+        dailyQueryLimit: 10,
+        caseSearchEnabled: false,
+        riskTablePreviewLimit: 10,
+      },
+      planHighlights: [
+        '免费版默认可创建 1 个项目组',
+        '私有库文件最多 2 个',
+        '每日 RAG 查询次数 10 次',
+        '案例查询能力需订阅后开启',
+      ],
       plans: this.plans,
+      pricing: {
+        weekly: '¥70 / 周',
+        monthly: '¥200 / 月',
+        yearly: '¥2000 / 年',
+      },
     };
   }
 }

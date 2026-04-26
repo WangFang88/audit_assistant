@@ -5,7 +5,7 @@ import { QueryRequestDto, QueryService } from './query.service';
 export class QueryController {
   constructor(private readonly queryService: QueryService) {}
 
-  @Post()
+  @Post('search')
   search(@Body() dto: QueryRequestDto) {
     return this.queryService.search(dto);
   }

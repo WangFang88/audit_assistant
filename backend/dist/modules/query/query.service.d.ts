@@ -22,9 +22,13 @@ export declare class QueryService {
     search(dto: QueryRequestDto): {
         question: string;
         scope: {
+            scopeMode: string;
+            label: string;
             publicLibrary: boolean;
+            privateLibrary: boolean;
             groupId: string | null;
             groupName: string | null;
+            isolationNotice: string;
         };
         pipeline: string[];
         retrievalStats: {
@@ -32,6 +36,14 @@ export declare class QueryService {
             tokenCount: number;
             candidateChunks: number;
             returnedCitations: number;
+            publicLibraryHits: number;
+            privateLibraryHits: number;
+        };
+        ragMeta: {
+            retrievalMode: string;
+            generationProviderTarget: string;
+            prototypeMode: string;
+            answerTraceable: boolean;
         };
         answer: string;
         citations: CitationRecord[];

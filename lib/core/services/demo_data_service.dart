@@ -37,6 +37,10 @@ class DemoDataService {
         chunkCount: 18,
         fileType: 'PDF',
         chunkStrategy: '结构优先切分',
+        parserTarget: 'multimodal-parser',
+        embeddingTarget: 'bge-large-zh',
+        vectorStoreTarget: 'pgvector',
+        pipelineStage: '已完成向量化',
       ),
       KnowledgeDocument(
         id: 'doc-2',
@@ -47,6 +51,10 @@ class DemoDataService {
         chunkCount: 12,
         fileType: 'DOCX',
         chunkStrategy: '结构优先切分',
+        parserTarget: 'multimodal-parser',
+        embeddingTarget: 'bge-large-zh',
+        vectorStoreTarget: 'pgvector',
+        pipelineStage: '已完成向量化',
       ),
       KnowledgeDocument(
         id: 'doc-3',
@@ -57,6 +65,10 @@ class DemoDataService {
         chunkCount: 0,
         fileType: 'PDF',
         chunkStrategy: '长度回退切分',
+        parserTarget: 'multimodal-parser',
+        embeddingTarget: 'bge-large-zh',
+        vectorStoreTarget: 'pgvector',
+        pipelineStage: 'OCR处理中',
       ),
     ];
   }
@@ -95,13 +107,26 @@ class DemoDataService {
     return QueryResult(
       answer: '系统已优先检索公共库与当前项目组私有库中已抽取、已切分、已建索引的文本块，并返回最相关的制度依据。',
       explanation: '当前方案不会在查询时解析原始大文件，超大文件会在导入阶段异步抽取与索引，因此查询响应更稳定。',
-      pipeline: const ['元数据过滤', '文本块关键词检索', '文本块语义检索', '结果融合与重排', '千问答案生成'],
+      pipeline: const ['范围过滤', '关键词召回', '语义召回', '融合重排', '阿里千问生成（目标）'],
       retrievalStats: const QueryRetrievalStats(
         queryMode: '关键词 + 语义融合',
         candidateChunks: 4,
         returnedCitations: 2,
+        publicLibraryHits: 1,
+        privateLibraryHits: 1,
       ),
       citations: citations,
+      scope: const QueryScope(
+        label: '公共库 + 当前项目组私有库',
+        groupName: '某区财政局审计组',
+        isolationNotice: '仅检索当前项目组私有库，不跨项目组读取私有资料。',
+      ),
+      ragMeta: const QueryRagMeta(
+        retrievalMode: 'hybrid',
+        generationProviderTarget: 'Qwen',
+        prototypeMode: 'mock',
+        answerTraceable: true,
+      ),
     );
   }
 
@@ -133,6 +158,16 @@ class DemoDataService {
       groupUsage: '项目组 1 / 1',
       documentUsage: '私有文件 2 / 2',
       queryUsage: '今日查询 6 / 10',
+      planHighlights: [
+        '免费版默认可创建 1 个项目组',
+        '私有库文件最多 2 个',
+        '每日 RAG 查询次数 10 次',
+        '案例查询能力需订阅后开启',
+      ],
+      trialDays: 1,
+      weeklyPrice: '¥70 / 周',
+      monthlyPrice: '¥200 / 月',
+      yearlyPrice: '¥2000 / 年',
     );
   }
 }

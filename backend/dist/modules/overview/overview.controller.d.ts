@@ -10,6 +10,25 @@ export declare class OverviewController {
             role: string;
             trialEndsAt: string;
         };
+        activeContext: {
+            groupId: string;
+            groupName: string | null;
+            queryScopeLabel: string;
+            isolationNotice: string;
+        };
+        roadmap: {
+            version: string;
+            title: string;
+            deadline: string;
+            ragFocus: string;
+        }[];
+        architectureTargets: {
+            generationProviderTarget: string;
+            vectorStoreTarget: string;
+            retrievalMode: string;
+            parserTarget: string;
+            deliveryMode: string;
+        };
         groups: {
             id: string;
             name: string;
@@ -39,6 +58,10 @@ export declare class OverviewController {
             groupId: string | null;
             fileType: "pdf" | "docx" | "xlsx" | "image";
             chunkStrategy: "structure-first" | "length-fallback";
+            parserTarget: "multimodal-parser";
+            embeddingTarget: "bge-large-zh";
+            vectorStoreTarget: "pgvector";
+            pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
         }[];
         extractJobs: {
             id: string;
@@ -49,9 +72,17 @@ export declare class OverviewController {
             progress: number;
             startedAt: string;
         }[];
+        libraryScope: {
+            scopeMode: string;
+            includesPublicLibrary: boolean;
+            includesPrivateLibrary: boolean;
+            publicDocumentCount: number;
+            privateDocumentCount: number;
+        };
         subscription: {
             currentPlanId: string;
             trialEndsAt: string;
+            trialDays: number;
             usage: {
                 groups: {
                     used: number;
@@ -66,6 +97,14 @@ export declare class OverviewController {
                     limit: number;
                 };
             };
+            limits: {
+                maxGroups: number;
+                maxPrivateDocuments: number;
+                dailyQueryLimit: number;
+                caseSearchEnabled: boolean;
+                riskTablePreviewLimit: number;
+            };
+            planHighlights: string[];
             plans: {
                 id: string;
                 name: string;
@@ -77,6 +116,11 @@ export declare class OverviewController {
                     caseSearch: boolean;
                 };
             }[];
+            pricing: {
+                weekly: string;
+                monthly: string;
+                yearly: string;
+            };
         };
         conversations: ({
             id: string;
@@ -96,9 +140,13 @@ export declare class OverviewController {
         featuredQuery: {
             question: string;
             scope: {
+                scopeMode: string;
+                label: string;
                 publicLibrary: boolean;
+                privateLibrary: boolean;
                 groupId: string | null;
                 groupName: string | null;
+                isolationNotice: string;
             };
             pipeline: string[];
             retrievalStats: {
@@ -106,6 +154,14 @@ export declare class OverviewController {
                 tokenCount: number;
                 candidateChunks: number;
                 returnedCitations: number;
+                publicLibraryHits: number;
+                privateLibraryHits: number;
+            };
+            ragMeta: {
+                retrievalMode: string;
+                generationProviderTarget: string;
+                prototypeMode: string;
+                answerTraceable: boolean;
             };
             answer: string;
             citations: {

@@ -29,6 +29,10 @@ type DocumentRecord = {
   groupId: string | null;
   fileType: 'pdf' | 'docx' | 'xlsx' | 'image';
   chunkStrategy: 'structure-first' | 'length-fallback';
+  parserTarget: 'multimodal-parser';
+  embeddingTarget: 'bge-large-zh';
+  vectorStoreTarget: 'pgvector';
+  pipelineStage: 'indexed' | 'extracting' | 'ocr' | 'chunking' | 'vectorizing' | 'queued';
 };
 
 type ExtractJobRecord = {
@@ -70,6 +74,10 @@ export class DocumentsService {
       groupId: null,
       fileType: 'pdf',
       chunkStrategy: 'structure-first',
+      parserTarget: 'multimodal-parser',
+      embeddingTarget: 'bge-large-zh',
+      vectorStoreTarget: 'pgvector',
+      pipelineStage: 'indexed',
     },
     {
       id: 'doc-2',
@@ -83,6 +91,10 @@ export class DocumentsService {
       groupId: 'group-1',
       fileType: 'docx',
       chunkStrategy: 'structure-first',
+      parserTarget: 'multimodal-parser',
+      embeddingTarget: 'bge-large-zh',
+      vectorStoreTarget: 'pgvector',
+      pipelineStage: 'indexed',
     },
     {
       id: 'doc-3',
@@ -96,6 +108,10 @@ export class DocumentsService {
       groupId: 'group-1',
       fileType: 'pdf',
       chunkStrategy: 'length-fallback',
+      parserTarget: 'multimodal-parser',
+      embeddingTarget: 'bge-large-zh',
+      vectorStoreTarget: 'pgvector',
+      pipelineStage: 'ocr',
     },
   ];
 
@@ -237,7 +253,26 @@ export class DocumentsService {
       extractionMode: isScan ? 'ocr' : 'text',
       indexStatus: 'queued',
       chunkStrategy: 'structure-first',
-      notes: '导入时抽取文字并建立索引，查询阶段不直接扫描原文件。',
+      parserTarget: 'multimodal-parser',
+      embeddingTarget: 'bge-large-zh',
+      vectorStoreTarget: 'pgvector',
+      pipelineStage: 'queued',
+      notes: '导入后会执行文字抽取、多模态拆解、结构化切分与向量化入库，查询阶段不直接扫描原文件。',
+    };
+  }
+
+  getLibraryScopeSummary(groupId?: string) {
+    const documents = this.listDocuments(groupId);
+    const publicDocuments = documents.filter((document) => document.libraryType === 'public').length;
+    const privateDocuments = documents.filter((document) => document.libraryType === 'private').length;
+    const scopeMode = groupId == null ? 'public_only' : 'public_plus_current_group_private';
+
+    return {
+      scopeMode,
+      includesPublicLibrary: true,
+      includesPrivateLibrary: groupId != null,
+      publicDocumentCount: publicDocuments,
+      privateDocumentCount: privateDocuments,
     };
   }
 }
