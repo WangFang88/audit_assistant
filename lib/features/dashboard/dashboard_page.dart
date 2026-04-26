@@ -1718,7 +1718,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   const SizedBox(height: 8),
                   Text('${document.fileType} · ${document.extractionMode} · ${document.indexStatus}'),
                   const SizedBox(height: 6),
-                  Text('来源路径：${document.sourcePath}', style: Theme.of(context).textTheme.bodySmall),
+                  Text('上传路径：${document.sourcePath}', style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 4),
                   Text('入库时间：${document.uploadedAt}', style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 10),
