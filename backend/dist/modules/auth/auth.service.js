@@ -41,7 +41,7 @@ class RegisterDto {
 exports.RegisterDto = RegisterDto;
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.Matches)(/^\d{11}$/),
+    (0, class_validator_1.Matches)(/^[\d\s\-()]{11,20}$/),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "phone", void 0);
 __decorate([

@@ -22,7 +22,7 @@ class RefreshTokenDto {
 
 class RegisterDto {
   @IsString()
-  @Matches(/^\d{11}$/)
+  @Matches(/^[\d\s\-()]{11,20}$/)
   phone!: string;
 
   @IsString()
