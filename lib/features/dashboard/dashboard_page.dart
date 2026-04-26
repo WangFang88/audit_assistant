@@ -1347,18 +1347,18 @@ class _DashboardPageState extends State<DashboardPage> {
               Chip(label: Text(activeContext.isolationNotice)),
               const Chip(label: Text('检索策略：关键词 + 语义混合召回')),
               const Chip(label: Text('扫描件：仅必要时 OCR')),
-              if (_hasReachedDailyQueryLimit) const Chip(label: Text('今日查询额度已用尽')),
+              if (!_isAdmin && _hasReachedDailyQueryLimit) const Chip(label: Text('今日查询额度已用尽')),
             ],
           ),
           const SizedBox(height: 12),
-          if (_hasReachedDailyQueryLimit)
+          if (!_isAdmin && _hasReachedDailyQueryLimit)
             Text(
               '免费版每日仅支持 ${_overview?.subscription.dailyQueriesLimit ?? 0} 次 RAG 查询，当前已达到上限。',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: _searching || _switchingGroup || _hasReachedDailyQueryLimit ? null : _runSearch,
+            onPressed: _searching || _switchingGroup || (!_isAdmin && _hasReachedDailyQueryLimit) ? null : _runSearch,
             child: _searching
                 ? const SizedBox(
                     height: 18,
@@ -1532,7 +1532,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
-          if (_hasReachedGroupLimit)
+          if (!_isAdmin && _hasReachedGroupLimit)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
@@ -1631,7 +1631,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
-          if (_hasReachedPrivateDocumentLimit)
+          if (!_isAdmin && _hasReachedPrivateDocumentLimit)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
