@@ -26,7 +26,13 @@ class _AuditAssistantAppState extends State<AuditAssistantApp> {
   }
 
   Future<void> _restoreSession() async {
-    final user = await _apiService.restoreSession();
+    AppUser? user;
+    try {
+      user = await _apiService.restoreSession();
+    } on ApiException {
+      user = null;
+    }
+
     if (!mounted) {
       return;
     }

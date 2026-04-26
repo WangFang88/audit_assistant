@@ -31,22 +31,12 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     final accessToken = prefs.getString(_accessTokenKey);
     final refreshToken = prefs.getString(_refreshTokenKey);
-    final userJson = prefs.getString(_userKey);
 
     if (accessToken == null || accessToken.isEmpty || refreshToken == null || refreshToken.isEmpty) {
       return null;
     }
 
-    if (userJson == null || userJson.isEmpty) {
-      return null;
-    }
-
-    final decoded = jsonDecode(userJson) as Object?;
-    if (decoded is! Map<String, dynamic>) {
-      return null;
-    }
-
-    return AppUser.fromJson(decoded);
+    return fetchCurrentUser();
   }
 
   Future<void> clearSession() async {
@@ -83,6 +73,18 @@ class ApiService {
 
     final json = _decodeMap(response);
     return LoginResponse.fromJson(json);
+  }
+
+  Future<AppUser> fetchCurrentUser() async {
+    final response = await _client.get(
+      Uri.parse('$_baseUrl/auth/me'),
+      headers: await _authorizedHeaders(),
+    );
+    final json = _decodeMap(response);
+    final user = AppUser.fromJson(json);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userKey, jsonEncode(user.toJson()));
+    return user;
   }
 
   Future<DashboardOverview> fetchDashboard({String? groupId}) async {
