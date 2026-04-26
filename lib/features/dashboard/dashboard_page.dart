@@ -60,6 +60,30 @@ class _DashboardPageState extends State<DashboardPage> {
 
   String? get _activeGroupId => _selectedGroupId;
 
+  bool get _hasReachedGroupLimit {
+    final subscription = _overview?.subscription;
+    if (subscription == null || subscription.groupsLimit <= 0) {
+      return false;
+    }
+    return subscription.groupsUsed >= subscription.groupsLimit;
+  }
+
+  bool get _hasReachedPrivateDocumentLimit {
+    final subscription = _overview?.subscription;
+    if (subscription == null || subscription.privateDocumentsLimit <= 0) {
+      return false;
+    }
+    return subscription.privateDocumentsUsed >= subscription.privateDocumentsLimit;
+  }
+
+  bool get _hasReachedDailyQueryLimit {
+    final subscription = _overview?.subscription;
+    if (subscription == null || subscription.dailyQueriesLimit <= 0) {
+      return false;
+    }
+    return subscription.dailyQueriesUsed >= subscription.dailyQueriesLimit;
+  }
+
   String get _activeConversationType {
     final conversation = _selectedConversation;
     return conversation?.type == '群聊' ? 'group' : 'direct';
@@ -231,6 +255,14 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _runSearch() async {
     final question = _questionController.text.trim();
     if (question.isEmpty) {
+      return;
+    }
+
+    if (_hasReachedDailyQueryLimit) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('今日 RAG 查询次数已用完，请明日再试或升级套餐。')));
       return;
     }
 
@@ -434,6 +466,14 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _showCreateGroupDialog() async {
+    if (_hasReachedGroupLimit) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('当前套餐的项目组数量已达上限，请升级后继续创建。')));
+      return;
+    }
+
     final nameController = TextEditingController();
     final organizationController = TextEditingController();
 
@@ -662,6 +702,14 @@ class _DashboardPageState extends State<DashboardPage> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('当前未选择项目组，仅建议导入公共库资料。')));
+    }
+
+    if (_hasReachedPrivateDocumentLimit) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('当前套餐的私有库文件数量已达上限，请升级后继续导入。')));
+      return;
     }
 
     final titleController = TextEditingController();
@@ -1023,11 +1071,18 @@ class _DashboardPageState extends State<DashboardPage> {
               Chip(label: Text(activeContext.isolationNotice)),
               const Chip(label: Text('检索策略：关键词 + 语义混合召回')),
               const Chip(label: Text('扫描件：仅必要时 OCR')),
+              if (_hasReachedDailyQueryLimit) const Chip(label: Text('今日查询额度已用尽')),
             ],
           ),
+          const SizedBox(height: 12),
+          if (_hasReachedDailyQueryLimit)
+            Text(
+              '免费版每日仅支持 ${_overview?.subscription.dailyQueriesLimit ?? 0} 次 RAG 查询，当前已达到上限。',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: _searching || _switchingGroup ? null : _runSearch,
+            onPressed: _searching || _switchingGroup || _hasReachedDailyQueryLimit ? null : _runSearch,
             child: _searching
                 ? const SizedBox(
                     height: 18,
@@ -1137,7 +1192,7 @@ class _DashboardPageState extends State<DashboardPage> {
         spacing: 8,
         children: [
           FilledButton.tonal(onPressed: _activeGroupId == null ? null : _showInviteDialog, child: const Text('邀请成员')),
-          FilledButton.tonal(onPressed: _showCreateGroupDialog, child: const Text('创建项目组')),
+          FilledButton.tonal(onPressed: _hasReachedGroupLimit ? null : _showCreateGroupDialog, child: const Text('创建项目组')),
         ],
       ),
       child: Column(
@@ -1148,6 +1203,14 @@ class _DashboardPageState extends State<DashboardPage> {
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
                 '当前未选择项目组，成员邀请、组长移交与群聊协作将保持禁用。',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          if (_hasReachedGroupLimit)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                '当前套餐仅支持 ${_overview?.subscription.groupsLimit ?? 0} 个项目组，已达到创建上限。',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
@@ -1201,7 +1264,10 @@ class _DashboardPageState extends State<DashboardPage> {
         spacing: 8,
         children: [
           FilledButton.tonal(onPressed: _documentsLoading ? null : _refreshDocuments, child: const Text('刷新任务')),
-          FilledButton.tonal(onPressed: _activeGroupId == null ? null : _showImportDocumentDialog, child: const Text('导入文件')),
+          FilledButton.tonal(
+            onPressed: _activeGroupId == null || _hasReachedPrivateDocumentLimit ? null : _showImportDocumentDialog,
+            child: const Text('导入文件'),
+          ),
         ],
       ),
       child: Column(
@@ -1212,6 +1278,14 @@ class _DashboardPageState extends State<DashboardPage> {
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
                 '当前未选择项目组，私有库导入仅作为能力说明；如需导入私有资料，请先进入项目组。',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          if (_hasReachedPrivateDocumentLimit)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                '当前套餐仅支持 ${_overview?.subscription.privateDocumentsLimit ?? 0} 个私有库文件，已达到导入上限。',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

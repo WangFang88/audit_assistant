@@ -432,6 +432,12 @@ class SubscriptionOverview {
     required this.weeklyPrice,
     required this.monthlyPrice,
     required this.yearlyPrice,
+    required this.groupsUsed,
+    required this.groupsLimit,
+    required this.privateDocumentsUsed,
+    required this.privateDocumentsLimit,
+    required this.dailyQueriesUsed,
+    required this.dailyQueriesLimit,
   });
 
   final String planName;
@@ -444,6 +450,12 @@ class SubscriptionOverview {
   final String weeklyPrice;
   final String monthlyPrice;
   final String yearlyPrice;
+  final int groupsUsed;
+  final int groupsLimit;
+  final int privateDocumentsUsed;
+  final int privateDocumentsLimit;
+  final int dailyQueriesUsed;
+  final int dailyQueriesLimit;
 
   factory SubscriptionOverview.fromJson(Map<String, dynamic> json) {
     final usage = json['usage'] as Map<String, dynamic>? ?? const {};
@@ -472,6 +484,12 @@ class SubscriptionOverview {
       weeklyPrice: pricing['weekly'] as String? ?? '--',
       monthlyPrice: pricing['monthly'] as String? ?? '--',
       yearlyPrice: pricing['yearly'] as String? ?? '--',
+      groupsUsed: groups['used'] as int? ?? 0,
+      groupsLimit: groups['limit'] as int? ?? 0,
+      privateDocumentsUsed: privateDocuments['used'] as int? ?? 0,
+      privateDocumentsLimit: privateDocuments['limit'] as int? ?? 0,
+      dailyQueriesUsed: dailyQueries['used'] as int? ?? 0,
+      dailyQueriesLimit: dailyQueries['limit'] as int? ?? 0,
     );
   }
 }

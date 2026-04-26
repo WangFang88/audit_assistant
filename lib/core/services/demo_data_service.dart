@@ -168,6 +168,12 @@ class DemoDataService {
       weeklyPrice: '¥70 / 周',
       monthlyPrice: '¥200 / 月',
       yearlyPrice: '¥2000 / 年',
+      groupsUsed: 1,
+      groupsLimit: 1,
+      privateDocumentsUsed: 2,
+      privateDocumentsLimit: 2,
+      dailyQueriesUsed: 6,
+      dailyQueriesLimit: 10,
     );
   }
 }
