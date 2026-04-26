@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { GroupsService } from '../groups/groups.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
@@ -70,6 +70,7 @@ type DocumentChunkRecord = {
 @Injectable()
 export class DocumentsService {
   constructor(
+    @Inject(forwardRef(() => GroupsService))
     private readonly groupsService: GroupsService,
     private readonly localStateService: LocalStateService,
     private readonly subscriptionsService: SubscriptionsService,
