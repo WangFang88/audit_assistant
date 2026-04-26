@@ -1,4 +1,5 @@
 import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
+import { QueryLogRepository, QueryLogSnapshot } from '../../database/repositories/query-log.repository';
 import { AuthService } from '../auth/auth.service';
 import { LocalStateService } from './local-state.service';
 
@@ -13,6 +14,7 @@ type UsageSnapshot = {
 export class SubscriptionsService {
   constructor(
     private readonly localStateService: LocalStateService,
+    private readonly queryLogRepository: QueryLogRepository,
     @Inject(forwardRef(() => AuthService)) private readonly authService: AuthService,
   ) {
     const persistedState = this.localStateService.readState();
@@ -22,6 +24,12 @@ export class SubscriptionsService {
         ...persistedState.usage,
       };
     }
+    if (persistedState.queryLogs) {
+      this.queryLogs = persistedState.queryLogs.map((queryLog) => {
+        const entity = this.queryLogRepository.createEntity(queryLog);
+        return this.queryLogRepository.mapEntity(entity);
+      });
+    }
 
     this.ensureDailyUsageIsCurrent();
   }
@@ -29,6 +37,7 @@ export class SubscriptionsService {
   private readonly currentPlanId = 'free';
   private readonly trialEndsAt = '2026-05-01';
   private readonly trialDays = 1;
+  private queryLogs: QueryLogSnapshot[] = [];
   private usage: UsageSnapshot = {
     groups: 1,
     privateDocuments: 2,
@@ -91,18 +100,34 @@ export class SubscriptionsService {
     return new Date().toISOString().slice(0, 10);
   }
 
-  private ensureDailyUsageIsCurrent() {
+  private persistQueryLogs() {
+    this.localStateService.saveQueryLogs(this.queryLogs);
+  }
+
+  private rebuildDailyUsageFromLogs() {
     const currentDateKey = this.getCurrentDateKey();
-    if (this.usage.dailyQueryDate === currentDateKey) {
-      return;
-    }
+    const dailyQueries = this.queryLogs
+      .filter((queryLog) => queryLog.queriedAt.slice(0, 10) === currentDateKey)
+      .reduce((total, queryLog) => total + queryLog.consumedQuota, 0);
 
     this.usage = {
       ...this.usage,
-      dailyQueries: 0,
+      dailyQueries,
       dailyQueryDate: currentDateKey,
     };
     this.localStateService.saveUsage(this.usage);
+  }
+
+  private ensureDailyUsageIsCurrent() {
+    const currentDateKey = this.getCurrentDateKey();
+    if (this.usage.dailyQueryDate !== currentDateKey) {
+      this.usage = {
+        ...this.usage,
+        dailyQueryDate: currentDateKey,
+      };
+    }
+
+    this.rebuildDailyUsageFromLogs();
   }
 
   getCurrentPlan() {
@@ -160,10 +185,12 @@ export class SubscriptionsService {
     }
   }
 
-  consumeQuery() {
+  recordQueryLog(queryLog: QueryLogSnapshot) {
     this.ensureDailyUsageIsCurrent();
-    this.usage.dailyQueries += 1;
-    this.localStateService.saveUsage(this.usage);
+    const entity = this.queryLogRepository.createEntity(queryLog);
+    this.queryLogs.push(this.queryLogRepository.mapEntity(entity));
+    this.persistQueryLogs();
+    this.rebuildDailyUsageFromLogs();
   }
 
   getOverview() {

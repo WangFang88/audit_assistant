@@ -100,7 +100,14 @@ export class QueryService {
     const publicHits = candidates.filter((candidate) => candidate.libraryType === 'public').length;
     const privateHits = candidates.filter((candidate) => candidate.libraryType === 'private').length;
 
-    this.subscriptionsService.consumeQuery();
+    this.subscriptionsService.recordQueryLog({
+      id: `query-log-${Date.now()}`,
+      userId: this.authService.me().id,
+      teamId: dto.groupId ?? null,
+      queryText: dto.question,
+      queriedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      consumedQuota: 1,
+    });
 
     return {
       question: dto.question,

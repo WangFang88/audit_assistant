@@ -86,6 +86,15 @@ type PersistedUserRecord = {
   password: string;
 };
 
+type PersistedQueryLogRecord = {
+  id: string;
+  userId: string;
+  teamId: string | null;
+  queryText: string;
+  queriedAt: string;
+  consumedQuota: number;
+};
+
 type PersistedState = {
   groups?: PersistedGroupRecord[];
   members?: PersistedMemberRecord[];
@@ -95,6 +104,7 @@ type PersistedState = {
   conversations?: PersistedConversationRecord[];
   messages?: PersistedMessageRecord[];
   users?: PersistedUserRecord[];
+  queryLogs?: PersistedQueryLogRecord[];
 };
 
 @Injectable()
@@ -140,6 +150,10 @@ export class LocalStateService {
 
   saveUsers(users: PersistedUserRecord[]) {
     this.writeState({ users });
+  }
+
+  saveQueryLogs(queryLogs: PersistedQueryLogRecord[]) {
+    this.writeState({ queryLogs });
   }
 
   private writeState(partial: PersistedState) {

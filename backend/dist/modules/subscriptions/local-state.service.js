@@ -47,6 +47,9 @@ let LocalStateService = class LocalStateService {
     saveUsers(users) {
         this.writeState({ users });
     }
+    saveQueryLogs(queryLogs) {
+        this.writeState({ queryLogs });
+    }
     writeState(partial) {
         const nextState = {
             ...this.readState(),

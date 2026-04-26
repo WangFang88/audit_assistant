@@ -1,3 +1,4 @@
+import { QueryLogRepository, QueryLogSnapshot } from '../../database/repositories/query-log.repository';
 import { AuthService } from '../auth/auth.service';
 import { LocalStateService } from './local-state.service';
 type UsageSnapshot = {
@@ -8,15 +9,19 @@ type UsageSnapshot = {
 };
 export declare class SubscriptionsService {
     private readonly localStateService;
+    private readonly queryLogRepository;
     private readonly authService;
-    constructor(localStateService: LocalStateService, authService: AuthService);
+    constructor(localStateService: LocalStateService, queryLogRepository: QueryLogRepository, authService: AuthService);
     private readonly currentPlanId;
     private readonly trialEndsAt;
     private readonly trialDays;
+    private queryLogs;
     private usage;
     private readonly plans;
     private isAdmin;
     private getCurrentDateKey;
+    private persistQueryLogs;
+    private rebuildDailyUsageFromLogs;
     private ensureDailyUsageIsCurrent;
     getCurrentPlan(): {
         id: string;
@@ -39,7 +44,7 @@ export declare class SubscriptionsService {
     assertCanCreateGroup(currentGroupCount: number): void;
     assertCanImportPrivateDocument(currentPrivateDocumentCount: number): void;
     assertCanRunQuery(currentDailyQueries: number): void;
-    consumeQuery(): void;
+    recordQueryLog(queryLog: QueryLogSnapshot): void;
     getOverview(): {
         currentPlanId: string;
         trialEndsAt: string;

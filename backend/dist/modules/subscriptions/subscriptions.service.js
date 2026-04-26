@@ -14,15 +14,18 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubscriptionsService = void 0;
 const common_1 = require("@nestjs/common");
+const query_log_repository_1 = require("../../database/repositories/query-log.repository");
 const auth_service_1 = require("../auth/auth.service");
 const local_state_service_1 = require("./local-state.service");
 let SubscriptionsService = class SubscriptionsService {
-    constructor(localStateService, authService) {
+    constructor(localStateService, queryLogRepository, authService) {
         this.localStateService = localStateService;
+        this.queryLogRepository = queryLogRepository;
         this.authService = authService;
         this.currentPlanId = 'free';
         this.trialEndsAt = '2026-05-01';
         this.trialDays = 1;
+        this.queryLogs = [];
         this.usage = {
             groups: 1,
             privateDocuments: 2,
@@ -82,6 +85,12 @@ let SubscriptionsService = class SubscriptionsService {
                 ...persistedState.usage,
             };
         }
+        if (persistedState.queryLogs) {
+            this.queryLogs = persistedState.queryLogs.map((queryLog) => {
+                const entity = this.queryLogRepository.createEntity(queryLog);
+                return this.queryLogRepository.mapEntity(entity);
+            });
+        }
         this.ensureDailyUsageIsCurrent();
     }
     isAdmin() {
@@ -90,17 +99,30 @@ let SubscriptionsService = class SubscriptionsService {
     getCurrentDateKey() {
         return new Date().toISOString().slice(0, 10);
     }
-    ensureDailyUsageIsCurrent() {
+    persistQueryLogs() {
+        this.localStateService.saveQueryLogs(this.queryLogs);
+    }
+    rebuildDailyUsageFromLogs() {
         const currentDateKey = this.getCurrentDateKey();
-        if (this.usage.dailyQueryDate === currentDateKey) {
-            return;
-        }
+        const dailyQueries = this.queryLogs
+            .filter((queryLog) => queryLog.queriedAt.slice(0, 10) === currentDateKey)
+            .reduce((total, queryLog) => total + queryLog.consumedQuota, 0);
         this.usage = {
             ...this.usage,
-            dailyQueries: 0,
+            dailyQueries,
             dailyQueryDate: currentDateKey,
         };
         this.localStateService.saveUsage(this.usage);
+    }
+    ensureDailyUsageIsCurrent() {
+        const currentDateKey = this.getCurrentDateKey();
+        if (this.usage.dailyQueryDate !== currentDateKey) {
+            this.usage = {
+                ...this.usage,
+                dailyQueryDate: currentDateKey,
+            };
+        }
+        this.rebuildDailyUsageFromLogs();
     }
     getCurrentPlan() {
         if (this.isAdmin()) {
@@ -150,10 +172,12 @@ let SubscriptionsService = class SubscriptionsService {
             throw new common_1.BadRequestException('今日 RAG 查询次数已用完，请明日再试或升级套餐');
         }
     }
-    consumeQuery() {
+    recordQueryLog(queryLog) {
         this.ensureDailyUsageIsCurrent();
-        this.usage.dailyQueries += 1;
-        this.localStateService.saveUsage(this.usage);
+        const entity = this.queryLogRepository.createEntity(queryLog);
+        this.queryLogs.push(this.queryLogRepository.mapEntity(entity));
+        this.persistQueryLogs();
+        this.rebuildDailyUsageFromLogs();
     }
     getOverview() {
         this.ensureDailyUsageIsCurrent();
@@ -192,8 +216,9 @@ let SubscriptionsService = class SubscriptionsService {
 exports.SubscriptionsService = SubscriptionsService;
 exports.SubscriptionsService = SubscriptionsService = __decorate([
     (0, common_1.Injectable)(),
-    __param(1, (0, common_1.Inject)((0, common_1.forwardRef)(() => auth_service_1.AuthService))),
+    __param(2, (0, common_1.Inject)((0, common_1.forwardRef)(() => auth_service_1.AuthService))),
     __metadata("design:paramtypes", [local_state_service_1.LocalStateService,
+        query_log_repository_1.QueryLogRepository,
         auth_service_1.AuthService])
 ], SubscriptionsService);
 //# sourceMappingURL=subscriptions.service.js.map

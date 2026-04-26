@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.QueryModule = void 0;
 const common_1 = require("@nestjs/common");
+const database_support_module_1 = require("../../database/database-support.module");
 const auth_module_1 = require("../auth/auth.module");
 const documents_module_1 = require("../documents/documents.module");
 const groups_module_1 = require("../groups/groups.module");
@@ -19,7 +20,7 @@ let QueryModule = class QueryModule {
 exports.QueryModule = QueryModule;
 exports.QueryModule = QueryModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule, documents_module_1.DocumentsModule, groups_module_1.GroupsModule, subscriptions_module_1.SubscriptionsModule],
+        imports: [database_support_module_1.DatabaseSupportModule, auth_module_1.AuthModule, documents_module_1.DocumentsModule, groups_module_1.GroupsModule, subscriptions_module_1.SubscriptionsModule],
         controllers: [query_controller_1.QueryController],
         providers: [query_service_1.QueryService],
         exports: [query_service_1.QueryService],

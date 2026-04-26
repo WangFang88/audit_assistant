@@ -74,6 +74,14 @@ type PersistedUserRecord = {
     trialEndsAt: string;
     password: string;
 };
+type PersistedQueryLogRecord = {
+    id: string;
+    userId: string;
+    teamId: string | null;
+    queryText: string;
+    queriedAt: string;
+    consumedQuota: number;
+};
 type PersistedState = {
     groups?: PersistedGroupRecord[];
     members?: PersistedMemberRecord[];
@@ -83,6 +91,7 @@ type PersistedState = {
     conversations?: PersistedConversationRecord[];
     messages?: PersistedMessageRecord[];
     users?: PersistedUserRecord[];
+    queryLogs?: PersistedQueryLogRecord[];
 };
 export declare class LocalStateService {
     private readonly filePath;
@@ -93,6 +102,7 @@ export declare class LocalStateService {
     saveUsage(usage: PersistedUsageSnapshot): void;
     saveChatState(conversations: PersistedConversationRecord[], messages: PersistedMessageRecord[]): void;
     saveUsers(users: PersistedUserRecord[]): void;
+    saveQueryLogs(queryLogs: PersistedQueryLogRecord[]): void;
     private writeState;
 }
 export {};
