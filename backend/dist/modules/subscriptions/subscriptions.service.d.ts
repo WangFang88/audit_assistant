@@ -3,6 +3,7 @@ type UsageSnapshot = {
     groups: number;
     privateDocuments: number;
     dailyQueries: number;
+    dailyQueryDate: string;
 };
 export declare class SubscriptionsService {
     private readonly localStateService;
@@ -12,6 +13,8 @@ export declare class SubscriptionsService {
     private readonly trialDays;
     private usage;
     private readonly plans;
+    private getCurrentDateKey;
+    private ensureDailyUsageIsCurrent;
     getCurrentPlan(): {
         id: string;
         name: string;
@@ -27,6 +30,7 @@ export declare class SubscriptionsService {
         groups: number;
         privateDocuments: number;
         dailyQueries: number;
+        dailyQueryDate: string;
     };
     syncUsage(usage: Partial<UsageSnapshot>): void;
     assertCanCreateGroup(currentGroupCount: number): void;

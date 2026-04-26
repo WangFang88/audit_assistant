@@ -5,6 +5,7 @@ type UsageSnapshot = {
   groups: number;
   privateDocuments: number;
   dailyQueries: number;
+  dailyQueryDate: string;
 };
 
 @Injectable()
@@ -12,8 +13,13 @@ export class SubscriptionsService {
   constructor(private readonly localStateService: LocalStateService) {
     const persistedState = this.localStateService.readState();
     if (persistedState.usage) {
-      this.usage = persistedState.usage;
+      this.usage = {
+        ...this.usage,
+        ...persistedState.usage,
+      };
     }
+
+    this.ensureDailyUsageIsCurrent();
   }
 
   private readonly currentPlanId = 'free';
@@ -23,6 +29,7 @@ export class SubscriptionsService {
     groups: 1,
     privateDocuments: 2,
     dailyQueries: 6,
+    dailyQueryDate: this.getCurrentDateKey(),
   };
 
   private readonly plans = [
@@ -72,18 +79,39 @@ export class SubscriptionsService {
     },
   ];
 
+  private getCurrentDateKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  private ensureDailyUsageIsCurrent() {
+    const currentDateKey = this.getCurrentDateKey();
+    if (this.usage.dailyQueryDate === currentDateKey) {
+      return;
+    }
+
+    this.usage = {
+      ...this.usage,
+      dailyQueries: 0,
+      dailyQueryDate: currentDateKey,
+    };
+    this.localStateService.saveUsage(this.usage);
+  }
+
   getCurrentPlan() {
     return this.plans.find((plan) => plan.id === this.currentPlanId) ?? this.plans[0];
   }
 
   getUsage() {
+    this.ensureDailyUsageIsCurrent();
     return { ...this.usage };
   }
 
   syncUsage(usage: Partial<UsageSnapshot>) {
+    this.ensureDailyUsageIsCurrent();
     this.usage = {
       ...this.usage,
       ...usage,
+      dailyQueryDate: usage.dailyQueryDate ?? this.usage.dailyQueryDate,
     };
     this.localStateService.saveUsage(this.usage);
   }
@@ -103,6 +131,7 @@ export class SubscriptionsService {
   }
 
   assertCanRunQuery(currentDailyQueries: number) {
+    this.ensureDailyUsageIsCurrent();
     const limit = this.getCurrentPlan().limits.dailyQueries;
     if (currentDailyQueries >= limit) {
       throw new BadRequestException('今日 RAG 查询次数已用完，请明日再试或升级套餐');
@@ -110,11 +139,13 @@ export class SubscriptionsService {
   }
 
   consumeQuery() {
+    this.ensureDailyUsageIsCurrent();
     this.usage.dailyQueries += 1;
     this.localStateService.saveUsage(this.usage);
   }
 
   getOverview() {
+    this.ensureDailyUsageIsCurrent();
     const plan = this.getCurrentPlan();
 
     return {

@@ -22,6 +22,7 @@ let SubscriptionsService = class SubscriptionsService {
             groups: 1,
             privateDocuments: 2,
             dailyQueries: 6,
+            dailyQueryDate: this.getCurrentDateKey(),
         };
         this.plans = [
             {
@@ -71,19 +72,41 @@ let SubscriptionsService = class SubscriptionsService {
         ];
         const persistedState = this.localStateService.readState();
         if (persistedState.usage) {
-            this.usage = persistedState.usage;
+            this.usage = {
+                ...this.usage,
+                ...persistedState.usage,
+            };
         }
+        this.ensureDailyUsageIsCurrent();
+    }
+    getCurrentDateKey() {
+        return new Date().toISOString().slice(0, 10);
+    }
+    ensureDailyUsageIsCurrent() {
+        const currentDateKey = this.getCurrentDateKey();
+        if (this.usage.dailyQueryDate === currentDateKey) {
+            return;
+        }
+        this.usage = {
+            ...this.usage,
+            dailyQueries: 0,
+            dailyQueryDate: currentDateKey,
+        };
+        this.localStateService.saveUsage(this.usage);
     }
     getCurrentPlan() {
         return this.plans.find((plan) => plan.id === this.currentPlanId) ?? this.plans[0];
     }
     getUsage() {
+        this.ensureDailyUsageIsCurrent();
         return { ...this.usage };
     }
     syncUsage(usage) {
+        this.ensureDailyUsageIsCurrent();
         this.usage = {
             ...this.usage,
             ...usage,
+            dailyQueryDate: usage.dailyQueryDate ?? this.usage.dailyQueryDate,
         };
         this.localStateService.saveUsage(this.usage);
     }
@@ -100,16 +123,19 @@ let SubscriptionsService = class SubscriptionsService {
         }
     }
     assertCanRunQuery(currentDailyQueries) {
+        this.ensureDailyUsageIsCurrent();
         const limit = this.getCurrentPlan().limits.dailyQueries;
         if (currentDailyQueries >= limit) {
             throw new common_1.BadRequestException('今日 RAG 查询次数已用完，请明日再试或升级套餐');
         }
     }
     consumeQuery() {
+        this.ensureDailyUsageIsCurrent();
         this.usage.dailyQueries += 1;
         this.localStateService.saveUsage(this.usage);
     }
     getOverview() {
+        this.ensureDailyUsageIsCurrent();
         const plan = this.getCurrentPlan();
         return {
             currentPlanId: this.currentPlanId,

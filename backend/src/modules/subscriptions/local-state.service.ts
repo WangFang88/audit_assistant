@@ -57,6 +57,7 @@ type PersistedUsageSnapshot = {
   groups: number;
   privateDocuments: number;
   dailyQueries: number;
+  dailyQueryDate: string;
 };
 
 type PersistedState = {
