@@ -5,6 +5,7 @@ declare class ImportDocumentDto {
     title: string;
     libraryType: 'public' | 'private';
     sourcePath: string;
+    rawText?: string;
     groupId?: string;
 }
 type DocumentRecord = {
@@ -58,6 +59,7 @@ export declare class DocumentsService {
     listExtractionJobs(groupId?: string): ExtractJobRecord[];
     getReadyChunks(groupId?: string): DocumentChunkRecord[];
     getDocumentById(documentId: string): DocumentRecord;
+    private buildChunksFromRawText;
     private buildChunksForDocument;
     importDocument(dto: ImportDocumentDto): {
         notes: string;

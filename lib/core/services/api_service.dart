@@ -241,6 +241,7 @@ class ApiService {
     required String title,
     required String libraryType,
     required String sourcePath,
+    String? rawText,
     String? groupId,
   }) async {
     final backendLibraryType = libraryType == '公共库' ? 'public' : 'private';
@@ -252,6 +253,7 @@ class ApiService {
           'title': title,
           'libraryType': backendLibraryType,
           'sourcePath': sourcePath,
+          'rawText': rawText,
           'groupId': groupId,
         }),
       ),

@@ -762,6 +762,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     final titleController = TextEditingController();
     final pathController = TextEditingController();
+    final rawTextController = TextEditingController();
     String libraryType = _activeGroupId == null ? '公共库' : '私有库';
 
     final confirmed = await showDialog<bool>(
@@ -769,23 +770,39 @@ class _DashboardPageState extends State<DashboardPage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('从文件服务器导入'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: titleController, decoration: const InputDecoration(labelText: '文件标题')),
-              const SizedBox(height: 12),
-              TextField(controller: pathController, decoration: const InputDecoration(labelText: '文件服务器路径')),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: libraryType,
-                items: [
-                  const DropdownMenuItem(value: '公共库', child: Text('公共库')),
-                  if (_activeGroupId != null) const DropdownMenuItem(value: '私有库', child: Text('私有库')),
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: titleController, decoration: const InputDecoration(labelText: '文件标题')),
+                  const SizedBox(height: 12),
+                  TextField(controller: pathController, decoration: const InputDecoration(labelText: '文件服务器路径')),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: libraryType,
+                    items: [
+                      const DropdownMenuItem(value: '公共库', child: Text('公共库')),
+                      if (_activeGroupId != null) const DropdownMenuItem(value: '私有库', child: Text('私有库')),
+                    ],
+                    onChanged: (value) => setDialogState(() => libraryType = value ?? (_activeGroupId == null ? '公共库' : '私有库')),
+                    decoration: const InputDecoration(labelText: '入库范围'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: rawTextController,
+                    minLines: 6,
+                    maxLines: 10,
+                    decoration: const InputDecoration(
+                      labelText: '文档正文（可选）',
+                      alignLabelWithHint: true,
+                      hintText: '可直接粘贴制度正文，导入后会优先按正文切分条款级 chunk。',
+                    ),
+                  ),
                 ],
-                onChanged: (value) => setDialogState(() => libraryType = value ?? (_activeGroupId == null ? '公共库' : '私有库')),
-                decoration: const InputDecoration(labelText: '入库范围'),
               ),
-            ],
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
@@ -804,6 +821,7 @@ class _DashboardPageState extends State<DashboardPage> {
         title: titleController.text.trim(),
         libraryType: libraryType,
         sourcePath: pathController.text.trim(),
+        rawText: rawTextController.text.trim().isEmpty ? null : rawTextController.text.trim(),
         groupId: libraryType == '私有库' ? _activeGroupId : null,
       );
       if (!mounted) {

@@ -17,6 +17,11 @@ class ImportDocumentDto {
 
   @IsOptional()
   @IsString()
+  @MinLength(20)
+  rawText?: string;
+
+  @IsOptional()
+  @IsString()
   groupId?: string;
 }
 
@@ -294,6 +299,54 @@ export class DocumentsService {
     return document;
   }
 
+  private buildChunksFromRawText(document: DocumentRecord, rawText: string): DocumentChunkRecord[] {
+    const normalizedText = rawText.replace(/\r/g, '').trim();
+    const segments = normalizedText
+      .split(/\n{2,}|(?=第[一二三四五六七八九十百]+[章节条])/)
+      .map((segment) => segment.replace(/\s+/g, ' ').trim())
+      .filter((segment) => segment.length >= 24)
+      .slice(0, 8);
+
+    if (segments.length === 0) {
+      return [];
+    }
+
+    const titleKeywords = document.title
+      .replace(/[()（）_./-]+/g, ' ')
+      .split(/[\s]+/)
+      .map((item) => item.trim())
+      .filter((item) => item.length >= 2);
+
+    return segments.map((segment, index) => {
+      const chapterMatch = segment.match(/第[一二三四五六七八九十百]+章[^。；，\n]*/);
+      const articleMatch = segment.match(/第[一二三四五六七八九十百]+条/);
+      const sentenceKeywords = Array.from(
+        new Set(
+          segment
+            .replace(/[，。；：、“”‘’（）()【】\[\]\-]/g, ' ')
+            .split(/[\s]+/)
+            .map((item) => item.trim())
+            .filter((item) => item.length >= 2)
+            .slice(0, 10),
+        ),
+      );
+
+      return {
+        id: `chunk-${this.chunks.length + index + 1}`,
+        documentId: document.id,
+        groupId: document.groupId,
+        libraryType: document.libraryType,
+        title: document.title,
+        chapterTitle: chapterMatch?.[0] ?? `第${index + 1}段`,
+        articleRef: articleMatch?.[0] ?? `第${index + 1}条`,
+        pageLabel: `第 ${index + 1} 页`,
+        content: segment,
+        keywords: Array.from(new Set([...titleKeywords, ...sentenceKeywords])),
+        indexStatus: 'ready',
+      };
+    });
+  }
+
   private buildChunksForDocument(document: DocumentRecord): DocumentChunkRecord[] {
     const normalizedTitle = document.title.toLowerCase();
     const normalizedSource = document.sourcePath.toLowerCase();
@@ -429,7 +482,9 @@ export class DocumentsService {
           ? 'image'
           : 'pdf';
 
-    const generatedChunkCount = 4;
+    const extractionMode: DocumentRecord['extractionMode'] = isScan ? 'ocr' : 'text';
+    const hasRawText = dto.rawText != null && dto.rawText.trim().length > 0;
+    const generatedChunkCount = hasRawText ? 0 : 4;
 
     const document: DocumentRecord = {
       id: `doc-${this.documents.length + 1}`,
@@ -439,7 +494,7 @@ export class DocumentsService {
       chunkCount: generatedChunkCount,
       groupId: dto.groupId ?? null,
       fileType,
-      extractionMode: isScan ? 'ocr' : 'text',
+      extractionMode,
       uploadedAt: '2026-04-26 12:30',
       indexStatus: 'ready' as const,
       chunkStrategy: 'structure-first' as const,
@@ -449,8 +504,10 @@ export class DocumentsService {
       pipelineStage: isScan ? 'ocr' as const : 'indexed' as const,
     };
 
+    const generatedChunks = hasRawText ? this.buildChunksFromRawText(document, dto.rawText!) : this.buildChunksForDocument(document);
+    document.chunkCount = generatedChunks.length;
+
     this.documents.push(document);
-    const generatedChunks = this.buildChunksForDocument(document);
     this.chunks.push(...generatedChunks);
     this.localStateService.saveDocuments(this.documents);
     this.localStateService.saveChunks(this.chunks);
