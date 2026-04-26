@@ -1,31 +1,12 @@
 {
   "usage": {
-    "groups": 1,
-    "privateDocuments": 2,
+    "groups": 0,
+    "privateDocuments": 0,
     "dailyQueries": 11,
     "dailyQueryDate": "2026-04-26"
   },
-  "groups": [
-    {
-      "id": "group-1",
-      "name": "某区财政局审计组",
-      "organizationName": "某区财政局",
-      "ownerUserId": "user-2",
-      "memberCount": 1,
-      "privateDocumentCount": 2,
-      "lastQueryAt": "2026-04-25 16:20"
-    }
-  ],
-  "members": [
-    {
-      "id": "member-1",
-      "groupId": "group-1",
-      "userId": "user-2",
-      "name": "审计组长",
-      "phone": "13800138001",
-      "role": "leader"
-    }
-  ],
+  "groups": [],
+  "members": [],
   "documents": [
     {
       "id": "doc-1",
@@ -43,40 +24,6 @@
       "embeddingTarget": "bge-large-zh",
       "vectorStoreTarget": "pgvector",
       "pipelineStage": "indexed"
-    },
-    {
-      "id": "doc-2",
-      "title": "某区财政局内部采购管理制度",
-      "libraryType": "private",
-      "sourcePath": "/groups/group-1/purchase-guideline.docx",
-      "chunkCount": 4,
-      "indexStatus": "ready",
-      "extractionMode": "text",
-      "uploadedAt": "2026-04-25 14:00",
-      "groupId": "group-1",
-      "fileType": "docx",
-      "chunkStrategy": "structure-first",
-      "parserTarget": "multimodal-parser",
-      "embeddingTarget": "bge-large-zh",
-      "vectorStoreTarget": "pgvector",
-      "pipelineStage": "indexed"
-    },
-    {
-      "id": "doc-3",
-      "title": "某医院设备管理台账扫描件",
-      "libraryType": "private",
-      "sourcePath": "/groups/group-1/equipment-scan.pdf",
-      "chunkCount": 0,
-      "indexStatus": "processing",
-      "extractionMode": "ocr",
-      "uploadedAt": "2026-04-25 15:30",
-      "groupId": "group-1",
-      "fileType": "pdf",
-      "chunkStrategy": "length-fallback",
-      "parserTarget": "multimodal-parser",
-      "embeddingTarget": "bge-large-zh",
-      "vectorStoreTarget": "pgvector",
-      "pipelineStage": "ocr"
     },
     {
       "id": "doc-4",
@@ -186,107 +133,6 @@
         "审计",
         "超范围支出",
         "资金用途"
-      ],
-      "indexStatus": "ready"
-    },
-    {
-      "id": "chunk-5",
-      "documentId": "doc-2",
-      "groupId": "group-1",
-      "libraryType": "private",
-      "title": "某区财政局内部采购管理制度",
-      "chapterTitle": "第一章 适用范围",
-      "articleRef": "第三条",
-      "pageLabel": "第 1 页",
-      "content": "某区财政局内部采购管理制度适用于项目组采购申请、审批分工和供应商比价管理，未经审批不得先采后补。",
-      "keywords": [
-        "某区财政局内部采购管理制度",
-        "groups",
-        "group",
-        "purchase",
-        "guideline",
-        "采购",
-        "审批",
-        "比价",
-        "供应商",
-        "范围",
-        "职责"
-      ],
-      "indexStatus": "ready"
-    },
-    {
-      "id": "chunk-6",
-      "documentId": "doc-2",
-      "groupId": "group-1",
-      "libraryType": "private",
-      "title": "某区财政局内部采购管理制度",
-      "chapterTitle": "第二章 审批与执行",
-      "articleRef": "第七条",
-      "pageLabel": "第 2 页",
-      "content": "某区财政局内部采购管理制度要求对立项、审批、采购执行、验收和付款实行分环节留痕，关键节点应形成书面记录。",
-      "keywords": [
-        "某区财政局内部采购管理制度",
-        "groups",
-        "group",
-        "purchase",
-        "guideline",
-        "申请",
-        "审批",
-        "执行",
-        "留痕",
-        "验收",
-        "付款",
-        "立项"
-      ],
-      "indexStatus": "ready"
-    },
-    {
-      "id": "chunk-7",
-      "documentId": "doc-2",
-      "groupId": "group-1",
-      "libraryType": "private",
-      "title": "某区财政局内部采购管理制度",
-      "chapterTitle": "第三章 证据与归档",
-      "articleRef": "第十二条",
-      "pageLabel": "第 3 页",
-      "content": "某区财政局内部采购管理制度要求对合同、发票、验收单、付款凭证及相关附件统一归档，保证后续查询可追溯。",
-      "keywords": [
-        "某区财政局内部采购管理制度",
-        "groups",
-        "group",
-        "purchase",
-        "guideline",
-        "合同",
-        "发票",
-        "验收单",
-        "付款凭证",
-        "归档",
-        "可追溯"
-      ],
-      "indexStatus": "ready"
-    },
-    {
-      "id": "chunk-8",
-      "documentId": "doc-2",
-      "groupId": "group-1",
-      "libraryType": "private",
-      "title": "某区财政局内部采购管理制度",
-      "chapterTitle": "第四章 监督与整改",
-      "articleRef": "第十六条",
-      "pageLabel": "第 4 页",
-      "content": "某区财政局内部采购管理制度明确对未审批采购、凭证不完整和验收缺失等问题应限期整改并复核。",
-      "keywords": [
-        "某区财政局内部采购管理制度",
-        "groups",
-        "group",
-        "purchase",
-        "guideline",
-        "整改",
-        "监督",
-        "审计",
-        "未审批采购",
-        "凭证不完整",
-        "验收缺失"
       ],
       "indexStatus": "ready"
     },
