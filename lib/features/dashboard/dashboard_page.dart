@@ -1385,8 +1385,6 @@ class _DashboardPageState extends State<DashboardPage> {
                       _buildQueryPanel(activeContext),
                       const SizedBox(height: 16),
                       _buildResultPanel(context, result),
-                      const SizedBox(height: 16),
-                      _buildGroupPanel(groups),
                     ],
                     _buildDocumentPanel(documents, extractJobs),
                   ],
@@ -1405,16 +1403,8 @@ class _DashboardPageState extends State<DashboardPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _buildGroupPanel(groups)),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildDocumentPanel(documents, extractJobs)),
-                      ],
-                    ),
-                  ] else
-                    _buildDocumentPanel(documents, extractJobs),
+                  ],
+                  _buildDocumentPanel(documents, extractJobs),
                 ],
               );
             },
@@ -1818,56 +1808,43 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildChat() {
     final activeConversation = _selectedConversation;
 
-    if (_activeGroupId == null) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: SectionCard(
-          title: '对话',
-          subtitle: '请先进入项目组后再使用群聊与项目协作消息。',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '当前未选择项目组，因此不会加载群聊上下文、项目成员协作消息或私有库相关会话。',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 12),
-              const Chip(label: Text('当前状态：仅公共库浏览')),
-            ],
-          ),
-        ),
-      );
-    }
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 960;
+        final groupPanel = _buildGroupPanel(_overview?.groups ?? const []);
         final conversationList = SectionCard(
           title: '对话列表',
-          subtitle: '已按当前项目组上下文刷新会话与消息。',
+          subtitle: _activeGroupId == null ? '请先在上方项目组面板中创建或选择项目组。' : '已按当前项目组上下文刷新会话与消息。',
           child: SizedBox(
             height: compact ? 320 : 560,
-            child: ListView(
-              children: _conversations
-                  .map(
-                    (item) => ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      selected: item.id == _selectedConversationId,
-                      onTap: () => _loadConversationMessages(item.id),
-                      leading: CircleAvatar(child: Text(item.type == '群聊' ? '群' : '私')),
-                      title: Text(item.title),
-                      subtitle: Text(item.lastMessage),
-                      trailing: item.unreadCount > 0 ? Chip(label: Text('${item.unreadCount}')) : null,
+            child: _activeGroupId == null
+                ? Center(
+                    child: Text(
+                      '请先创建或选择项目组。',
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   )
-                  .toList(),
-            ),
+                : ListView(
+                    children: _conversations
+                        .map(
+                          (item) => ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            selected: item.id == _selectedConversationId,
+                            onTap: () => _loadConversationMessages(item.id),
+                            leading: CircleAvatar(child: Text(item.type == '群聊' ? '群' : '私')),
+                            title: Text(item.title),
+                            subtitle: Text(item.lastMessage),
+                            trailing: item.unreadCount > 0 ? Chip(label: Text('${item.unreadCount}')) : null,
+                          ),
+                        )
+                        .toList(),
+                  ),
           ),
         );
 
         final messagePanel = SectionCard(
           title: activeConversation?.title ?? '消息详情',
-          subtitle: activeConversation == null ? '请选择一个会话。' : '支持读取和发送消息。',
+          subtitle: _activeGroupId == null ? '请先在上方项目组面板中创建或选择项目组。' : activeConversation == null ? '请选择一个会话。' : '支持读取和发送消息。',
           child: SizedBox(
             height: compact ? 420 : 560,
             child: Column(
@@ -1875,13 +1852,20 @@ class _DashboardPageState extends State<DashboardPage> {
                 Expanded(
                   child: _chatLoading
                       ? const Center(child: CircularProgressIndicator())
-                      : _messages.isEmpty
+                      : _activeGroupId == null
                           ? Center(
                               child: Text(
-                                activeConversation == null ? '请选择一个会话。' : '当前暂无消息。',
+                                '请先创建或选择项目组。',
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                             )
+                          : _messages.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    activeConversation == null ? '请选择一个会话。' : '当前暂无消息。',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                )
                           : ListView(
                               children: _messages
                                   .map(
@@ -1922,13 +1906,13 @@ class _DashboardPageState extends State<DashboardPage> {
                     Expanded(
                       child: TextField(
                         controller: _messageController,
-                        enabled: _selectedConversationId != null && !_sendingMessage,
+                        enabled: _activeGroupId != null && _selectedConversationId != null && !_sendingMessage,
                         decoration: const InputDecoration(labelText: '输入消息'),
                       ),
                     ),
                     const SizedBox(width: 12),
                     FilledButton(
-                      onPressed: _selectedConversationId == null || _sendingMessage ? null : _sendMessage,
+                      onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage ? null : _sendMessage,
                       child: _sendingMessage
                           ? const SizedBox(
                               height: 18,
@@ -1947,19 +1931,27 @@ class _DashboardPageState extends State<DashboardPage> {
         return Padding(
           padding: const EdgeInsets.all(24),
           child: compact
-              ? Column(
+              ? ListView(
                   children: [
+                    groupPanel,
+                    const SizedBox(height: 16),
                     conversationList,
                     const SizedBox(height: 16),
                     messagePanel,
                   ],
                 )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              : ListView(
                   children: [
-                    SizedBox(width: 300, child: conversationList),
-                    const SizedBox(width: 16),
-                    Expanded(child: messagePanel),
+                    groupPanel,
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: 300, child: conversationList),
+                        const SizedBox(width: 16),
+                        Expanded(child: messagePanel),
+                      ],
+                    ),
                   ],
                 ),
         );

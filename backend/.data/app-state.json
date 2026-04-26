@@ -381,5 +381,46 @@
       ],
       "indexStatus": "ready"
     }
+  ],
+  "conversations": [
+    {
+      "id": "conv-group-1",
+      "type": "group",
+      "title": "某区财政局审计组群聊",
+      "groupId": "group-1",
+      "unreadCount": 0,
+      "lastMessage": "你好"
+    },
+    {
+      "id": "conv-direct-1",
+      "type": "direct",
+      "title": "与法规顾问的私信",
+      "groupId": null,
+      "unreadCount": 0,
+      "lastMessage": "我已整理出相关条款。"
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-1",
+      "conversationId": "conv-group-1",
+      "senderName": "审计组长",
+      "content": "请同步采购抽查结果。",
+      "sentAt": "2026-04-25 16:40"
+    },
+    {
+      "id": "msg-2",
+      "conversationId": "conv-direct-1",
+      "senderName": "法规顾问",
+      "content": "我已整理出相关条款。",
+      "sentAt": "2026-04-25 15:20"
+    },
+    {
+      "id": "msg-3",
+      "conversationId": "conv-group-1",
+      "senderName": "审计组长",
+      "content": "你好",
+      "sentAt": "2026-04-26 13:30"
+    }
   ]
 }
