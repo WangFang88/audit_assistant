@@ -487,6 +487,7 @@ class SubscriptionOverview {
     required this.dailyQueriesUsed,
     required this.dailyQueriesLimit,
     required this.latestOrder,
+    required this.orderHistory,
   });
 
   final String planId;
@@ -507,6 +508,7 @@ class SubscriptionOverview {
   final int dailyQueriesUsed;
   final int dailyQueriesLimit;
   final SubscriptionOrderSummary? latestOrder;
+  final List<SubscriptionOrderSummary> orderHistory;
 
   factory SubscriptionOverview.fromJson(Map<String, dynamic> json) {
     final usage = json['usage'] as Map<String, dynamic>? ?? const {};
@@ -539,6 +541,10 @@ class SubscriptionOverview {
       latestOrder: (json['latestOrder'] as Map<String, dynamic>?) == null
           ? null
           : SubscriptionOrderSummary.fromJson(json['latestOrder'] as Map<String, dynamic>),
+      orderHistory: (json['orderHistory'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(SubscriptionOrderSummary.fromJson)
+          .toList(),
       groupsUsed: groups['used'] as int? ?? 0,
       groupsLimit: groups['limit'] as int? ?? 0,
       privateDocumentsUsed: privateDocuments['used'] as int? ?? 0,

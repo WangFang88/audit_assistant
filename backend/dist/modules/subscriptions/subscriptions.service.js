@@ -141,9 +141,12 @@ let SubscriptionsService = class SubscriptionsService {
     persistSubscriptions() {
         this.localStateService.saveSubscriptions(this.subscriptionOrders);
     }
-    getLatestSubscriptionOrder() {
+    getUserSubscriptionOrders() {
         const currentUserId = this.authService.me().id;
-        const userOrders = this.subscriptionOrders.filter((order) => order.userId === currentUserId);
+        return this.subscriptionOrders.filter((order) => order.userId === currentUserId);
+    }
+    getLatestSubscriptionOrder() {
+        const userOrders = this.getUserSubscriptionOrders();
         return userOrders[userOrders.length - 1] ?? null;
     }
     formatDateTime(date) {
@@ -277,6 +280,16 @@ let SubscriptionsService = class SubscriptionsService {
                     paidAt: latestOrder.paidAt,
                     expiredAt: latestOrder.expiredAt,
                 },
+            orderHistory: this.getUserSubscriptionOrders()
+                .map((order) => ({
+                id: order.id,
+                planType: order.planType,
+                amount: order.amount,
+                paidAt: order.paidAt,
+                expiredAt: order.expiredAt,
+            }))
+                .slice()
+                .reverse(),
             usage: {
                 groups: { used: this.usage.groups, limit: plan.limits.groupCount },
                 privateDocuments: { used: this.usage.privateDocuments, limit: plan.limits.privateDocuments },

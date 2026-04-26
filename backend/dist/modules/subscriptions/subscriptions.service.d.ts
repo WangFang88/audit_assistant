@@ -30,6 +30,7 @@ export declare class SubscriptionsService {
     private getCurrentDateKey;
     private persistQueryLogs;
     private persistSubscriptions;
+    private getUserSubscriptionOrders;
     private getLatestSubscriptionOrder;
     private formatDateTime;
     private addDays;
@@ -70,6 +71,13 @@ export declare class SubscriptionsService {
             paidAt: string;
             expiredAt: string;
         } | null;
+        orderHistory: {
+            id: string;
+            planType: "free" | "weekly" | "monthly" | "yearly";
+            amount: string;
+            paidAt: string;
+            expiredAt: string;
+        }[];
         usage: {
             groups: {
                 used: number;

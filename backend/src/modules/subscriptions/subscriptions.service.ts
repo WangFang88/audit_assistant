@@ -144,9 +144,13 @@ export class SubscriptionsService {
     this.localStateService.saveSubscriptions(this.subscriptionOrders);
   }
 
-  private getLatestSubscriptionOrder() {
+  private getUserSubscriptionOrders() {
     const currentUserId = this.authService.me().id;
-    const userOrders = this.subscriptionOrders.filter((order) => order.userId === currentUserId);
+    return this.subscriptionOrders.filter((order) => order.userId === currentUserId);
+  }
+
+  private getLatestSubscriptionOrder() {
+    const userOrders = this.getUserSubscriptionOrders();
     return userOrders[userOrders.length - 1] ?? null;
   }
 
@@ -302,6 +306,16 @@ export class SubscriptionsService {
               paidAt: latestOrder.paidAt,
               expiredAt: latestOrder.expiredAt,
             },
+      orderHistory: this.getUserSubscriptionOrders()
+          .map((order) => ({
+                id: order.id,
+                planType: order.planType,
+                amount: order.amount,
+                paidAt: order.paidAt,
+                expiredAt: order.expiredAt,
+              }))
+          .slice()
+          .reverse(),
       usage: {
         groups: { used: this.usage.groups, limit: plan.limits.groupCount },
         privateDocuments: { used: this.usage.privateDocuments, limit: plan.limits.privateDocuments },

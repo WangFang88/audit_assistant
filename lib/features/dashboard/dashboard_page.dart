@@ -2074,6 +2074,17 @@ class _DashboardPageState extends State<DashboardPage> {
                       const SizedBox(height: 8),
                       Text('到期时间：${subscription.latestOrder!.expiredAt}'),
                     ],
+                    if (subscription.orderHistory.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Text('订单历史', style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      ...subscription.orderHistory.map(
+                        (order) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text('${order.planType} · ¥${order.amount} · ${order.paidAt} → ${order.expiredAt}'),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Wrap(
                       spacing: 12,

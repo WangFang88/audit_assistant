@@ -159,6 +159,7 @@ class DemoDataService {
 
   SubscriptionOverview getSubscriptionOverview() {
     return const SubscriptionOverview(
+      planId: 'free',
       planName: '免费版',
       priceLabel: '¥0 / 1天试用',
       groupUsage: '项目组 1 / 1',
@@ -180,6 +181,8 @@ class DemoDataService {
       privateDocumentsLimit: 2,
       dailyQueriesUsed: 6,
       dailyQueriesLimit: 10,
+      latestOrder: null,
+      orderHistory: [],
     );
   }
 }

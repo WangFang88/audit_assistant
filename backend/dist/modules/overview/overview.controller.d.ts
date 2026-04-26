@@ -92,6 +92,13 @@ export declare class OverviewController {
                 paidAt: string;
                 expiredAt: string;
             } | null;
+            orderHistory: {
+                id: string;
+                planType: "free" | "weekly" | "monthly" | "yearly";
+                amount: string;
+                paidAt: string;
+                expiredAt: string;
+            }[];
             usage: {
                 groups: {
                     used: number;
