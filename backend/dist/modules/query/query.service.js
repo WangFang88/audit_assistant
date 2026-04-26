@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.QueryRequestDto = exports.QueryService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const auth_service_1 = require("../auth/auth.service");
 const documents_service_1 = require("../documents/documents.service");
 const groups_service_1 = require("../groups/groups.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
@@ -29,12 +30,16 @@ __decorate([
     __metadata("design:type", String)
 ], QueryRequestDto.prototype, "groupId", void 0);
 let QueryService = class QueryService {
-    constructor(documentsService, groupsService, subscriptionsService) {
+    constructor(authService, documentsService, groupsService, subscriptionsService) {
+        this.authService = authService;
         this.documentsService = documentsService;
         this.groupsService = groupsService;
         this.subscriptionsService = subscriptionsService;
     }
     search(dto) {
+        if (this.authService.isAdmin() && dto.groupId != null) {
+            throw new common_1.ForbiddenException('管理员仅可检索公共库，不能按项目组范围检索');
+        }
         const usage = this.subscriptionsService.getUsage();
         this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
         const group = dto.groupId ? this.groupsService.getGroupById(dto.groupId) : null;
@@ -120,7 +125,8 @@ let QueryService = class QueryService {
 exports.QueryService = QueryService;
 exports.QueryService = QueryService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [documents_service_1.DocumentsService,
+    __metadata("design:paramtypes", [auth_service_1.AuthService,
+        documents_service_1.DocumentsService,
         groups_service_1.GroupsService,
         subscriptions_service_1.SubscriptionsService])
 ], QueryService);

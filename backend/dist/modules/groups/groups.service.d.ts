@@ -1,3 +1,4 @@
+import { AuthService } from '../auth/auth.service';
 import { DocumentsService } from '../documents/documents.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
@@ -30,12 +31,14 @@ type MemberRecord = {
     role: 'leader' | 'member';
 };
 export declare class GroupsService {
+    private readonly authService;
     private readonly subscriptionsService;
     private readonly localStateService;
     private readonly documentsService;
-    constructor(subscriptionsService: SubscriptionsService, localStateService: LocalStateService, documentsService: DocumentsService);
+    constructor(authService: AuthService, subscriptionsService: SubscriptionsService, localStateService: LocalStateService, documentsService: DocumentsService);
     private readonly groups;
     private readonly members;
+    private assertAdminCannotManageGroups;
     listGroups(): GroupRecord[];
     persistState(): void;
     getGroupById(groupId: string): GroupRecord;

@@ -1,5 +1,6 @@
-import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
@@ -70,6 +71,7 @@ type DocumentChunkRecord = {
 @Injectable()
 export class DocumentsService {
   constructor(
+    private readonly authService: AuthService,
     @Inject(forwardRef(() => GroupsService))
     private readonly groupsService: GroupsService,
     private readonly localStateService: LocalStateService,
@@ -257,7 +259,26 @@ export class DocumentsService {
     },
   ];
 
+  private assertAdminPublicLibraryOnly(groupId?: string) {
+    if (!this.authService.isAdmin()) {
+      return;
+    }
+
+    if (groupId != null) {
+      throw new ForbiddenException('管理员仅可访问公共库，不能进入项目组私有库');
+    }
+  }
+
+  private assertAdminCanAccessDocument(document: DocumentRecord) {
+    if (!this.authService.isAdmin() || document.libraryType === 'public') {
+      return;
+    }
+
+    throw new ForbiddenException('管理员仅可访问公共库文档，不能查看项目组私有资料');
+  }
+
   listDocuments(groupId?: string) {
+    this.assertAdminPublicLibraryOnly(groupId);
     return this.documents.filter((document) => {
       if (document.libraryType === 'public') {
         return true;
@@ -268,6 +289,7 @@ export class DocumentsService {
   }
 
   listExtractionJobs(groupId?: string) {
+    this.assertAdminPublicLibraryOnly(groupId);
     return this.extractJobs.filter((job) => {
       if (job.groupId == null) {
         return true;
@@ -278,6 +300,7 @@ export class DocumentsService {
   }
 
   getReadyChunks(groupId?: string) {
+    this.assertAdminPublicLibraryOnly(groupId);
     return this.chunks.filter((chunk) => {
       if (chunk.indexStatus !== 'ready') {
         return false;
@@ -292,7 +315,8 @@ export class DocumentsService {
   }
 
   listDocumentChunks(documentId: string) {
-    this.getDocumentById(documentId);
+    const document = this.getDocumentById(documentId);
+    this.assertAdminCanAccessDocument(document);
     return this.chunks.filter((chunk) => chunk.documentId === documentId);
   }
 
@@ -462,6 +486,12 @@ export class DocumentsService {
   }
 
   importDocument(dto: ImportDocumentDto) {
+    if (this.authService.isAdmin()) {
+      if (dto.libraryType !== 'public' || dto.groupId != null) {
+        throw new ForbiddenException('管理员仅可导入公共库文件，不能写入项目组私有库');
+      }
+    }
+
     if (dto.libraryType === 'private') {
       if (!dto.groupId) {
         throw new BadRequestException('私有库导入必须指定项目组');
@@ -544,6 +574,7 @@ export class DocumentsService {
   }
 
   getLibraryScopeSummary(groupId?: string) {
+    this.assertAdminPublicLibraryOnly(groupId);
     const documents = this.listDocuments(groupId);
     const publicDocuments = documents.filter((document) => document.libraryType === 'public').length;
     const privateDocuments = documents.filter((document) => document.libraryType === 'private').length;

@@ -1,5 +1,6 @@
-import { forwardRef, Inject, BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { forwardRef, Inject, BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { IsIn, IsString, MinLength } from 'class-validator';
+import { AuthService } from '../auth/auth.service';
 import { DocumentsService } from '../documents/documents.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
@@ -49,6 +50,7 @@ type MemberRecord = {
 @Injectable()
 export class GroupsService {
   constructor(
+    private readonly authService: AuthService,
     private readonly subscriptionsService: SubscriptionsService,
     private readonly localStateService: LocalStateService,
     @Inject(forwardRef(() => DocumentsService))
@@ -102,6 +104,14 @@ export class GroupsService {
     },
   ];
 
+  private assertAdminCannotManageGroups() {
+    if (!this.authService.isAdmin()) {
+      return;
+    }
+
+    throw new ForbiddenException('管理员不参与项目组，无法执行项目组相关操作');
+  }
+
   listGroups() {
     return this.groups;
   }
@@ -120,6 +130,7 @@ export class GroupsService {
   }
 
   createGroup(dto: CreateGroupDto) {
+    this.assertAdminCannotManageGroups();
     this.subscriptionsService.assertCanCreateGroup(this.groups.length);
 
     const group = {
@@ -148,11 +159,13 @@ export class GroupsService {
   }
 
   listMembers(groupId: string) {
+    this.assertAdminCannotManageGroups();
     this.getGroupById(groupId);
     return this.members.filter((member) => member.groupId === groupId);
   }
 
   invite(groupId: string, dto: InviteMemberDto) {
+    this.assertAdminCannotManageGroups();
     this.getGroupById(groupId);
     return {
       groupId,
@@ -164,6 +177,7 @@ export class GroupsService {
   }
 
   transferLeader(groupId: string, dto: TransferLeaderDto) {
+    this.assertAdminCannotManageGroups();
     const group = this.getGroupById(groupId);
     const currentLeader = this.members.find(
       (member) => member.groupId === groupId && member.userId === group.ownerUserId,
@@ -194,6 +208,7 @@ export class GroupsService {
   }
 
   removeMember(groupId: string, memberId: string) {
+    this.assertAdminCannotManageGroups();
     const group = this.getGroupById(groupId);
     const memberIndex = this.members.findIndex(
       (member) => member.groupId === groupId && member.id === memberId,
@@ -223,6 +238,7 @@ export class GroupsService {
   }
 
   deleteGroup(groupId: string) {
+    this.assertAdminCannotManageGroups();
     const groupIndex = this.groups.findIndex((group) => group.id === groupId);
     if (groupIndex < 0) {
       throw new NotFoundException('项目组不存在');

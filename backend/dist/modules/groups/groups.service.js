@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransferLeaderDto = exports.InviteMemberDto = exports.CreateGroupDto = exports.GroupsService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const auth_service_1 = require("../auth/auth.service");
 const documents_service_1 = require("../documents/documents.service");
 const local_state_service_1 = require("../subscriptions/local-state.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
@@ -50,7 +51,8 @@ __decorate([
     __metadata("design:type", String)
 ], TransferLeaderDto.prototype, "targetUserId", void 0);
 let GroupsService = class GroupsService {
-    constructor(subscriptionsService, localStateService, documentsService) {
+    constructor(authService, subscriptionsService, localStateService, documentsService) {
+        this.authService = authService;
         this.subscriptionsService = subscriptionsService;
         this.localStateService = localStateService;
         this.documentsService = documentsService;
@@ -99,6 +101,12 @@ let GroupsService = class GroupsService {
             this.members.splice(0, this.members.length, ...persistedState.members);
         }
     }
+    assertAdminCannotManageGroups() {
+        if (!this.authService.isAdmin()) {
+            return;
+        }
+        throw new common_1.ForbiddenException('管理员不参与项目组，无法执行项目组相关操作');
+    }
     listGroups() {
         return this.groups;
     }
@@ -113,6 +121,7 @@ let GroupsService = class GroupsService {
         return group;
     }
     createGroup(dto) {
+        this.assertAdminCannotManageGroups();
         this.subscriptionsService.assertCanCreateGroup(this.groups.length);
         const group = {
             id: `group-${this.groups.length + 1}`,
@@ -137,10 +146,12 @@ let GroupsService = class GroupsService {
         return group;
     }
     listMembers(groupId) {
+        this.assertAdminCannotManageGroups();
         this.getGroupById(groupId);
         return this.members.filter((member) => member.groupId === groupId);
     }
     invite(groupId, dto) {
+        this.assertAdminCannotManageGroups();
         this.getGroupById(groupId);
         return {
             groupId,
@@ -151,6 +162,7 @@ let GroupsService = class GroupsService {
         };
     }
     transferLeader(groupId, dto) {
+        this.assertAdminCannotManageGroups();
         const group = this.getGroupById(groupId);
         const currentLeader = this.members.find((member) => member.groupId === groupId && member.userId === group.ownerUserId);
         const newLeader = this.members.find((member) => member.groupId === groupId && member.userId === dto.targetUserId);
@@ -173,6 +185,7 @@ let GroupsService = class GroupsService {
         };
     }
     removeMember(groupId, memberId) {
+        this.assertAdminCannotManageGroups();
         const group = this.getGroupById(groupId);
         const memberIndex = this.members.findIndex((member) => member.groupId === groupId && member.id === memberId);
         if (memberIndex < 0) {
@@ -195,6 +208,7 @@ let GroupsService = class GroupsService {
         };
     }
     deleteGroup(groupId) {
+        this.assertAdminCannotManageGroups();
         const groupIndex = this.groups.findIndex((group) => group.id === groupId);
         if (groupIndex < 0) {
             throw new common_1.NotFoundException('项目组不存在');
@@ -219,8 +233,9 @@ let GroupsService = class GroupsService {
 exports.GroupsService = GroupsService;
 exports.GroupsService = GroupsService = __decorate([
     (0, common_1.Injectable)(),
-    __param(2, (0, common_1.Inject)((0, common_1.forwardRef)(() => documents_service_1.DocumentsService))),
-    __metadata("design:paramtypes", [subscriptions_service_1.SubscriptionsService,
+    __param(3, (0, common_1.Inject)((0, common_1.forwardRef)(() => documents_service_1.DocumentsService))),
+    __metadata("design:paramtypes", [auth_service_1.AuthService,
+        subscriptions_service_1.SubscriptionsService,
         local_state_service_1.LocalStateService,
         documents_service_1.DocumentsService])
 ], GroupsService);

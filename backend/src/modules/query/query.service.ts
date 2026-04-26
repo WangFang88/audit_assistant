@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { IsOptional, IsString, MinLength } from 'class-validator';
+import { AuthService } from '../auth/auth.service';
 import { DocumentsService } from '../documents/documents.service';
 import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
@@ -29,12 +30,17 @@ type CitationRecord = {
 @Injectable()
 export class QueryService {
   constructor(
+    private readonly authService: AuthService,
     private readonly documentsService: DocumentsService,
     private readonly groupsService: GroupsService,
     private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   search(dto: QueryRequestDto) {
+    if (this.authService.isAdmin() && dto.groupId != null) {
+      throw new ForbiddenException('管理员仅可检索公共库，不能按项目组范围检索');
+    }
+
     const usage = this.subscriptionsService.getUsage();
     this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
 

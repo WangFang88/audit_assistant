@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { AuthService } from '../auth/auth.service';
 
 class SendMessageDto {
   @IsIn(['group', 'direct'])
@@ -20,6 +21,8 @@ class SendMessageDto {
 
 @Injectable()
 export class ChatService {
+  constructor(private readonly authService: AuthService) {}
+
   private readonly conversations = [
     {
       id: 'conv-group-1',
@@ -56,7 +59,16 @@ export class ChatService {
     },
   ];
 
+  private assertAdminCannotUseChat() {
+    if (!this.authService.isAdmin()) {
+      return;
+    }
+
+    throw new ForbiddenException('管理员不参与项目组协作，无法使用对话功能');
+  }
+
   listConversations(groupId?: string) {
+    this.assertAdminCannotUseChat();
     return this.conversations.filter((conversation) => {
       if (conversation.type === 'direct') {
         return true;
@@ -67,10 +79,12 @@ export class ChatService {
   }
 
   listMessages(conversationId: string) {
+    this.assertAdminCannotUseChat();
     return this.messages.filter((message) => message.conversationId === conversationId);
   }
 
   sendMessage(dto: SendMessageDto) {
+    this.assertAdminCannotUseChat();
     return {
       id: `msg-${this.messages.length + 1}`,
       conversationId: dto.conversationId,

@@ -157,7 +157,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _switchGroup(String? groupId) async {
-    if (groupId == null || groupId == _selectedGroupId) {
+    if (_isAdmin || groupId == null || groupId == _selectedGroupId) {
       return;
     }
 
@@ -212,12 +212,12 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<_GroupBundle> _loadGroupBundle(String? groupId) async {
-    final conversations = await widget.apiService.fetchConversations(groupId: groupId);
-    final members = groupId == null ? const <GroupMember>[] : await widget.apiService.fetchMembers(groupId);
-    final documents = await widget.apiService.fetchDocuments(groupId: groupId);
-    final extractJobs = await widget.apiService.fetchExtractionJobs(groupId: groupId);
+    final conversations = _isAdmin ? const <ConversationSummary>[] : await widget.apiService.fetchConversations(groupId: groupId);
+    final members = _isAdmin || groupId == null ? const <GroupMember>[] : await widget.apiService.fetchMembers(groupId);
+    final documents = await widget.apiService.fetchDocuments(groupId: _isAdmin ? null : groupId);
+    final extractJobs = await widget.apiService.fetchExtractionJobs(groupId: _isAdmin ? null : groupId);
     final selectedConversationId = _pickConversationId(conversations, groupId);
-    final messages = selectedConversationId == null
+    final messages = _isAdmin || selectedConversationId == null
         ? const <ChatMessage>[]
         : await widget.apiService.fetchMessages(selectedConversationId);
 
@@ -263,6 +263,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> _runSearch() async {
     final question = _questionController.text.trim();
+    final searchGroupId = _isAdmin ? null : _activeGroupId;
     if (question.isEmpty) {
       return;
     }
@@ -283,7 +284,7 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       final result = await widget.apiService.search(
         question: question,
-        groupId: _activeGroupId,
+        groupId: searchGroupId,
       );
       if (!mounted) {
         return;
@@ -315,6 +316,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _loadConversationMessages(String conversationId) async {
+    if (_isAdmin) {
+      return;
+    }
+
     setState(() {
       _chatLoading = true;
       _selectedConversationId = conversationId;
@@ -353,7 +358,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _sendMessage() async {
-    if (_selectedConversationId == null || _messageController.text.trim().isEmpty) {
+    if (_isAdmin || _selectedConversationId == null || _messageController.text.trim().isEmpty) {
       return;
     }
 
@@ -395,7 +400,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _refreshMembers() async {
-    if (_activeGroupId == null) {
+    if (_isAdmin || _activeGroupId == null) {
       return;
     }
 
@@ -442,8 +447,8 @@ class _DashboardPageState extends State<DashboardPage> {
     });
 
     try {
-      final documents = await widget.apiService.fetchDocuments(groupId: _activeGroupId);
-      final jobs = await widget.apiService.fetchExtractionJobs(groupId: _activeGroupId);
+      final documents = await widget.apiService.fetchDocuments(groupId: _isAdmin ? null : _activeGroupId);
+      final jobs = await widget.apiService.fetchExtractionJobs(groupId: _isAdmin ? null : _activeGroupId);
       if (!mounted) {
         return;
       }
@@ -475,6 +480,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _showCreateGroupDialog() async {
+    if (_isAdmin) {
+      return;
+    }
+
     if (_hasReachedGroupLimit) {
       if (!mounted) {
         return;
@@ -529,7 +538,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _showInviteDialog() async {
-    if (_activeGroupId == null) {
+    if (_isAdmin || _activeGroupId == null) {
       if (!mounted) {
         return;
       }
@@ -591,7 +600,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _showTransferLeaderDialog() async {
-    if (_activeGroupId == null) {
+    if (_isAdmin || _activeGroupId == null) {
       if (!mounted) {
         return;
       }
@@ -653,7 +662,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _removeMember(GroupMember member) async {
-    if (_activeGroupId == null || member.role == '组长') {
+    if (_isAdmin || _activeGroupId == null || member.role == '组长') {
       return;
     }
 
@@ -706,6 +715,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _deleteGroup(ProjectGroup group) async {
+    if (_isAdmin) {
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -927,7 +940,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final titleController = TextEditingController();
     final pathController = TextEditingController();
     final rawTextController = TextEditingController();
-    String libraryType = _activeGroupId == null ? '公共库' : '私有库';
+    String libraryType = _isAdmin || _activeGroupId == null ? '公共库' : '私有库';
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -948,9 +961,9 @@ class _DashboardPageState extends State<DashboardPage> {
                     initialValue: libraryType,
                     items: [
                       const DropdownMenuItem(value: '公共库', child: Text('公共库')),
-                      if (_activeGroupId != null) const DropdownMenuItem(value: '私有库', child: Text('私有库')),
+                      if (!_isAdmin && _activeGroupId != null) const DropdownMenuItem(value: '私有库', child: Text('私有库')),
                     ],
-                    onChanged: (value) => setDialogState(() => libraryType = value ?? (_activeGroupId == null ? '公共库' : '私有库')),
+                    onChanged: (value) => setDialogState(() => libraryType = value ?? (_isAdmin || _activeGroupId == null ? '公共库' : '私有库')),
                     decoration: const InputDecoration(labelText: '入库范围'),
                   ),
                   const SizedBox(height: 12),

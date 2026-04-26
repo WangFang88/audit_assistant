@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ImportDocumentDto = exports.DocumentsService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const auth_service_1 = require("../auth/auth.service");
 const groups_service_1 = require("../groups/groups.service");
 const local_state_service_1 = require("../subscriptions/local-state.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
@@ -46,7 +47,8 @@ __decorate([
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "groupId", void 0);
 let DocumentsService = class DocumentsService {
-    constructor(groupsService, localStateService, subscriptionsService) {
+    constructor(authService, groupsService, localStateService, subscriptionsService) {
+        this.authService = authService;
         this.groupsService = groupsService;
         this.localStateService = localStateService;
         this.subscriptionsService = subscriptionsService;
@@ -228,7 +230,22 @@ let DocumentsService = class DocumentsService {
             this.chunks.splice(0, this.chunks.length, ...persistedState.chunks);
         }
     }
+    assertAdminPublicLibraryOnly(groupId) {
+        if (!this.authService.isAdmin()) {
+            return;
+        }
+        if (groupId != null) {
+            throw new common_1.ForbiddenException('管理员仅可访问公共库，不能进入项目组私有库');
+        }
+    }
+    assertAdminCanAccessDocument(document) {
+        if (!this.authService.isAdmin() || document.libraryType === 'public') {
+            return;
+        }
+        throw new common_1.ForbiddenException('管理员仅可访问公共库文档，不能查看项目组私有资料');
+    }
     listDocuments(groupId) {
+        this.assertAdminPublicLibraryOnly(groupId);
         return this.documents.filter((document) => {
             if (document.libraryType === 'public') {
                 return true;
@@ -237,6 +254,7 @@ let DocumentsService = class DocumentsService {
         });
     }
     listExtractionJobs(groupId) {
+        this.assertAdminPublicLibraryOnly(groupId);
         return this.extractJobs.filter((job) => {
             if (job.groupId == null) {
                 return true;
@@ -245,6 +263,7 @@ let DocumentsService = class DocumentsService {
         });
     }
     getReadyChunks(groupId) {
+        this.assertAdminPublicLibraryOnly(groupId);
         return this.chunks.filter((chunk) => {
             if (chunk.indexStatus !== 'ready') {
                 return false;
@@ -256,7 +275,8 @@ let DocumentsService = class DocumentsService {
         });
     }
     listDocumentChunks(documentId) {
-        this.getDocumentById(documentId);
+        const document = this.getDocumentById(documentId);
+        this.assertAdminCanAccessDocument(document);
         return this.chunks.filter((chunk) => chunk.documentId === documentId);
     }
     getDocumentById(documentId) {
@@ -408,6 +428,11 @@ let DocumentsService = class DocumentsService {
         }));
     }
     importDocument(dto) {
+        if (this.authService.isAdmin()) {
+            if (dto.libraryType !== 'public' || dto.groupId != null) {
+                throw new common_1.ForbiddenException('管理员仅可导入公共库文件，不能写入项目组私有库');
+            }
+        }
         if (dto.libraryType === 'private') {
             if (!dto.groupId) {
                 throw new common_1.BadRequestException('私有库导入必须指定项目组');
@@ -479,6 +504,7 @@ let DocumentsService = class DocumentsService {
         this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
     }
     getLibraryScopeSummary(groupId) {
+        this.assertAdminPublicLibraryOnly(groupId);
         const documents = this.listDocuments(groupId);
         const publicDocuments = documents.filter((document) => document.libraryType === 'public').length;
         const privateDocuments = documents.filter((document) => document.libraryType === 'private').length;
@@ -495,8 +521,9 @@ let DocumentsService = class DocumentsService {
 exports.DocumentsService = DocumentsService;
 exports.DocumentsService = DocumentsService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, common_1.Inject)((0, common_1.forwardRef)(() => groups_service_1.GroupsService))),
-    __metadata("design:paramtypes", [groups_service_1.GroupsService,
+    __param(1, (0, common_1.Inject)((0, common_1.forwardRef)(() => groups_service_1.GroupsService))),
+    __metadata("design:paramtypes", [auth_service_1.AuthService,
+        groups_service_1.GroupsService,
         local_state_service_1.LocalStateService,
         subscriptions_service_1.SubscriptionsService])
 ], DocumentsService);

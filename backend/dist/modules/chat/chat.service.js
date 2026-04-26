@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SendMessageDto = exports.ChatService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const auth_service_1 = require("../auth/auth.service");
 class SendMessageDto {
 }
 exports.SendMessageDto = SendMessageDto;
@@ -35,7 +36,8 @@ __decorate([
     __metadata("design:type", String)
 ], SendMessageDto.prototype, "groupId", void 0);
 let ChatService = class ChatService {
-    constructor() {
+    constructor(authService) {
+        this.authService = authService;
         this.conversations = [
             {
                 id: 'conv-group-1',
@@ -71,7 +73,14 @@ let ChatService = class ChatService {
             },
         ];
     }
+    assertAdminCannotUseChat() {
+        if (!this.authService.isAdmin()) {
+            return;
+        }
+        throw new common_1.ForbiddenException('管理员不参与项目组协作，无法使用对话功能');
+    }
     listConversations(groupId) {
+        this.assertAdminCannotUseChat();
         return this.conversations.filter((conversation) => {
             if (conversation.type === 'direct') {
                 return true;
@@ -80,9 +89,11 @@ let ChatService = class ChatService {
         });
     }
     listMessages(conversationId) {
+        this.assertAdminCannotUseChat();
         return this.messages.filter((message) => message.conversationId === conversationId);
     }
     sendMessage(dto) {
+        this.assertAdminCannotUseChat();
         return {
             id: `msg-${this.messages.length + 1}`,
             conversationId: dto.conversationId,
@@ -96,6 +107,7 @@ let ChatService = class ChatService {
 };
 exports.ChatService = ChatService;
 exports.ChatService = ChatService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [auth_service_1.AuthService])
 ], ChatService);
 //# sourceMappingURL=chat.service.js.map

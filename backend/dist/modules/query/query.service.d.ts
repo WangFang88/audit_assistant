@@ -1,3 +1,4 @@
+import { AuthService } from '../auth/auth.service';
 import { DocumentsService } from '../documents/documents.service';
 import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
@@ -17,10 +18,11 @@ type CitationRecord = {
     pageLabel: string;
 };
 export declare class QueryService {
+    private readonly authService;
     private readonly documentsService;
     private readonly groupsService;
     private readonly subscriptionsService;
-    constructor(documentsService: DocumentsService, groupsService: GroupsService, subscriptionsService: SubscriptionsService);
+    constructor(authService: AuthService, documentsService: DocumentsService, groupsService: GroupsService, subscriptionsService: SubscriptionsService);
     search(dto: QueryRequestDto): {
         question: string;
         scope: {

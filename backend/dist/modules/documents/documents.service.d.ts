@@ -1,3 +1,4 @@
+import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
@@ -48,13 +49,16 @@ type DocumentChunkRecord = {
     indexStatus: 'ready' | 'processing';
 };
 export declare class DocumentsService {
+    private readonly authService;
     private readonly groupsService;
     private readonly localStateService;
     private readonly subscriptionsService;
-    constructor(groupsService: GroupsService, localStateService: LocalStateService, subscriptionsService: SubscriptionsService);
+    constructor(authService: AuthService, groupsService: GroupsService, localStateService: LocalStateService, subscriptionsService: SubscriptionsService);
     private readonly documents;
     private readonly extractJobs;
     private readonly chunks;
+    private assertAdminPublicLibraryOnly;
+    private assertAdminCanAccessDocument;
     listDocuments(groupId?: string): DocumentRecord[];
     listExtractionJobs(groupId?: string): ExtractJobRecord[];
     getReadyChunks(groupId?: string): DocumentChunkRecord[];

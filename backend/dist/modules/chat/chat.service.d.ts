@@ -1,3 +1,4 @@
+import { AuthService } from '../auth/auth.service';
 declare class SendMessageDto {
     conversationType: 'group' | 'direct';
     conversationId: string;
@@ -5,8 +6,11 @@ declare class SendMessageDto {
     groupId?: string;
 }
 export declare class ChatService {
+    private readonly authService;
+    constructor(authService: AuthService);
     private readonly conversations;
     private readonly messages;
+    private assertAdminCannotUseChat;
     listConversations(groupId?: string): ({
         id: string;
         type: string;
