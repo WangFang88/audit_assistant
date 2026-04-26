@@ -202,40 +202,106 @@ let DocumentsService = class DocumentsService {
         return document;
     }
     buildChunksForDocument(document) {
-        const baseKeywords = document.title
-            .replace(/某/g, '')
-            .replace(/管理/g, '')
-            .replace(/制度/g, '')
-            .split(/[\s\-/_.]+/)
+        const normalizedTitle = document.title.toLowerCase();
+        const normalizedSource = document.sourcePath.toLowerCase();
+        const baseKeywords = Array.from(new Set(`${document.title} ${document.sourcePath}`
+            .replace(/[()（）_./-]+/g, ' ')
+            .split(/[\s]+/)
             .map((item) => item.trim())
-            .filter((item) => item.length > 0);
-        const chunkA = {
-            id: `chunk-${this.chunks.length + 1}`,
+            .filter((item) => item.length >= 2)));
+        const isProcurement = normalizedTitle.includes('采购') || normalizedSource.includes('purchase');
+        const isFinance = normalizedTitle.includes('资金') || normalizedTitle.includes('预算') || normalizedTitle.includes('财政');
+        const isEquipment = normalizedTitle.includes('设备') || normalizedSource.includes('equipment');
+        const isScan = document.extractionMode === 'ocr';
+        const chunkBlueprints = [
+            {
+                chapterTitle: '第一章 适用范围',
+                articleRef: '第三条',
+                pageLabel: '第 1 页',
+                content: isProcurement
+                    ? `${document.title}适用于项目组采购申请、审批分工和供应商比价管理，未经审批不得先采后补。`
+                    : isFinance
+                        ? `${document.title}适用于预算安排、专项资金使用和绩效跟踪，相关支出须符合既定用途。`
+                        : isEquipment
+                            ? `${document.title}适用于设备采购、领用、维护和盘点，各环节应明确责任人员。`
+                            : `${document.title}适用于项目执行中的职责划分、审批边界和资料管理要求。`,
+                keywords: [
+                    ...baseKeywords,
+                    ...(isProcurement ? ['采购', '审批', '比价', '供应商'] : []),
+                    ...(isFinance ? ['预算', '专项资金', '绩效', '用途'] : []),
+                    ...(isEquipment ? ['设备', '领用', '维护', '盘点'] : []),
+                    '范围',
+                    '职责',
+                ],
+            },
+            {
+                chapterTitle: '第二章 审批与执行',
+                articleRef: '第七条',
+                pageLabel: '第 2 页',
+                content: isProcurement
+                    ? `${document.title}要求对立项、审批、采购执行、验收和付款实行分环节留痕，关键节点应形成书面记录。`
+                    : isFinance
+                        ? `${document.title}要求对申请、审批、拨付、执行和调整全过程留痕，重要事项应附依据材料。`
+                        : isEquipment
+                            ? `${document.title}要求对采购验收、资产登记、使用交接和维护记录实行闭环管理。`
+                            : `${document.title}要求对申请、审批、执行和结果确认形成完整业务闭环。`,
+                keywords: [
+                    ...baseKeywords,
+                    '申请',
+                    '审批',
+                    '执行',
+                    '留痕',
+                    ...(isProcurement ? ['验收', '付款', '立项'] : []),
+                    ...(isFinance ? ['拨付', '调整', '依据'] : []),
+                    ...(isEquipment ? ['登记', '交接', '维护'] : []),
+                ],
+            },
+            {
+                chapterTitle: '第三章 证据与归档',
+                articleRef: '第十二条',
+                pageLabel: '第 3 页',
+                content: isScan
+                    ? `${document.title}作为扫描件入库时，应补充页码标识、关键字段校核结果和 OCR 抽取复核记录。`
+                    : `${document.title}要求对合同、发票、验收单、付款凭证及相关附件统一归档，保证后续查询可追溯。`,
+                keywords: [
+                    ...baseKeywords,
+                    ...(isScan ? ['扫描件', 'OCR', '复核', '页码'] : ['合同', '发票', '验收单', '付款凭证']),
+                    '归档',
+                    '可追溯',
+                ],
+            },
+            {
+                chapterTitle: '第四章 监督与整改',
+                articleRef: '第十六条',
+                pageLabel: '第 4 页',
+                content: isFinance
+                    ? `${document.title}明确对超范围支出、改变资金用途和资料缺失等问题应及时整改，并纳入审计关注事项。`
+                    : isProcurement
+                        ? `${document.title}明确对未审批采购、凭证不完整和验收缺失等问题应限期整改并复核。`
+                        : `${document.title}明确对执行偏差、资料缺漏和责任不清等问题应及时整改并复盘。`,
+                keywords: [
+                    ...baseKeywords,
+                    '整改',
+                    '监督',
+                    '审计',
+                    ...(isFinance ? ['超范围支出', '资金用途'] : []),
+                    ...(isProcurement ? ['未审批采购', '凭证不完整', '验收缺失'] : []),
+                ],
+            },
+        ];
+        return chunkBlueprints.map((blueprint, index) => ({
+            id: `chunk-${this.chunks.length + index + 1}`,
             documentId: document.id,
             groupId: document.groupId,
             libraryType: document.libraryType,
             title: document.title,
-            chapterTitle: '第一章 范围与职责',
-            articleRef: '第一条',
-            pageLabel: '第 1 页',
-            content: `${document.title}明确了适用范围、责任边界、审批职责与资料留痕要求。`,
-            keywords: [...baseKeywords, '范围', '职责', '审批', '留痕'],
+            chapterTitle: blueprint.chapterTitle,
+            articleRef: blueprint.articleRef,
+            pageLabel: blueprint.pageLabel,
+            content: blueprint.content,
+            keywords: Array.from(new Set(blueprint.keywords)),
             indexStatus: 'ready',
-        };
-        const chunkB = {
-            id: `chunk-${this.chunks.length + 2}`,
-            documentId: document.id,
-            groupId: document.groupId,
-            libraryType: document.libraryType,
-            title: document.title,
-            chapterTitle: '第二章 执行与证据',
-            articleRef: '第二条',
-            pageLabel: '第 2 页',
-            content: `${document.title}要求对预算、采购、合同、验收、支付等关键节点保存完整依据。`,
-            keywords: [...baseKeywords, '预算', '采购', '合同', '验收', '支付'],
-            indexStatus: 'ready',
-        };
-        return [chunkA, chunkB];
+        }));
     }
     importDocument(dto) {
         if (dto.libraryType === 'private') {
