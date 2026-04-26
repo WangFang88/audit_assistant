@@ -61,6 +61,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
   String? get _activeGroupId => _selectedGroupId;
 
+  bool get _canImportPublicDocuments {
+    return widget.currentUser.role == '管理员' || widget.currentUser.role == 'admin';
+  }
+
   bool get _hasReachedGroupLimit {
     final subscription = _overview?.subscription;
     if (subscription == null || subscription.groupsLimit <= 0) {
@@ -893,11 +897,19 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _showImportDocumentDialog() async {
+    if (_activeGroupId == null && !_canImportPublicDocuments) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('公共库仅允许管理员导入，请先联系管理员或进入项目组导入私有资料。')));
+      return;
+    }
+
     if (_activeGroupId == null) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('当前未选择项目组，仅建议导入公共库资料。')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('当前未选择项目组，将按公共库导入。')));
     }
 
     if (_hasReachedPrivateDocumentLimit) {
@@ -1547,7 +1559,9 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           FilledButton.tonal(onPressed: _documentsLoading ? null : _refreshDocuments, child: const Text('刷新任务')),
           FilledButton.tonal(
-            onPressed: _hasReachedPrivateDocumentLimit && _activeGroupId != null ? null : _showImportDocumentDialog,
+            onPressed: (_activeGroupId != null || _canImportPublicDocuments) && !(_hasReachedPrivateDocumentLimit && _activeGroupId != null)
+                ? _showImportDocumentDialog
+                : null,
             child: const Text('导入文件'),
           ),
         ],
@@ -1559,7 +1573,9 @@ class _DashboardPageState extends State<DashboardPage> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
-                '当前未选择项目组，仍可导入公共库资料；如需导入私有资料，请先进入项目组。',
+                _canImportPublicDocuments
+                    ? '当前未选择项目组，可导入公共库资料；如需导入私有资料，请先进入项目组。'
+                    : '当前未选择项目组，公共库仅允许管理员导入；如需导入私有资料，请先进入项目组。',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
