@@ -177,6 +177,19 @@ class ApiService {
     return QueryResult.fromJson(json);
   }
 
+  Future<void> createSubscriptionOrder({required String planType}) async {
+    final response = await _requestWithRefresh(
+      (headers) => _client.post(
+        Uri.parse('$_baseUrl/subscriptions/orders'),
+        headers: headers,
+        body: jsonEncode({'planType': planType}),
+      ),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    _decodeMap(response);
+  }
+
   Future<List<ConversationSummary>> fetchConversations({String? groupId}) async {
     final uri = Uri.parse('$_baseUrl/chat/conversations').replace(
       queryParameters: groupId == null ? null : {'groupId': groupId},

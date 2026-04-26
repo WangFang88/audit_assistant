@@ -36,6 +36,7 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _sendingMessage = false;
   bool _membersLoading = false;
   bool _documentsLoading = false;
+  bool _subscribing = false;
   String? _error;
   DashboardOverview? _overview;
   QueryResult? _result;
@@ -488,6 +489,46 @@ class _DashboardPageState extends State<DashboardPage> {
       if (mounted) {
         setState(() {
           _documentsLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _subscribe(String planType) async {
+    if (_isAdmin) {
+      return;
+    }
+
+    setState(() {
+      _subscribing = true;
+      _error = null;
+    });
+
+    try {
+      await widget.apiService.createSubscriptionOrder(planType: planType);
+      await _loadDashboard(preferredGroupId: _activeGroupId);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('订阅已更新。')));
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = '订阅更新失败。';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _subscribing = false;
         });
       }
     }
@@ -2019,6 +2060,25 @@ class _DashboardPageState extends State<DashboardPage> {
                     Text(subscription.documentUsage),
                     const SizedBox(height: 8),
                     Text(subscription.queryUsage),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        FilledButton.tonal(
+                          onPressed: _subscribing ? null : () => _subscribe('weekly'),
+                          child: _subscribing ? const Text('处理中...') : const Text('开通周订阅'),
+                        ),
+                        FilledButton.tonal(
+                          onPressed: _subscribing ? null : () => _subscribe('monthly'),
+                          child: const Text('开通月订阅'),
+                        ),
+                        FilledButton(
+                          onPressed: _subscribing ? null : () => _subscribe('yearly'),
+                          child: const Text('开通年订阅'),
+                        ),
+                      ],
+                    ),
                   ],
           ),
         ),
