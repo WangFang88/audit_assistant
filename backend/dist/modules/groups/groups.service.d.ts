@@ -1,3 +1,4 @@
+import { TeamRepository } from '../../database/repositories/team.repository';
 import { AuthService } from '../auth/auth.service';
 import { DocumentsService } from '../documents/documents.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
@@ -34,16 +35,19 @@ export declare class GroupsService {
     private readonly authService;
     private readonly subscriptionsService;
     private readonly localStateService;
+    private readonly teamRepository;
     private readonly documentsService;
-    constructor(authService: AuthService, subscriptionsService: SubscriptionsService, localStateService: LocalStateService, documentsService: DocumentsService);
+    constructor(authService: AuthService, subscriptionsService: SubscriptionsService, localStateService: LocalStateService, teamRepository: TeamRepository, documentsService: DocumentsService);
     private readonly groups;
     private readonly members;
+    private toTeamSnapshot;
+    private toMemberSnapshot;
+    persistState(): void;
     private assertAdminCannotManageGroups;
     private getCurrentUser;
     private isCurrentUserMemberOfGroup;
     assertCanAccessGroup(groupId: string): void;
     listGroups(): GroupRecord[];
-    persistState(): void;
     getGroupById(groupId: string): GroupRecord;
     createGroup(dto: CreateGroupDto): {
         id: string;

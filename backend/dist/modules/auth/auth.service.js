@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RegisterDto = exports.RefreshTokenDto = exports.LoginDto = exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const auth_user_repository_1 = require("../../database/repositories/auth-user.repository");
 const local_state_service_1 = require("../subscriptions/local-state.service");
 class LoginDto {
 }
@@ -48,8 +49,9 @@ __decorate([
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);
 let AuthService = class AuthService {
-    constructor(localStateService) {
+    constructor(localStateService, authUserRepository) {
         this.localStateService = localStateService;
+        this.authUserRepository = authUserRepository;
         this.demoUsers = [
             {
                 id: 'user-1',
@@ -58,6 +60,7 @@ let AuthService = class AuthService {
                 role: 'admin',
                 trialEndsAt: '2026-05-01',
                 password: '123456',
+                subscriptionType: 'admin-preview',
             },
             {
                 id: 'user-2',
@@ -66,6 +69,7 @@ let AuthService = class AuthService {
                 role: 'member',
                 trialEndsAt: '2026-05-01',
                 password: '123456',
+                subscriptionType: 'free',
             },
             {
                 id: 'user-3',
@@ -74,6 +78,7 @@ let AuthService = class AuthService {
                 role: 'member',
                 trialEndsAt: '2026-05-01',
                 password: '123456',
+                subscriptionType: 'free',
             },
             {
                 id: 'user-4',
@@ -82,17 +87,50 @@ let AuthService = class AuthService {
                 role: 'member',
                 trialEndsAt: '2026-05-01',
                 password: '123456',
+                subscriptionType: 'free',
             },
         ];
         this.registeredUsers = [];
         this.currentUser = this.toPublicUser(this.demoUsers[0]);
         const persistedUsers = this.localStateService.readState().users;
         if (persistedUsers && persistedUsers.length > 0) {
-            this.registeredUsers = persistedUsers.filter((user) => !this.demoUsers.some((demoUser) => demoUser.id === user.id));
+            this.registeredUsers = persistedUsers
+                .filter((user) => !this.demoUsers.some((demoUser) => demoUser.id === user.id))
+                .map((user) => ({
+                id: user.id,
+                name: user.name,
+                phone: user.phone,
+                role: user.role,
+                trialEndsAt: user.trialEndsAt,
+                password: user.password,
+                subscriptionType: 'free',
+            }));
         }
     }
     get users() {
         return [...this.demoUsers, ...this.registeredUsers];
+    }
+    toSnapshot(user) {
+        return {
+            id: user.id,
+            name: user.name,
+            phone: user.phone,
+            role: user.role,
+            trialEndsAt: user.trialEndsAt,
+            passwordHash: user.password,
+            subscriptionType: user.subscriptionType,
+        };
+    }
+    fromSnapshot(snapshot) {
+        return {
+            id: snapshot.id,
+            name: snapshot.name,
+            phone: snapshot.phone,
+            role: snapshot.role,
+            trialEndsAt: snapshot.trialEndsAt,
+            password: snapshot.passwordHash,
+            subscriptionType: snapshot.subscriptionType,
+        };
     }
     toPublicUser(user) {
         return {
@@ -104,7 +142,17 @@ let AuthService = class AuthService {
         };
     }
     persistUsers() {
-        this.localStateService.saveUsers(this.registeredUsers);
+        this.localStateService.saveUsers(this.registeredUsers.map((user) => {
+            const entity = this.authUserRepository.createEntity(this.toSnapshot(user));
+            return {
+                id: entity.id,
+                name: entity.nickname,
+                phone: entity.phone,
+                role: entity.role,
+                trialEndsAt: (entity.subscriptionExpiredAt ?? new Date('2026-05-01T00:00:00.000Z')).toISOString().slice(0, 10),
+                password: entity.passwordHash,
+            };
+        }));
     }
     buildAccessToken(userId) {
         return `demo-access-token-${userId}`;
@@ -168,6 +216,7 @@ let AuthService = class AuthService {
             role: 'member',
             trialEndsAt: '2026-05-01',
             password,
+            subscriptionType: 'free',
         };
         this.registeredUsers = [...this.registeredUsers, user];
         this.persistUsers();
@@ -197,6 +246,7 @@ let AuthService = class AuthService {
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [local_state_service_1.LocalStateService])
+    __metadata("design:paramtypes", [local_state_service_1.LocalStateService,
+        auth_user_repository_1.AuthUserRepository])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

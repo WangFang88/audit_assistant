@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { IsString, Matches, MinLength } from 'class-validator';
+import { AuthUserRepository, AuthUserSnapshot } from '../../database/repositories/auth-user.repository';
 import { LocalStateService } from '../subscriptions/local-state.service';
 
 class LoginDto {
@@ -38,14 +39,28 @@ type DemoUser = {
 
 type AuthUserRecord = DemoUser & {
   password: string;
+  subscriptionType: string;
 };
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly localStateService: LocalStateService) {
+  constructor(
+    private readonly localStateService: LocalStateService,
+    private readonly authUserRepository: AuthUserRepository,
+  ) {
     const persistedUsers = this.localStateService.readState().users;
     if (persistedUsers && persistedUsers.length > 0) {
-      this.registeredUsers = persistedUsers.filter((user) => !this.demoUsers.some((demoUser) => demoUser.id === user.id));
+      this.registeredUsers = persistedUsers
+        .filter((user) => !this.demoUsers.some((demoUser) => demoUser.id === user.id))
+        .map((user) => ({
+          id: user.id,
+          name: user.name,
+          phone: user.phone,
+          role: user.role,
+          trialEndsAt: user.trialEndsAt,
+          password: user.password,
+          subscriptionType: 'free',
+        }));
     }
   }
 
@@ -57,6 +72,7 @@ export class AuthService {
       role: 'admin',
       trialEndsAt: '2026-05-01',
       password: '123456',
+      subscriptionType: 'admin-preview',
     },
     {
       id: 'user-2',
@@ -65,6 +81,7 @@ export class AuthService {
       role: 'member',
       trialEndsAt: '2026-05-01',
       password: '123456',
+      subscriptionType: 'free',
     },
     {
       id: 'user-3',
@@ -73,6 +90,7 @@ export class AuthService {
       role: 'member',
       trialEndsAt: '2026-05-01',
       password: '123456',
+      subscriptionType: 'free',
     },
     {
       id: 'user-4',
@@ -81,6 +99,7 @@ export class AuthService {
       role: 'member',
       trialEndsAt: '2026-05-01',
       password: '123456',
+      subscriptionType: 'free',
     },
   ];
 
@@ -89,6 +108,30 @@ export class AuthService {
 
   private get users() {
     return [...this.demoUsers, ...this.registeredUsers];
+  }
+
+  private toSnapshot(user: AuthUserRecord): AuthUserSnapshot {
+    return {
+      id: user.id,
+      name: user.name,
+      phone: user.phone,
+      role: user.role,
+      trialEndsAt: user.trialEndsAt,
+      passwordHash: user.password,
+      subscriptionType: user.subscriptionType,
+    };
+  }
+
+  private fromSnapshot(snapshot: AuthUserSnapshot): AuthUserRecord {
+    return {
+      id: snapshot.id,
+      name: snapshot.name,
+      phone: snapshot.phone,
+      role: snapshot.role,
+      trialEndsAt: snapshot.trialEndsAt,
+      password: snapshot.passwordHash,
+      subscriptionType: snapshot.subscriptionType,
+    };
   }
 
   private toPublicUser(user: AuthUserRecord): DemoUser {
@@ -102,7 +145,19 @@ export class AuthService {
   }
 
   private persistUsers() {
-    this.localStateService.saveUsers(this.registeredUsers);
+    this.localStateService.saveUsers(
+      this.registeredUsers.map((user) => {
+        const entity = this.authUserRepository.createEntity(this.toSnapshot(user));
+        return {
+          id: entity.id,
+          name: entity.nickname,
+          phone: entity.phone,
+          role: entity.role,
+          trialEndsAt: (entity.subscriptionExpiredAt ?? new Date('2026-05-01T00:00:00.000Z')).toISOString().slice(0, 10),
+          password: entity.passwordHash,
+        };
+      }),
+    );
   }
 
   private buildAccessToken(userId: string) {
@@ -181,6 +236,7 @@ export class AuthService {
       role: 'member',
       trialEndsAt: '2026-05-01',
       password,
+      subscriptionType: 'free',
     };
 
     this.registeredUsers = [...this.registeredUsers, user];

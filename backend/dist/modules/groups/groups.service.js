@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransferLeaderDto = exports.InviteMemberDto = exports.CreateGroupDto = exports.GroupsService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const team_repository_1 = require("../../database/repositories/team.repository");
 const auth_service_1 = require("../auth/auth.service");
 const documents_service_1 = require("../documents/documents.service");
 const local_state_service_1 = require("../subscriptions/local-state.service");
@@ -51,10 +52,11 @@ __decorate([
     __metadata("design:type", String)
 ], TransferLeaderDto.prototype, "targetUserId", void 0);
 let GroupsService = class GroupsService {
-    constructor(authService, subscriptionsService, localStateService, documentsService) {
+    constructor(authService, subscriptionsService, localStateService, teamRepository, documentsService) {
         this.authService = authService;
         this.subscriptionsService = subscriptionsService;
         this.localStateService = localStateService;
+        this.teamRepository = teamRepository;
         this.documentsService = documentsService;
         this.groups = [
             {
@@ -101,6 +103,36 @@ let GroupsService = class GroupsService {
             this.members.splice(0, this.members.length, ...persistedState.members);
         }
     }
+    toTeamSnapshot(group) {
+        return {
+            id: group.id,
+            name: group.name,
+            organizationName: group.organizationName,
+            ownerUserId: group.ownerUserId,
+            memberCount: group.memberCount,
+            privateDocumentCount: group.privateDocumentCount,
+            lastQueryAt: group.lastQueryAt,
+        };
+    }
+    toMemberSnapshot(member) {
+        return {
+            id: member.id,
+            groupId: member.groupId,
+            userId: member.userId,
+            name: member.name,
+            phone: member.phone,
+            role: member.role,
+        };
+    }
+    persistState() {
+        this.localStateService.saveGroups(this.groups.map((group) => {
+            const teamEntity = this.teamRepository.createTeamEntity(this.toTeamSnapshot(group));
+            return this.teamRepository.mapTeamEntity(teamEntity, group.memberCount, group.privateDocumentCount);
+        }), this.members.map((member) => {
+            this.teamRepository.createTeamMemberEntity(this.toMemberSnapshot(member));
+            return member;
+        }));
+    }
     assertAdminCannotManageGroups() {
         if (!this.authService.isAdmin()) {
             return;
@@ -131,9 +163,6 @@ let GroupsService = class GroupsService {
         const currentUserId = this.getCurrentUser().id;
         const memberGroupIds = new Set(this.members.filter((member) => member.userId === currentUserId).map((member) => member.groupId));
         return this.groups.filter((group) => memberGroupIds.has(group.id));
-    }
-    persistState() {
-        this.localStateService.saveGroups(this.groups, this.members);
     }
     getGroupById(groupId) {
         const group = this.groups.find((item) => item.id === groupId);
@@ -256,10 +285,11 @@ let GroupsService = class GroupsService {
 exports.GroupsService = GroupsService;
 exports.GroupsService = GroupsService = __decorate([
     (0, common_1.Injectable)(),
-    __param(3, (0, common_1.Inject)((0, common_1.forwardRef)(() => documents_service_1.DocumentsService))),
+    __param(4, (0, common_1.Inject)((0, common_1.forwardRef)(() => documents_service_1.DocumentsService))),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
         subscriptions_service_1.SubscriptionsService,
         local_state_service_1.LocalStateService,
+        team_repository_1.TeamRepository,
         documents_service_1.DocumentsService])
 ], GroupsService);
 //# sourceMappingURL=groups.service.js.map

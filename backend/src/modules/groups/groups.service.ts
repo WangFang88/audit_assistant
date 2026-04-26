@@ -1,5 +1,6 @@
 import { forwardRef, Inject, BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { IsIn, IsString, MinLength } from 'class-validator';
+import { TeamMemberSnapshot, TeamRepository, TeamSnapshot } from '../../database/repositories/team.repository';
 import { AuthService } from '../auth/auth.service';
 import { DocumentsService } from '../documents/documents.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
@@ -53,6 +54,7 @@ export class GroupsService {
     private readonly authService: AuthService,
     private readonly subscriptionsService: SubscriptionsService,
     private readonly localStateService: LocalStateService,
+    private readonly teamRepository: TeamRepository,
     @Inject(forwardRef(() => DocumentsService))
     private readonly documentsService: DocumentsService,
   ) {
@@ -104,6 +106,42 @@ export class GroupsService {
     },
   ];
 
+  private toTeamSnapshot(group: GroupRecord): TeamSnapshot {
+    return {
+      id: group.id,
+      name: group.name,
+      organizationName: group.organizationName,
+      ownerUserId: group.ownerUserId,
+      memberCount: group.memberCount,
+      privateDocumentCount: group.privateDocumentCount,
+      lastQueryAt: group.lastQueryAt,
+    };
+  }
+
+  private toMemberSnapshot(member: MemberRecord): TeamMemberSnapshot {
+    return {
+      id: member.id,
+      groupId: member.groupId,
+      userId: member.userId,
+      name: member.name,
+      phone: member.phone,
+      role: member.role,
+    };
+  }
+
+  persistState() {
+    this.localStateService.saveGroups(
+      this.groups.map((group) => {
+        const teamEntity = this.teamRepository.createTeamEntity(this.toTeamSnapshot(group));
+        return this.teamRepository.mapTeamEntity(teamEntity, group.memberCount, group.privateDocumentCount);
+      }),
+      this.members.map((member) => {
+        this.teamRepository.createTeamMemberEntity(this.toMemberSnapshot(member));
+        return member;
+      }),
+    );
+  }
+
   private assertAdminCannotManageGroups() {
     if (!this.authService.isAdmin()) {
       return;
@@ -144,10 +182,6 @@ export class GroupsService {
       this.members.filter((member) => member.userId === currentUserId).map((member) => member.groupId),
     );
     return this.groups.filter((group) => memberGroupIds.has(group.id));
-  }
-
-  persistState() {
-    this.localStateService.saveGroups(this.groups, this.members);
   }
 
   getGroupById(groupId: string) {

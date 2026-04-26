@@ -1,3 +1,4 @@
+import { AuthUserRepository } from '../../database/repositories/auth-user.repository';
 import { LocalStateService } from '../subscriptions/local-state.service';
 declare class LoginDto {
     phone: string;
@@ -19,11 +20,14 @@ type DemoUser = {
 };
 export declare class AuthService {
     private readonly localStateService;
-    constructor(localStateService: LocalStateService);
+    private readonly authUserRepository;
+    constructor(localStateService: LocalStateService, authUserRepository: AuthUserRepository);
     private readonly demoUsers;
     private registeredUsers;
     private currentUser;
     private get users();
+    private toSnapshot;
+    private fromSnapshot;
     private toPublicUser;
     private persistUsers;
     private buildAccessToken;
