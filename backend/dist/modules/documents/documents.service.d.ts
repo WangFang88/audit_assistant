@@ -1,4 +1,5 @@
 import { GroupsService } from '../groups/groups.service';
+import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 declare class ImportDocumentDto {
     title: string;
@@ -47,8 +48,9 @@ type DocumentChunkRecord = {
 };
 export declare class DocumentsService {
     private readonly groupsService;
+    private readonly localStateService;
     private readonly subscriptionsService;
-    constructor(groupsService: GroupsService, subscriptionsService: SubscriptionsService);
+    constructor(groupsService: GroupsService, localStateService: LocalStateService, subscriptionsService: SubscriptionsService);
     private readonly documents;
     private readonly extractJobs;
     private readonly chunks;

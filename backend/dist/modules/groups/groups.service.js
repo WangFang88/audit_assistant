@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransferLeaderDto = exports.InviteMemberDto = exports.CreateGroupDto = exports.GroupsService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const local_state_service_1 = require("../subscriptions/local-state.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 class CreateGroupDto {
 }
@@ -45,8 +46,9 @@ __decorate([
     __metadata("design:type", String)
 ], TransferLeaderDto.prototype, "targetUserId", void 0);
 let GroupsService = class GroupsService {
-    constructor(subscriptionsService) {
+    constructor(subscriptionsService, localStateService) {
         this.subscriptionsService = subscriptionsService;
+        this.localStateService = localStateService;
         this.groups = [
             {
                 id: 'group-1',
@@ -84,9 +86,19 @@ let GroupsService = class GroupsService {
                 role: 'member',
             },
         ];
+        const persistedState = this.localStateService.readState();
+        if (persistedState.groups) {
+            this.groups.splice(0, this.groups.length, ...persistedState.groups);
+        }
+        if (persistedState.members) {
+            this.members.splice(0, this.members.length, ...persistedState.members);
+        }
     }
     listGroups() {
         return this.groups;
+    }
+    persistState() {
+        this.localStateService.saveGroups(this.groups, this.members);
     }
     getGroupById(groupId) {
         const group = this.groups.find((item) => item.id === groupId);
@@ -115,6 +127,7 @@ let GroupsService = class GroupsService {
             phone: '13800138000',
             role: 'leader',
         });
+        this.persistState();
         this.subscriptionsService.syncUsage({ groups: this.groups.length });
         return group;
     }
@@ -145,6 +158,7 @@ let GroupsService = class GroupsService {
         }
         newLeader.role = 'leader';
         group.ownerUserId = dto.targetUserId;
+        this.persistState();
         return {
             groupId,
             groupName: group.name,
@@ -165,6 +179,7 @@ let GroupsService = class GroupsService {
         }
         this.members.splice(memberIndex, 1);
         group.memberCount = Math.max(1, group.memberCount - 1);
+        this.persistState();
         return {
             groupId,
             groupName: group.name,
@@ -178,6 +193,7 @@ let GroupsService = class GroupsService {
 exports.GroupsService = GroupsService;
 exports.GroupsService = GroupsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [subscriptions_service_1.SubscriptionsService])
+    __metadata("design:paramtypes", [subscriptions_service_1.SubscriptionsService,
+        local_state_service_1.LocalStateService])
 ], GroupsService);
 //# sourceMappingURL=groups.service.js.map

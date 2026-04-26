@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { IsIn, IsString, MinLength } from 'class-validator';
+import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 class CreateGroupDto {
@@ -46,7 +47,18 @@ type MemberRecord = {
 
 @Injectable()
 export class GroupsService {
-  constructor(private readonly subscriptionsService: SubscriptionsService) {}
+  constructor(
+    private readonly subscriptionsService: SubscriptionsService,
+    private readonly localStateService: LocalStateService,
+  ) {
+    const persistedState = this.localStateService.readState();
+    if (persistedState.groups) {
+      this.groups.splice(0, this.groups.length, ...persistedState.groups);
+    }
+    if (persistedState.members) {
+      this.members.splice(0, this.members.length, ...persistedState.members);
+    }
+  }
 
   private readonly groups: GroupRecord[] = [
     {
@@ -91,6 +103,10 @@ export class GroupsService {
     return this.groups;
   }
 
+  persistState() {
+    this.localStateService.saveGroups(this.groups, this.members);
+  }
+
   getGroupById(groupId: string) {
     const group = this.groups.find((item) => item.id === groupId);
     if (!group) {
@@ -122,6 +138,7 @@ export class GroupsService {
       phone: '13800138000',
       role: 'leader',
     });
+    this.persistState();
     this.subscriptionsService.syncUsage({ groups: this.groups.length });
 
     return group;
@@ -162,6 +179,7 @@ export class GroupsService {
     }
     newLeader.role = 'leader';
     group.ownerUserId = dto.targetUserId;
+    this.persistState();
 
     return {
       groupId,
@@ -189,6 +207,7 @@ export class GroupsService {
 
     this.members.splice(memberIndex, 1);
     group.memberCount = Math.max(1, group.memberCount - 1);
+    this.persistState();
 
     return {
       groupId,

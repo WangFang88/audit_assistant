@@ -13,6 +13,7 @@ exports.ImportDocumentDto = exports.DocumentsService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
 const groups_service_1 = require("../groups/groups.service");
+const local_state_service_1 = require("../subscriptions/local-state.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 class ImportDocumentDto {
 }
@@ -36,8 +37,9 @@ __decorate([
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "groupId", void 0);
 let DocumentsService = class DocumentsService {
-    constructor(groupsService, subscriptionsService) {
+    constructor(groupsService, localStateService, subscriptionsService) {
         this.groupsService = groupsService;
+        this.localStateService = localStateService;
         this.subscriptionsService = subscriptionsService;
         this.documents = [
             {
@@ -157,6 +159,10 @@ let DocumentsService = class DocumentsService {
                 indexStatus: 'ready',
             },
         ];
+        const persistedState = this.localStateService.readState();
+        if (persistedState.documents) {
+            this.documents.splice(0, this.documents.length, ...persistedState.documents);
+        }
     }
     listDocuments(groupId) {
         return this.documents.filter((document) => {
@@ -233,9 +239,11 @@ let DocumentsService = class DocumentsService {
             pipelineStage: 'queued',
         };
         this.documents.push(document);
+        this.localStateService.saveDocuments(this.documents);
         if (dto.libraryType === 'private') {
             const group = this.groupsService.getGroupById(dto.groupId);
             group.privateDocumentCount += 1;
+            this.groupsService.persistState();
             const privateDocumentCount = this.documents.filter((item) => item.libraryType === 'private').length;
             this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
         }
@@ -262,6 +270,7 @@ exports.DocumentsService = DocumentsService;
 exports.DocumentsService = DocumentsService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [groups_service_1.GroupsService,
+        local_state_service_1.LocalStateService,
         subscriptions_service_1.SubscriptionsService])
 ], DocumentsService);
 //# sourceMappingURL=documents.service.js.map

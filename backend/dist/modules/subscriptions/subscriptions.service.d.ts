@@ -1,9 +1,12 @@
+import { LocalStateService } from './local-state.service';
 type UsageSnapshot = {
     groups: number;
     privateDocuments: number;
     dailyQueries: number;
 };
 export declare class SubscriptionsService {
+    private readonly localStateService;
+    constructor(localStateService: LocalStateService);
     private readonly currentPlanId;
     private readonly trialEndsAt;
     private readonly trialDays;

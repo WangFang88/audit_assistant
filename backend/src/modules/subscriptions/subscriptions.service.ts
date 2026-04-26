@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { LocalStateService } from './local-state.service';
 
 type UsageSnapshot = {
   groups: number;
@@ -8,6 +9,13 @@ type UsageSnapshot = {
 
 @Injectable()
 export class SubscriptionsService {
+  constructor(private readonly localStateService: LocalStateService) {
+    const persistedState = this.localStateService.readState();
+    if (persistedState.usage) {
+      this.usage = persistedState.usage;
+    }
+  }
+
   private readonly currentPlanId = 'free';
   private readonly trialEndsAt = '2026-05-01';
   private readonly trialDays = 1;
@@ -77,6 +85,7 @@ export class SubscriptionsService {
       ...this.usage,
       ...usage,
     };
+    this.localStateService.saveUsage(this.usage);
   }
 
   assertCanCreateGroup(currentGroupCount: number) {
@@ -102,6 +111,7 @@ export class SubscriptionsService {
 
   consumeQuery() {
     this.usage.dailyQueries += 1;
+    this.localStateService.saveUsage(this.usage);
   }
 
   getOverview() {

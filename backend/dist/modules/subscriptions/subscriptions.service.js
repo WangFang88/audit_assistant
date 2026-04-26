@@ -5,11 +5,16 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubscriptionsService = void 0;
 const common_1 = require("@nestjs/common");
+const local_state_service_1 = require("./local-state.service");
 let SubscriptionsService = class SubscriptionsService {
-    constructor() {
+    constructor(localStateService) {
+        this.localStateService = localStateService;
         this.currentPlanId = 'free';
         this.trialEndsAt = '2026-05-01';
         this.trialDays = 1;
@@ -64,6 +69,10 @@ let SubscriptionsService = class SubscriptionsService {
                 },
             },
         ];
+        const persistedState = this.localStateService.readState();
+        if (persistedState.usage) {
+            this.usage = persistedState.usage;
+        }
     }
     getCurrentPlan() {
         return this.plans.find((plan) => plan.id === this.currentPlanId) ?? this.plans[0];
@@ -76,6 +85,7 @@ let SubscriptionsService = class SubscriptionsService {
             ...this.usage,
             ...usage,
         };
+        this.localStateService.saveUsage(this.usage);
     }
     assertCanCreateGroup(currentGroupCount) {
         const limit = this.getCurrentPlan().limits.groupCount;
@@ -97,6 +107,7 @@ let SubscriptionsService = class SubscriptionsService {
     }
     consumeQuery() {
         this.usage.dailyQueries += 1;
+        this.localStateService.saveUsage(this.usage);
     }
     getOverview() {
         const plan = this.getCurrentPlan();
@@ -133,6 +144,7 @@ let SubscriptionsService = class SubscriptionsService {
 };
 exports.SubscriptionsService = SubscriptionsService;
 exports.SubscriptionsService = SubscriptionsService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [local_state_service_1.LocalStateService])
 ], SubscriptionsService);
 //# sourceMappingURL=subscriptions.service.js.map

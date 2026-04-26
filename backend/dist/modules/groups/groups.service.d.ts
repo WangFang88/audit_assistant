@@ -1,3 +1,4 @@
+import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 declare class CreateGroupDto {
     name: string;
@@ -29,10 +30,12 @@ type MemberRecord = {
 };
 export declare class GroupsService {
     private readonly subscriptionsService;
-    constructor(subscriptionsService: SubscriptionsService);
+    private readonly localStateService;
+    constructor(subscriptionsService: SubscriptionsService, localStateService: LocalStateService);
     private readonly groups;
     private readonly members;
     listGroups(): GroupRecord[];
+    persistState(): void;
     getGroupById(groupId: string): GroupRecord;
     createGroup(dto: CreateGroupDto): {
         id: string;

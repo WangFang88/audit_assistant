@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { GroupsService } from '../groups/groups.service';
+import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 class ImportDocumentDto {
@@ -65,8 +66,14 @@ type DocumentChunkRecord = {
 export class DocumentsService {
   constructor(
     private readonly groupsService: GroupsService,
+    private readonly localStateService: LocalStateService,
     private readonly subscriptionsService: SubscriptionsService,
-  ) {}
+  ) {
+    const persistedState = this.localStateService.readState();
+    if (persistedState.documents) {
+      this.documents.splice(0, this.documents.length, ...persistedState.documents);
+    }
+  }
 
   private readonly documents: DocumentRecord[] = [
     {
@@ -278,9 +285,11 @@ export class DocumentsService {
     };
 
     this.documents.push(document);
+    this.localStateService.saveDocuments(this.documents);
     if (dto.libraryType === 'private') {
       const group = this.groupsService.getGroupById(dto.groupId!);
       group.privateDocumentCount += 1;
+      this.groupsService.persistState();
       const privateDocumentCount = this.documents.filter((item) => item.libraryType === 'private').length;
       this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
     }
