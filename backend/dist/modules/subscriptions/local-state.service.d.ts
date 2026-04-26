@@ -51,12 +51,29 @@ type PersistedUsageSnapshot = {
     dailyQueries: number;
     dailyQueryDate: string;
 };
+type PersistedConversationRecord = {
+    id: string;
+    type: 'group' | 'direct';
+    title: string;
+    groupId: string | null;
+    unreadCount: number;
+    lastMessage: string;
+};
+type PersistedMessageRecord = {
+    id: string;
+    conversationId: string;
+    senderName: string;
+    content: string;
+    sentAt: string;
+};
 type PersistedState = {
     groups?: PersistedGroupRecord[];
     members?: PersistedMemberRecord[];
     documents?: PersistedDocumentRecord[];
     chunks?: PersistedChunkRecord[];
     usage?: PersistedUsageSnapshot;
+    conversations?: PersistedConversationRecord[];
+    messages?: PersistedMessageRecord[];
 };
 export declare class LocalStateService {
     private readonly filePath;
@@ -65,6 +82,7 @@ export declare class LocalStateService {
     saveDocuments(documents: PersistedDocumentRecord[]): void;
     saveChunks(chunks: PersistedChunkRecord[]): void;
     saveUsage(usage: PersistedUsageSnapshot): void;
+    saveChatState(conversations: PersistedConversationRecord[], messages: PersistedMessageRecord[]): void;
     private writeState;
 }
 export {};

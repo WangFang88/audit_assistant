@@ -13,6 +13,8 @@ exports.SendMessageDto = exports.ChatService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
 const auth_service_1 = require("../auth/auth.service");
+const groups_service_1 = require("../groups/groups.service");
+const local_state_service_1 = require("../subscriptions/local-state.service");
 class SendMessageDto {
 }
 exports.SendMessageDto = SendMessageDto;
@@ -36,8 +38,10 @@ __decorate([
     __metadata("design:type", String)
 ], SendMessageDto.prototype, "groupId", void 0);
 let ChatService = class ChatService {
-    constructor(authService) {
+    constructor(authService, groupsService, localStateService) {
         this.authService = authService;
+        this.groupsService = groupsService;
+        this.localStateService = localStateService;
         this.conversations = [
             {
                 id: 'conv-group-1',
@@ -72,6 +76,13 @@ let ChatService = class ChatService {
                 sentAt: '2026-04-25 15:20',
             },
         ];
+        const persistedState = this.localStateService.readState();
+        if (persistedState.conversations) {
+            this.conversations.splice(0, this.conversations.length, ...persistedState.conversations);
+        }
+        if (persistedState.messages) {
+            this.messages.splice(0, this.messages.length, ...persistedState.messages);
+        }
     }
     assertAdminCannotUseChat() {
         if (!this.authService.isAdmin()) {
@@ -79,8 +90,33 @@ let ChatService = class ChatService {
         }
         throw new common_1.ForbiddenException('管理员不参与项目组协作，无法使用对话功能');
     }
+    persistState() {
+        this.localStateService.saveChatState(this.conversations, this.messages);
+    }
+    assertCanAccessConversation(conversation, groupId) {
+        if (conversation.type === 'direct') {
+            return;
+        }
+        if (conversation.groupId == null) {
+            throw new common_1.ForbiddenException('当前群聊未绑定项目组，暂不可访问');
+        }
+        this.groupsService.assertCanAccessGroup(conversation.groupId);
+        if (groupId != null && conversation.groupId !== groupId) {
+            throw new common_1.ForbiddenException('当前会话不属于所选项目组');
+        }
+    }
+    getConversationById(conversationId) {
+        const conversation = this.conversations.find((item) => item.id === conversationId);
+        if (!conversation) {
+            throw new common_1.NotFoundException('会话不存在');
+        }
+        return conversation;
+    }
     listConversations(groupId) {
         this.assertAdminCannotUseChat();
+        if (groupId != null) {
+            this.groupsService.assertCanAccessGroup(groupId);
+        }
         return this.conversations.filter((conversation) => {
             if (conversation.type === 'direct') {
                 return true;
@@ -90,24 +126,45 @@ let ChatService = class ChatService {
     }
     listMessages(conversationId) {
         this.assertAdminCannotUseChat();
+        const conversation = this.getConversationById(conversationId);
+        this.assertCanAccessConversation(conversation);
         return this.messages.filter((message) => message.conversationId === conversationId);
     }
     sendMessage(dto) {
         this.assertAdminCannotUseChat();
-        return {
+        const conversation = this.getConversationById(dto.conversationId);
+        if (conversation.type !== dto.conversationType) {
+            throw new common_1.ForbiddenException('当前会话类型与发送目标不一致');
+        }
+        this.assertCanAccessConversation(conversation, dto.groupId);
+        const currentUser = this.authService.me();
+        const message = {
             id: `msg-${this.messages.length + 1}`,
             conversationId: dto.conversationId,
-            senderName: '当前用户',
+            senderName: currentUser.name,
             content: dto.content,
-            sentAt: '2026-04-25 18:30',
+            sentAt: '2026-04-26 13:30',
             conversationType: dto.conversationType,
-            groupId: dto.groupId ?? null,
+            groupId: conversation.groupId,
         };
+        this.messages.push({
+            id: message.id,
+            conversationId: message.conversationId,
+            senderName: message.senderName,
+            content: message.content,
+            sentAt: message.sentAt,
+        });
+        conversation.lastMessage = dto.content;
+        conversation.unreadCount = 0;
+        this.persistState();
+        return message;
     }
 };
 exports.ChatService = ChatService;
 exports.ChatService = ChatService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [auth_service_1.AuthService])
+    __metadata("design:paramtypes", [auth_service_1.AuthService,
+        groups_service_1.GroupsService,
+        local_state_service_1.LocalStateService])
 ], ChatService);
 //# sourceMappingURL=chat.service.js.map

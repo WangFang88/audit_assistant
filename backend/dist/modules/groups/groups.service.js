@@ -107,8 +107,30 @@ let GroupsService = class GroupsService {
         }
         throw new common_1.ForbiddenException('管理员不参与项目组，无法执行项目组相关操作');
     }
+    getCurrentUser() {
+        return this.authService.me();
+    }
+    isCurrentUserMemberOfGroup(groupId) {
+        const user = this.getCurrentUser();
+        return this.members.some((member) => member.groupId === groupId && member.userId === user.id);
+    }
+    assertCanAccessGroup(groupId) {
+        if (this.authService.isAdmin()) {
+            throw new common_1.ForbiddenException('管理员不参与项目组，无法访问项目组相关数据');
+        }
+        this.getGroupById(groupId);
+        if (this.isCurrentUserMemberOfGroup(groupId)) {
+            return;
+        }
+        throw new common_1.ForbiddenException('当前账号不属于该项目组，无法访问相关数据');
+    }
     listGroups() {
-        return this.groups;
+        if (this.authService.isAdmin()) {
+            return [];
+        }
+        const currentUserId = this.getCurrentUser().id;
+        const memberGroupIds = new Set(this.members.filter((member) => member.userId === currentUserId).map((member) => member.groupId));
+        return this.groups.filter((group) => memberGroupIds.has(group.id));
     }
     persistState() {
         this.localStateService.saveGroups(this.groups, this.members);
@@ -122,12 +144,13 @@ let GroupsService = class GroupsService {
     }
     createGroup(dto) {
         this.assertAdminCannotManageGroups();
-        this.subscriptionsService.assertCanCreateGroup(this.groups.length);
+        const currentUser = this.getCurrentUser();
+        this.subscriptionsService.assertCanCreateGroup(this.listGroups().length);
         const group = {
             id: `group-${this.groups.length + 1}`,
             name: dto.name,
             organizationName: dto.organizationName,
-            ownerUserId: 'user-1',
+            ownerUserId: currentUser.id,
             memberCount: 1,
             privateDocumentCount: 0,
             lastQueryAt: null,
@@ -136,9 +159,9 @@ let GroupsService = class GroupsService {
         this.members.push({
             id: `member-${this.members.length + 1}`,
             groupId: group.id,
-            userId: 'user-1',
-            name: '审计专员',
-            phone: '13800138000',
+            userId: currentUser.id,
+            name: currentUser.name,
+            phone: currentUser.phone,
             role: 'leader',
         });
         this.persistState();
@@ -147,12 +170,12 @@ let GroupsService = class GroupsService {
     }
     listMembers(groupId) {
         this.assertAdminCannotManageGroups();
-        this.getGroupById(groupId);
+        this.assertCanAccessGroup(groupId);
         return this.members.filter((member) => member.groupId === groupId);
     }
     invite(groupId, dto) {
         this.assertAdminCannotManageGroups();
-        this.getGroupById(groupId);
+        this.assertCanAccessGroup(groupId);
         return {
             groupId,
             inviteCode: 'INVITE-2026',
@@ -163,6 +186,7 @@ let GroupsService = class GroupsService {
     }
     transferLeader(groupId, dto) {
         this.assertAdminCannotManageGroups();
+        this.assertCanAccessGroup(groupId);
         const group = this.getGroupById(groupId);
         const currentLeader = this.members.find((member) => member.groupId === groupId && member.userId === group.ownerUserId);
         const newLeader = this.members.find((member) => member.groupId === groupId && member.userId === dto.targetUserId);
@@ -187,6 +211,7 @@ let GroupsService = class GroupsService {
     removeMember(groupId, memberId) {
         this.assertAdminCannotManageGroups();
         const group = this.getGroupById(groupId);
+        this.assertCanAccessGroup(groupId);
         const memberIndex = this.members.findIndex((member) => member.groupId === groupId && member.id === memberId);
         if (memberIndex < 0) {
             throw new common_1.NotFoundException('成员不存在');
@@ -196,7 +221,7 @@ let GroupsService = class GroupsService {
             throw new common_1.BadRequestException('请先移交组长后再清退当前组长');
         }
         this.members.splice(memberIndex, 1);
-        group.memberCount = Math.max(1, group.memberCount - 1);
+        group.memberCount = this.members.filter((item) => item.groupId === groupId).length;
         this.persistState();
         return {
             groupId,
@@ -209,6 +234,7 @@ let GroupsService = class GroupsService {
     }
     deleteGroup(groupId) {
         this.assertAdminCannotManageGroups();
+        this.assertCanAccessGroup(groupId);
         const groupIndex = this.groups.findIndex((group) => group.id === groupId);
         if (groupIndex < 0) {
             throw new common_1.NotFoundException('项目组不存在');

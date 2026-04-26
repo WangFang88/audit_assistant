@@ -266,6 +266,10 @@ class _DashboardPageState extends State<DashboardPage> {
     final question = _questionController.text.trim();
     final searchGroupId = _isAdmin ? null : _activeGroupId;
     if (question.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请输入审计问题后再执行检索。')));
       return;
     }
 
@@ -359,7 +363,16 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _sendMessage() async {
-    if (_isAdmin || _selectedConversationId == null || _messageController.text.trim().isEmpty) {
+    final content = _messageController.text.trim();
+    if (_isAdmin || _selectedConversationId == null) {
+      return;
+    }
+
+    if (content.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请输入消息内容后再发送。')));
       return;
     }
 
@@ -372,7 +385,7 @@ class _DashboardPageState extends State<DashboardPage> {
       await widget.apiService.sendMessage(
         conversationId: _selectedConversationId!,
         conversationType: _activeConversationType,
-        content: _messageController.text.trim(),
+        content: content,
         groupId: _activeConversationType == 'group' ? _activeGroupId : null,
       );
       _messageController.clear();
@@ -513,7 +526,18 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('创建')),
+          FilledButton(
+            onPressed: () {
+              if (nameController.text.trim().isEmpty || organizationController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('请填写项目组名称和被审计单位。')),
+                );
+                return;
+              }
+              Navigator.pop(context, true);
+            },
+            child: const Text('创建'),
+          ),
         ],
       ),
     );
@@ -573,7 +597,19 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('发送邀请')),
+            FilledButton(
+              onPressed: () {
+                final phone = phoneController.text.trim();
+                if (phone.isEmpty || phone.length < 11) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('请输入 11 位手机号后再发送邀请。')),
+                  );
+                  return;
+                }
+                Navigator.pop(context, true);
+              },
+              child: const Text('发送邀请'),
+            ),
           ],
         ),
       ),
@@ -929,7 +965,7 @@ class _DashboardPageState extends State<DashboardPage> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isAdmin ? '当前为管理员公共库视角，将导入到公共库。' : '当前未选择项目组，将按公共库导入。'),
+          content: Text(_isAdmin ? '当前为管理员公共库视角，将导入到公共库。' : '当前未选择项目组，普通成员不能导入公共库；如需导入资料，请先进入项目组后上传到私有库。'),
         ),
       );
     }
@@ -1047,9 +1083,18 @@ class _DashboardPageState extends State<DashboardPage> {
       return;
     }
 
+    final title = titleController.text.trim();
+    if (title.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请填写文件标题后再导入。')));
+      return;
+    }
+
     try {
       final result = await widget.apiService.importDocument(
-        title: titleController.text.trim(),
+        title: title,
         libraryType: libraryType,
         file: selectedFile!,
         rawText: rawTextController.text.trim().isEmpty ? null : rawTextController.text.trim(),
@@ -1848,32 +1893,33 @@ class _DashboardPageState extends State<DashboardPage> {
                           : ListView(
                               children: _messages
                                   .map(
-                                    (message) => Align(
-                                      alignment: message.senderName == '当前用户'
-                                          ? Alignment.centerRight
-                                          : Alignment.centerLeft,
-                                      child: Container(
-                                        margin: const EdgeInsets.only(bottom: 12),
-                                        padding: const EdgeInsets.all(12),
-                                        constraints: const BoxConstraints(maxWidth: 420),
-                                        decoration: BoxDecoration(
-                                          color: message.senderName == '当前用户'
-                                              ? const Color(0xFFE8F1FF)
-                                              : const Color(0xFFF7F7FA),
-                                          borderRadius: BorderRadius.circular(14),
+                                    (message) {
+                                      final isCurrentUser = message.senderName == widget.currentUser.name;
+                                      return Align(
+                                        alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+                                        child: Container(
+                                          margin: const EdgeInsets.only(bottom: 12),
+                                          padding: const EdgeInsets.all(12),
+                                          constraints: const BoxConstraints(maxWidth: 420),
+                                          decoration: BoxDecoration(
+                                            color: isCurrentUser
+                                                ? const Color(0xFFE8F1FF)
+                                                : const Color(0xFFF7F7FA),
+                                            borderRadius: BorderRadius.circular(14),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(message.senderName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                              const SizedBox(height: 6),
+                                              Text(message.content),
+                                              const SizedBox(height: 6),
+                                              Text(message.sentAt, style: Theme.of(context).textTheme.bodySmall),
+                                            ],
+                                          ),
                                         ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(message.senderName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                            const SizedBox(height: 6),
-                                            Text(message.content),
-                                            const SizedBox(height: 6),
-                                            Text(message.sentAt, style: Theme.of(context).textTheme.bodySmall),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
+                                      );
+                                    },
                                   )
                                   .toList(),
                             ),

@@ -6,10 +6,10 @@ export declare class AuthController {
         accessToken: string;
         refreshToken: string;
         user: {
-            phone: string;
             id: string;
             name: string;
-            role: string;
+            phone: string;
+            role: "admin" | "member";
             trialEndsAt: string;
         };
     };
@@ -20,7 +20,7 @@ export declare class AuthController {
             id: string;
             name: string;
             phone: string;
-            role: string;
+            role: "admin" | "member";
             trialEndsAt: string;
         };
     };
@@ -28,7 +28,7 @@ export declare class AuthController {
         id: string;
         name: string;
         phone: string;
-        role: string;
+        role: "admin" | "member";
         trialEndsAt: string;
     };
 }

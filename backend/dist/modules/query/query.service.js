@@ -40,6 +40,9 @@ let QueryService = class QueryService {
         if (this.authService.isAdmin() && dto.groupId != null) {
             throw new common_1.ForbiddenException('管理员仅可检索公共库，不能按项目组范围检索');
         }
+        if (!this.authService.isAdmin() && dto.groupId != null) {
+            this.groupsService.assertCanAccessGroup(dto.groupId);
+        }
         const usage = this.subscriptionsService.getUsage();
         this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
         const group = dto.groupId ? this.groupsService.getGroupById(dto.groupId) : null;

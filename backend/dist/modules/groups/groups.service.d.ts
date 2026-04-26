@@ -39,6 +39,9 @@ export declare class GroupsService {
     private readonly groups;
     private readonly members;
     private assertAdminCannotManageGroups;
+    private getCurrentUser;
+    private isCurrentUserMemberOfGroup;
+    assertCanAccessGroup(groupId: string): void;
     listGroups(): GroupRecord[];
     persistState(): void;
     getGroupById(groupId: string): GroupRecord;
@@ -56,7 +59,7 @@ export declare class GroupsService {
         groupId: string;
         inviteCode: string;
         phone: string;
-        role: "leader" | "member";
+        role: "member" | "leader";
         expiresAt: string;
     };
     transferLeader(groupId: string, dto: TransferLeaderDto): {

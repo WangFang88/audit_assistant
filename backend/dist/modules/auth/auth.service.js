@@ -35,41 +35,89 @@ __decorate([
 ], RefreshTokenDto.prototype, "refreshToken", void 0);
 let AuthService = class AuthService {
     constructor() {
-        this.accessToken = 'demo-access-token';
-        this.refreshToken = 'demo-refresh-token';
-        this.currentUser = {
-            id: 'user-1',
-            name: '系统管理员',
-            phone: '13800138000',
-            role: 'admin',
-            trialEndsAt: '2026-05-01',
-        };
+        this.users = [
+            {
+                id: 'user-1',
+                name: '系统管理员',
+                phone: '13800138000',
+                role: 'admin',
+                trialEndsAt: '2026-05-01',
+            },
+            {
+                id: 'user-2',
+                name: '审计组长',
+                phone: '13800138001',
+                role: 'member',
+                trialEndsAt: '2026-05-01',
+            },
+            {
+                id: 'user-3',
+                name: '审计助理',
+                phone: '13800138002',
+                role: 'member',
+                trialEndsAt: '2026-05-01',
+            },
+            {
+                id: 'user-4',
+                name: '法规顾问',
+                phone: '13800138003',
+                role: 'member',
+                trialEndsAt: '2026-05-01',
+            },
+        ];
+        this.currentUser = this.users[0];
+    }
+    buildAccessToken(userId) {
+        return `demo-access-token-${userId}`;
+    }
+    buildRefreshToken(userId) {
+        return `demo-refresh-token-${userId}`;
+    }
+    findUserByPhone(phone) {
+        const normalizedPhone = phone.trim();
+        return this.users.find((user) => user.phone === normalizedPhone || (normalizedPhone == 'admin' && user.role === 'admin'));
+    }
+    findUserByToken(token, prefix) {
+        if (!token.startsWith(prefix)) {
+            return null;
+        }
+        const userId = token.slice(prefix.length);
+        return this.users.find((user) => user.id === userId) ?? null;
+    }
+    setCurrentUser(user) {
+        this.currentUser = user;
+        return user;
     }
     login(dto) {
+        const user = this.findUserByPhone(dto.phone);
+        if (!user) {
+            throw new common_1.UnauthorizedException('账号不存在，请使用演示账号登录');
+        }
+        this.setCurrentUser(user);
         return {
-            accessToken: this.accessToken,
-            refreshToken: this.refreshToken,
-            user: {
-                ...this.currentUser,
-                phone: dto.phone,
-            },
+            accessToken: this.buildAccessToken(user.id),
+            refreshToken: this.buildRefreshToken(user.id),
+            user,
         };
     }
     refresh(dto) {
-        if (dto.refreshToken != this.refreshToken) {
+        const user = this.findUserByToken(dto.refreshToken, 'demo-refresh-token-');
+        if (!user) {
             throw new common_1.UnauthorizedException('Refresh token 无效');
         }
+        this.setCurrentUser(user);
         return {
-            accessToken: this.accessToken,
-            refreshToken: this.refreshToken,
-            user: this.currentUser,
+            accessToken: this.buildAccessToken(user.id),
+            refreshToken: this.buildRefreshToken(user.id),
+            user,
         };
     }
     validateAccessToken(token) {
-        if (token !== this.accessToken) {
+        const user = this.findUserByToken(token, 'demo-access-token-');
+        if (!user) {
             return null;
         }
-        return this.currentUser;
+        return this.setCurrentUser(user);
     }
     me() {
         return this.currentUser;

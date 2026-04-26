@@ -1,6 +1,8 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { AuthService } from '../auth/auth.service';
+import { GroupsService } from '../groups/groups.service';
+import { LocalStateService } from '../subscriptions/local-state.service';
 
 class SendMessageDto {
   @IsIn(['group', 'direct'])
@@ -19,11 +21,40 @@ class SendMessageDto {
   groupId?: string;
 }
 
+type ConversationRecord = {
+  id: string;
+  type: 'group' | 'direct';
+  title: string;
+  groupId: string | null;
+  unreadCount: number;
+  lastMessage: string;
+};
+
+type MessageRecord = {
+  id: string;
+  conversationId: string;
+  senderName: string;
+  content: string;
+  sentAt: string;
+};
+
 @Injectable()
 export class ChatService {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly groupsService: GroupsService,
+    private readonly localStateService: LocalStateService,
+  ) {
+    const persistedState = this.localStateService.readState();
+    if (persistedState.conversations) {
+      this.conversations.splice(0, this.conversations.length, ...persistedState.conversations);
+    }
+    if (persistedState.messages) {
+      this.messages.splice(0, this.messages.length, ...persistedState.messages);
+    }
+  }
 
-  private readonly conversations = [
+  private readonly conversations: ConversationRecord[] = [
     {
       id: 'conv-group-1',
       type: 'group',
@@ -42,7 +73,7 @@ export class ChatService {
     },
   ];
 
-  private readonly messages = [
+  private readonly messages: MessageRecord[] = [
     {
       id: 'msg-1',
       conversationId: 'conv-group-1',
@@ -67,8 +98,40 @@ export class ChatService {
     throw new ForbiddenException('管理员不参与项目组协作，无法使用对话功能');
   }
 
+  private persistState() {
+    this.localStateService.saveChatState(this.conversations, this.messages);
+  }
+
+  private assertCanAccessConversation(conversation: ConversationRecord, groupId?: string) {
+    if (conversation.type === 'direct') {
+      return;
+    }
+
+    if (conversation.groupId == null) {
+      throw new ForbiddenException('当前群聊未绑定项目组，暂不可访问');
+    }
+
+    this.groupsService.assertCanAccessGroup(conversation.groupId);
+    if (groupId != null && conversation.groupId !== groupId) {
+      throw new ForbiddenException('当前会话不属于所选项目组');
+    }
+  }
+
+  private getConversationById(conversationId: string) {
+    const conversation = this.conversations.find((item) => item.id === conversationId);
+    if (!conversation) {
+      throw new NotFoundException('会话不存在');
+    }
+
+    return conversation;
+  }
+
   listConversations(groupId?: string) {
     this.assertAdminCannotUseChat();
+    if (groupId != null) {
+      this.groupsService.assertCanAccessGroup(groupId);
+    }
+
     return this.conversations.filter((conversation) => {
       if (conversation.type === 'direct') {
         return true;
@@ -80,20 +143,44 @@ export class ChatService {
 
   listMessages(conversationId: string) {
     this.assertAdminCannotUseChat();
+    const conversation = this.getConversationById(conversationId);
+    this.assertCanAccessConversation(conversation);
     return this.messages.filter((message) => message.conversationId === conversationId);
   }
 
   sendMessage(dto: SendMessageDto) {
     this.assertAdminCannotUseChat();
-    return {
+    const conversation = this.getConversationById(dto.conversationId);
+
+    if (conversation.type !== dto.conversationType) {
+      throw new ForbiddenException('当前会话类型与发送目标不一致');
+    }
+
+    this.assertCanAccessConversation(conversation, dto.groupId);
+
+    const currentUser = this.authService.me();
+    const message = {
       id: `msg-${this.messages.length + 1}`,
       conversationId: dto.conversationId,
-      senderName: '当前用户',
+      senderName: currentUser.name,
       content: dto.content,
-      sentAt: '2026-04-25 18:30',
+      sentAt: '2026-04-26 13:30',
       conversationType: dto.conversationType,
-      groupId: dto.groupId ?? null,
+      groupId: conversation.groupId,
     };
+
+    this.messages.push({
+      id: message.id,
+      conversationId: message.conversationId,
+      senderName: message.senderName,
+      content: message.content,
+      sentAt: message.sentAt,
+    });
+    conversation.lastMessage = dto.content;
+    conversation.unreadCount = 0;
+    this.persistState();
+
+    return message;
   }
 }
 

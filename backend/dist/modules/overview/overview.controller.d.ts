@@ -7,7 +7,7 @@ export declare class OverviewController {
             id: string;
             name: string;
             phone: string;
-            role: string;
+            role: "admin" | "member";
             trialEndsAt: string;
         };
         activeContext: {
@@ -122,21 +122,14 @@ export declare class OverviewController {
                 yearly: string;
             };
         };
-        conversations: ({
+        conversations: {
             id: string;
-            type: string;
+            type: "group" | "direct";
             title: string;
-            groupId: string;
+            groupId: string | null;
             unreadCount: number;
             lastMessage: string;
-        } | {
-            id: string;
-            type: string;
-            title: string;
-            groupId: null;
-            unreadCount: number;
-            lastMessage: string;
-        })[];
+        }[];
         featuredQuery: {
             question: string;
             scope: {

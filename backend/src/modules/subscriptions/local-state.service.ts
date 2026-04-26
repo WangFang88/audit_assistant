@@ -60,12 +60,31 @@ type PersistedUsageSnapshot = {
   dailyQueryDate: string;
 };
 
+type PersistedConversationRecord = {
+  id: string;
+  type: 'group' | 'direct';
+  title: string;
+  groupId: string | null;
+  unreadCount: number;
+  lastMessage: string;
+};
+
+type PersistedMessageRecord = {
+  id: string;
+  conversationId: string;
+  senderName: string;
+  content: string;
+  sentAt: string;
+};
+
 type PersistedState = {
   groups?: PersistedGroupRecord[];
   members?: PersistedMemberRecord[];
   documents?: PersistedDocumentRecord[];
   chunks?: PersistedChunkRecord[];
   usage?: PersistedUsageSnapshot;
+  conversations?: PersistedConversationRecord[];
+  messages?: PersistedMessageRecord[];
 };
 
 @Injectable()
@@ -103,6 +122,10 @@ export class LocalStateService {
 
   saveUsage(usage: PersistedUsageSnapshot) {
     this.writeState({ usage });
+  }
+
+  saveChatState(conversations: PersistedConversationRecord[], messages: PersistedMessageRecord[]) {
+    this.writeState({ conversations, messages });
   }
 
   private writeState(partial: PersistedState) {

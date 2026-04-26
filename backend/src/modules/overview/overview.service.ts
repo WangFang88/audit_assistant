@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
 import { DocumentsService } from '../documents/documents.service';
@@ -23,6 +23,54 @@ export class OverviewService {
     const visibleGroups = isAdmin ? [] : this.groupsService.listGroups();
     const effectiveGroupId = isAdmin ? undefined : groupId ?? visibleGroups[0]?.id;
     const activeGroup = effectiveGroupId ? this.groupsService.getGroupById(effectiveGroupId) : null;
+    let featuredQuery;
+
+    try {
+      featuredQuery = this.queryService.search({
+        question: '请检索与专项资金使用和采购审批相关的制度依据。',
+        groupId: effectiveGroupId,
+      });
+    } catch (error) {
+      if (!(error instanceof BadRequestException)) {
+        throw error;
+      }
+
+      featuredQuery = {
+        question: '请检索与专项资金使用和采购审批相关的制度依据。',
+        scope: {
+          scopeMode: effectiveGroupId == null ? 'public_only' : 'public_plus_current_group_private',
+          label: effectiveGroupId == null ? '仅公共库' : '公共库 + 当前项目组私有库',
+          publicLibrary: true,
+          privateLibrary: effectiveGroupId != null,
+          groupId: effectiveGroupId ?? null,
+          groupName: activeGroup?.name ?? null,
+          isolationNotice:
+            effectiveGroupId == null
+              ? isAdmin
+                ? '当前为管理员视角，仅管理公共基础库，不加入项目组。'
+                : '当前未进入项目组，仅可检索公共基础库。'
+              : '当前仅检索本项目组私有资料，不跨项目组读取私有库。',
+        },
+        pipeline: ['范围过滤', '关键词召回', '语义召回', '融合重排', '阿里千问生成（目标）'],
+        retrievalStats: {
+          queryMode: 'featured-query-unavailable',
+          tokenCount: 0,
+          candidateChunks: 0,
+          returnedCitations: 0,
+          publicLibraryHits: 0,
+          privateLibraryHits: 0,
+        },
+        ragMeta: {
+          retrievalMode: 'hybrid',
+          generationProviderTarget: 'Qwen',
+          prototypeMode: 'chunk-indexed-prototype',
+          answerTraceable: true,
+        },
+        answer: error.message,
+        citations: [],
+        explanation: '首页精选检索当前未执行，工作台其余数据仍可正常加载。',
+      };
+    }
 
     return {
       user,
@@ -71,10 +119,7 @@ export class OverviewService {
       libraryScope: this.documentsService.getLibraryScopeSummary(effectiveGroupId),
       subscription: this.subscriptionsService.getOverview(),
       conversations: isAdmin ? [] : this.chatService.listConversations(effectiveGroupId),
-      featuredQuery: this.queryService.search({
-        question: '请检索与专项资金使用和采购审批相关的制度依据。',
-        groupId: effectiveGroupId,
-      }),
+      featuredQuery,
     };
   }
 }

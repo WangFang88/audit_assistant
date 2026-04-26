@@ -1,38 +1,40 @@
 import { AuthService } from '../auth/auth.service';
+import { GroupsService } from '../groups/groups.service';
+import { LocalStateService } from '../subscriptions/local-state.service';
 declare class SendMessageDto {
     conversationType: 'group' | 'direct';
     conversationId: string;
     content: string;
     groupId?: string;
 }
+type ConversationRecord = {
+    id: string;
+    type: 'group' | 'direct';
+    title: string;
+    groupId: string | null;
+    unreadCount: number;
+    lastMessage: string;
+};
+type MessageRecord = {
+    id: string;
+    conversationId: string;
+    senderName: string;
+    content: string;
+    sentAt: string;
+};
 export declare class ChatService {
     private readonly authService;
-    constructor(authService: AuthService);
+    private readonly groupsService;
+    private readonly localStateService;
+    constructor(authService: AuthService, groupsService: GroupsService, localStateService: LocalStateService);
     private readonly conversations;
     private readonly messages;
     private assertAdminCannotUseChat;
-    listConversations(groupId?: string): ({
-        id: string;
-        type: string;
-        title: string;
-        groupId: string;
-        unreadCount: number;
-        lastMessage: string;
-    } | {
-        id: string;
-        type: string;
-        title: string;
-        groupId: null;
-        unreadCount: number;
-        lastMessage: string;
-    })[];
-    listMessages(conversationId: string): {
-        id: string;
-        conversationId: string;
-        senderName: string;
-        content: string;
-        sentAt: string;
-    }[];
+    private persistState;
+    private assertCanAccessConversation;
+    private getConversationById;
+    listConversations(groupId?: string): ConversationRecord[];
+    listMessages(conversationId: string): MessageRecord[];
     sendMessage(dto: SendMessageDto): {
         id: string;
         conversationId: string;

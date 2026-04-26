@@ -244,6 +244,9 @@ let DocumentsService = class DocumentsService {
     }
     listDocuments(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
+        if (!this.authService.isAdmin() && groupId != null) {
+            this.groupsService.assertCanAccessGroup(groupId);
+        }
         return this.documents.filter((document) => {
             if (document.libraryType === 'public') {
                 return true;
@@ -253,6 +256,9 @@ let DocumentsService = class DocumentsService {
     }
     listExtractionJobs(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
+        if (!this.authService.isAdmin() && groupId != null) {
+            this.groupsService.assertCanAccessGroup(groupId);
+        }
         return this.extractJobs.filter((job) => {
             if (job.groupId == null) {
                 return true;
@@ -262,6 +268,9 @@ let DocumentsService = class DocumentsService {
     }
     getReadyChunks(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
+        if (!this.authService.isAdmin() && groupId != null) {
+            this.groupsService.assertCanAccessGroup(groupId);
+        }
         return this.chunks.filter((chunk) => {
             if (chunk.indexStatus !== 'ready') {
                 return false;
@@ -275,6 +284,9 @@ let DocumentsService = class DocumentsService {
     listDocumentChunks(documentId) {
         const document = this.getDocumentById(documentId);
         this.assertAdminCanAccessDocument(document);
+        if (!this.authService.isAdmin() && document.libraryType === 'private' && document.groupId != null) {
+            this.groupsService.assertCanAccessGroup(document.groupId);
+        }
         return this.chunks.filter((chunk) => chunk.documentId === documentId);
     }
     getDocumentById(documentId) {
@@ -479,7 +491,7 @@ let DocumentsService = class DocumentsService {
             if (!dto.groupId) {
                 throw new common_1.BadRequestException('私有库导入必须指定项目组');
             }
-            this.groupsService.getGroupById(dto.groupId);
+            this.groupsService.assertCanAccessGroup(dto.groupId);
             const currentPrivateDocuments = this.documents.filter((document) => document.libraryType === 'private').length;
             this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
         }
