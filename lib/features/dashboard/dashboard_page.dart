@@ -1859,34 +1859,62 @@ class _DashboardPageState extends State<DashboardPage> {
       padding: const EdgeInsets.all(24),
       children: [
         SectionCard(
-          title: '账户信息',
+          title: _isAdmin ? '管理员账户' : '账户信息',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('姓名：${user.name}'),
               const SizedBox(height: 8),
-              Text('手机号：${user.phone}'),
+              Text(_isAdmin ? '管理员账号：admin' : '手机号：${user.phone}'),
               const SizedBox(height: 8),
               Text('角色：${user.role}'),
+              if (_isAdmin) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '当前账号用于公共基础库管理与演示预览，不加入项目组，不参与组内协作。',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
             ],
           ),
         ),
         const SizedBox(height: 16),
         SectionCard(
-          title: '订阅与限制',
+          title: _isAdmin ? '管理员职责' : '订阅与限制',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(subscription.planName),
-              const SizedBox(height: 8),
-              Text(subscription.priceLabel),
-              const SizedBox(height: 8),
-              Text(subscription.groupUsage),
-              const SizedBox(height: 8),
-              Text(subscription.documentUsage),
-              const SizedBox(height: 8),
-              Text(subscription.queryUsage),
-            ],
+            children: _isAdmin
+                ? [
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: const [
+                        SizedBox(width: 180, child: _MetricTile(label: '当前视角', value: '公共库管理')),
+                        SizedBox(width: 180, child: _MetricTile(label: '项目组状态', value: '不加入项目组')),
+                        SizedBox(width: 180, child: _MetricTile(label: '导入权限', value: '公共库已开启')),
+                        SizedBox(width: 180, child: _MetricTile(label: '查询额度', value: '管理员预览')),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ...const [
+                      Text('• 负责导入和维护公共制度、规范、审计依据等资料。'),
+                      SizedBox(height: 8),
+                      Text('• 查询默认仅检索公共基础库，不读取任何项目组私有资料。'),
+                      SizedBox(height: 8),
+                      Text('• 项目组成员管理、群聊协作和私有库导入已从管理员视角隐藏。'),
+                    ],
+                  ]
+                : [
+                    Text(subscription.planName),
+                    const SizedBox(height: 8),
+                    Text(subscription.priceLabel),
+                    const SizedBox(height: 8),
+                    Text(subscription.groupUsage),
+                    const SizedBox(height: 8),
+                    Text(subscription.documentUsage),
+                    const SizedBox(height: 8),
+                    Text(subscription.queryUsage),
+                  ],
           ),
         ),
       ],
