@@ -1435,10 +1435,16 @@ class _DashboardPageState extends State<DashboardPage> {
                 width: 160,
                 child: _MetricTile(label: '公共库命中', value: '${result.retrievalStats.publicLibraryHits}'),
               ),
-              SizedBox(
-                width: 160,
-                child: _MetricTile(label: '私有库命中', value: '${result.retrievalStats.privateLibraryHits}'),
-              ),
+              if (_isAdmin)
+                const SizedBox(
+                  width: 180,
+                  child: _MetricTile(label: '当前结果范围', value: '仅公共库命中'),
+                )
+              else
+                SizedBox(
+                  width: 160,
+                  child: _MetricTile(label: '私有库命中', value: '${result.retrievalStats.privateLibraryHits}'),
+                ),
             ],
           ),
           const SizedBox(height: 16),
