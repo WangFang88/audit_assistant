@@ -1,0 +1,28 @@
+{
+  "usage": {
+    "groups": 1,
+    "privateDocuments": 2,
+    "dailyQueries": 9
+  },
+  "groups": [
+    {
+      "id": "group-1",
+      "name": "某区财政局审计组",
+      "organizationName": "某区财政局",
+      "ownerUserId": "user-1",
+      "memberCount": 2,
+      "privateDocumentCount": 2,
+      "lastQueryAt": "2026-04-25 16:20"
+    }
+  ],
+  "members": [
+    {
+      "id": "member-1",
+      "groupId": "group-1",
+      "userId": "user-1",
+      "name": "审计专员",
+      "phone": "13800138000",
+      "role": "leader"
+    }
+  ]
+}

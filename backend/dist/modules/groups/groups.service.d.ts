@@ -1,3 +1,4 @@
+import { DocumentsService } from '../documents/documents.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 declare class CreateGroupDto {
@@ -31,7 +32,8 @@ type MemberRecord = {
 export declare class GroupsService {
     private readonly subscriptionsService;
     private readonly localStateService;
-    constructor(subscriptionsService: SubscriptionsService, localStateService: LocalStateService);
+    private readonly documentsService;
+    constructor(subscriptionsService: SubscriptionsService, localStateService: LocalStateService, documentsService: DocumentsService);
     private readonly groups;
     private readonly members;
     listGroups(): GroupRecord[];
@@ -68,6 +70,12 @@ export declare class GroupsService {
         removedUserId: string;
         removedAt: string;
         memberCount: number;
+    };
+    deleteGroup(groupId: string): {
+        deletedGroupId: string;
+        deletedGroupName: string;
+        deletedAt: string;
+        remainingGroups: number;
     };
 }
 export { CreateGroupDto, InviteMemberDto, TransferLeaderDto };

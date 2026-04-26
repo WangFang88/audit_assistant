@@ -8,10 +8,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransferLeaderDto = exports.InviteMemberDto = exports.CreateGroupDto = exports.GroupsService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const documents_service_1 = require("../documents/documents.service");
 const local_state_service_1 = require("../subscriptions/local-state.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 class CreateGroupDto {
@@ -46,9 +50,10 @@ __decorate([
     __metadata("design:type", String)
 ], TransferLeaderDto.prototype, "targetUserId", void 0);
 let GroupsService = class GroupsService {
-    constructor(subscriptionsService, localStateService) {
+    constructor(subscriptionsService, localStateService, documentsService) {
         this.subscriptionsService = subscriptionsService;
         this.localStateService = localStateService;
+        this.documentsService = documentsService;
         this.groups = [
             {
                 id: 'group-1',
@@ -189,11 +194,34 @@ let GroupsService = class GroupsService {
             memberCount: group.memberCount,
         };
     }
+    deleteGroup(groupId) {
+        const groupIndex = this.groups.findIndex((group) => group.id === groupId);
+        if (groupIndex < 0) {
+            throw new common_1.NotFoundException('项目组不存在');
+        }
+        if (this.groups.length <= 1) {
+            throw new common_1.BadRequestException('至少需要保留 1 个项目组，暂不支持删除最后一个项目组');
+        }
+        const group = this.groups[groupIndex];
+        this.groups.splice(groupIndex, 1);
+        this.members.splice(0, this.members.length, ...this.members.filter((member) => member.groupId !== groupId));
+        this.documentsService.removeGroupDocuments(groupId);
+        this.persistState();
+        this.subscriptionsService.syncUsage({ groups: this.groups.length });
+        return {
+            deletedGroupId: group.id,
+            deletedGroupName: group.name,
+            deletedAt: '2026-04-26 13:10',
+            remainingGroups: this.groups.length,
+        };
+    }
 };
 exports.GroupsService = GroupsService;
 exports.GroupsService = GroupsService = __decorate([
     (0, common_1.Injectable)(),
+    __param(2, (0, common_1.Inject)((0, common_1.forwardRef)(() => documents_service_1.DocumentsService))),
     __metadata("design:paramtypes", [subscriptions_service_1.SubscriptionsService,
-        local_state_service_1.LocalStateService])
+        local_state_service_1.LocalStateService,
+        documents_service_1.DocumentsService])
 ], GroupsService);
 //# sourceMappingURL=groups.service.js.map

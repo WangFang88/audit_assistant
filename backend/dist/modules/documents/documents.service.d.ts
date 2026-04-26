@@ -76,6 +76,7 @@ export declare class DocumentsService {
         vectorStoreTarget: "pgvector";
         pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
     };
+    removeGroupDocuments(groupId: string): void;
     getLibraryScopeSummary(groupId?: string): {
         scopeMode: string;
         includesPublicLibrary: boolean;

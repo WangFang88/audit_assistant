@@ -37,6 +37,9 @@ let GroupsController = class GroupsController {
     removeMember(groupId, memberId) {
         return this.groupsService.removeMember(groupId, memberId);
     }
+    deleteGroup(groupId) {
+        return this.groupsService.deleteGroup(groupId);
+    }
 };
 exports.GroupsController = GroupsController;
 __decorate([
@@ -83,6 +86,13 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], GroupsController.prototype, "removeMember", null);
+__decorate([
+    (0, common_1.Delete)(':groupId'),
+    __param(0, (0, common_1.Param)('groupId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], GroupsController.prototype, "deleteGroup", null);
 exports.GroupsController = GroupsController = __decorate([
     (0, common_1.Controller)('groups'),
     __metadata("design:paramtypes", [groups_service_1.GroupsService])

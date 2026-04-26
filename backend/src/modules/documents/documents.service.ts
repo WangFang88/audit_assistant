@@ -300,6 +300,15 @@ export class DocumentsService {
     };
   }
 
+  removeGroupDocuments(groupId: string) {
+    const remainingDocuments = this.documents.filter((document) => document.groupId !== groupId);
+    this.documents.splice(0, this.documents.length, ...remainingDocuments);
+    this.localStateService.saveDocuments(this.documents);
+
+    const privateDocumentCount = this.documents.filter((document) => document.libraryType === 'private').length;
+    this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
+  }
+
   getLibraryScopeSummary(groupId?: string) {
     const documents = this.listDocuments(groupId);
     const publicDocuments = documents.filter((document) => document.libraryType === 'public').length;

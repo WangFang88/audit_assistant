@@ -252,6 +252,13 @@ let DocumentsService = class DocumentsService {
             notes: '导入后会执行文字抽取、多模态拆解、结构化切分与向量化入库，查询阶段不直接扫描原文件。',
         };
     }
+    removeGroupDocuments(groupId) {
+        const remainingDocuments = this.documents.filter((document) => document.groupId !== groupId);
+        this.documents.splice(0, this.documents.length, ...remainingDocuments);
+        this.localStateService.saveDocuments(this.documents);
+        const privateDocumentCount = this.documents.filter((document) => document.libraryType === 'private').length;
+        this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
+    }
     getLibraryScopeSummary(groupId) {
         const documents = this.listDocuments(groupId);
         const publicDocuments = documents.filter((document) => document.libraryType === 'public').length;

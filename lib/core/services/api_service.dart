@@ -306,6 +306,16 @@ class ApiService {
     _decodeMap(response);
   }
 
+  Future<void> deleteGroup({required String groupId}) async {
+    final response = await _requestWithRefresh(
+      (headers) => _client.delete(
+        Uri.parse('$_baseUrl/groups/$groupId'),
+        headers: headers,
+      ),
+    );
+    _decodeMap(response);
+  }
+
   Future<void> _refreshSession() async {
     final refreshToken = await getRefreshToken();
     if (refreshToken == null) {

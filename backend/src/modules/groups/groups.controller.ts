@@ -42,4 +42,9 @@ export class GroupsController {
   removeMember(@Param('groupId') groupId: string, @Param('memberId') memberId: string) {
     return this.groupsService.removeMember(groupId, memberId);
   }
+
+  @Delete(':groupId')
+  deleteGroup(@Param('groupId') groupId: string) {
+    return this.groupsService.deleteGroup(groupId);
+  }
 }

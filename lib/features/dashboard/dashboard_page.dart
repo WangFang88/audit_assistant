@@ -696,6 +696,54 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  Future<void> _deleteGroup(ProjectGroup group) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认删除项目组'),
+        content: Text('确定要删除 ${group.name} 吗？该项目组成员与私有库文档也会一起移除。'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('确认删除')),
+        ],
+      ),
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    setState(() {
+      _switchingGroup = true;
+      _error = null;
+    });
+
+    try {
+      await widget.apiService.deleteGroup(groupId: group.id);
+      await _loadDashboard();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = '项目组删除失败。';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _switchingGroup = false;
+        });
+      }
+    }
+  }
+
   Future<void> _showImportDocumentDialog() async {
     if (_activeGroupId == null) {
       if (!mounted) {
@@ -1214,6 +1262,14 @@ class _DashboardPageState extends State<DashboardPage> {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
+          if (groups.length <= 1)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                '当前仅剩 1 个项目组，暂不支持删除最后一个项目组。',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
           ...groups.map(
             (group) => ListTile(
               contentPadding: EdgeInsets.zero,
@@ -1221,7 +1277,17 @@ class _DashboardPageState extends State<DashboardPage> {
               onTap: () => _switchGroup(group.id),
               title: Text(group.name),
               subtitle: Text('${group.organizationName} · 成员 ${group.memberCount} 人 · 私有文件 ${group.privateDocumentCount} 个'),
-              trailing: Text(group.lastQueryAt),
+              trailing: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                children: [
+                  Text(group.lastQueryAt),
+                  TextButton(
+                    onPressed: groups.length <= 1 || _switchingGroup ? null : () => _deleteGroup(group),
+                    child: const Text('删除'),
+                  ),
+                ],
+              ),
             ),
           ),
           const Divider(height: 24),

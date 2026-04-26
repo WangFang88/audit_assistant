@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { forwardRef, Inject, BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { IsIn, IsString, MinLength } from 'class-validator';
+import { DocumentsService } from '../documents/documents.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
@@ -50,6 +51,8 @@ export class GroupsService {
   constructor(
     private readonly subscriptionsService: SubscriptionsService,
     private readonly localStateService: LocalStateService,
+    @Inject(forwardRef(() => DocumentsService))
+    private readonly documentsService: DocumentsService,
   ) {
     const persistedState = this.localStateService.readState();
     if (persistedState.groups) {
@@ -216,6 +219,35 @@ export class GroupsService {
       removedUserId: member.userId,
       removedAt: '2026-04-25 18:20',
       memberCount: group.memberCount,
+    };
+  }
+
+  deleteGroup(groupId: string) {
+    const groupIndex = this.groups.findIndex((group) => group.id === groupId);
+    if (groupIndex < 0) {
+      throw new NotFoundException('项目组不存在');
+    }
+
+    if (this.groups.length <= 1) {
+      throw new BadRequestException('至少需要保留 1 个项目组，暂不支持删除最后一个项目组');
+    }
+
+    const group = this.groups[groupIndex];
+    this.groups.splice(groupIndex, 1);
+    this.members.splice(
+      0,
+      this.members.length,
+      ...this.members.filter((member) => member.groupId !== groupId),
+    );
+    this.documentsService.removeGroupDocuments(groupId);
+    this.persistState();
+    this.subscriptionsService.syncUsage({ groups: this.groups.length });
+
+    return {
+      deletedGroupId: group.id,
+      deletedGroupName: group.name,
+      deletedAt: '2026-04-26 13:10',
+      remainingGroups: this.groups.length,
     };
   }
 }
