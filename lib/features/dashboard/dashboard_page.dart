@@ -1145,6 +1145,8 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildResultPanel(BuildContext context, QueryResult result) {
+    final theme = Theme.of(context);
+
     return SectionCard(
       title: '检索结果',
       subtitle: '返回答案、引用条款、范围说明与当前原型的 RAG 元信息。',
@@ -1163,9 +1165,24 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(result.scope.isolationNotice, style: Theme.of(context).textTheme.bodySmall),
+          Text(result.scope.isolationNotice, style: theme.textTheme.bodySmall),
           const SizedBox(height: 16),
-          Text(result.answer),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F8FC),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('系统回答', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Text(result.answer),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,
@@ -1197,36 +1214,69 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
           const SizedBox(height: 16),
-          Text('引用条款', style: Theme.of(context).textTheme.titleSmall),
+          Text('引用条款', style: theme.textTheme.titleSmall),
           const SizedBox(height: 12),
           ...result.citations.map(
             (citation) => Container(
+              width: double.infinity,
               margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFF),
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.white,
+                border: Border.all(color: const Color(0xFFD9E3F0)),
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0D0F172A),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Expanded(child: Text(citation.title, style: const TextStyle(fontWeight: FontWeight.w600))),
-                      Chip(label: Text('${citation.libraryType} ${(citation.score * 100).toStringAsFixed(0)}%')),
+                      Text(citation.title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                      Chip(label: Text(citation.libraryType == 'private' ? '项目组私有库' : '公共库')),
+                      Chip(label: Text('命中 ${(citation.score * 100).toStringAsFixed(0)}%')),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text('${citation.chapterTitle} · ${citation.articleRef} · ${citation.pageLabel}'),
-                  const SizedBox(height: 8),
-                  Text(citation.matchedChunk),
-                  const SizedBox(height: 8),
-                  Text(citation.reason, style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      Chip(label: Text(citation.chapterTitle)),
+                      Chip(label: Text(citation.articleRef)),
+                      Chip(label: Text(citation.pageLabel)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text('命中片段', style: theme.textTheme.labelLarge),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(citation.matchedChunk),
+                  ),
+                  const SizedBox(height: 12),
+                  Text('命中原因', style: theme.textTheme.labelLarge),
+                  const SizedBox(height: 6),
+                  Text(citation.reason, style: theme.textTheme.bodySmall),
                 ],
               ),
             ),
           ),
-          Text(result.explanation, style: Theme.of(context).textTheme.bodySmall),
+          Text(result.explanation, style: theme.textTheme.bodySmall),
         ],
       ),
     );
