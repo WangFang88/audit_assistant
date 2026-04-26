@@ -63,6 +63,13 @@ export declare class SubscriptionsService {
         currentPlanId: "free" | "weekly" | "monthly" | "yearly";
         trialEndsAt: string;
         trialDays: number;
+        latestOrder: {
+            id: string;
+            planType: "free" | "weekly" | "monthly" | "yearly";
+            amount: string;
+            paidAt: string;
+            expiredAt: string;
+        } | null;
         usage: {
             groups: {
                 used: number;

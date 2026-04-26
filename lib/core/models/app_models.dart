@@ -469,6 +469,7 @@ class ImportDocumentResult {
 
 class SubscriptionOverview {
   const SubscriptionOverview({
+    required this.planId,
     required this.planName,
     required this.priceLabel,
     required this.groupUsage,
@@ -485,8 +486,10 @@ class SubscriptionOverview {
     required this.privateDocumentsLimit,
     required this.dailyQueriesUsed,
     required this.dailyQueriesLimit,
+    required this.latestOrder,
   });
 
+  final String planId;
   final String planName;
   final String priceLabel;
   final String groupUsage;
@@ -503,6 +506,7 @@ class SubscriptionOverview {
   final int privateDocumentsLimit;
   final int dailyQueriesUsed;
   final int dailyQueriesLimit;
+  final SubscriptionOrderSummary? latestOrder;
 
   factory SubscriptionOverview.fromJson(Map<String, dynamic> json) {
     final usage = json['usage'] as Map<String, dynamic>? ?? const {};
@@ -518,6 +522,7 @@ class SubscriptionOverview {
         );
 
     return SubscriptionOverview(
+      planId: currentPlanId,
       planName: currentPlan['name'] as String? ?? '未设置套餐',
       priceLabel: currentPlan['priceLabel'] as String? ?? '--',
       groupUsage: '项目组 ${groups['used'] ?? 0} / ${groups['limit'] ?? 0}',
@@ -531,12 +536,41 @@ class SubscriptionOverview {
       weeklyPrice: pricing['weekly'] as String? ?? '--',
       monthlyPrice: pricing['monthly'] as String? ?? '--',
       yearlyPrice: pricing['yearly'] as String? ?? '--',
+      latestOrder: (json['latestOrder'] as Map<String, dynamic>?) == null
+          ? null
+          : SubscriptionOrderSummary.fromJson(json['latestOrder'] as Map<String, dynamic>),
       groupsUsed: groups['used'] as int? ?? 0,
       groupsLimit: groups['limit'] as int? ?? 0,
       privateDocumentsUsed: privateDocuments['used'] as int? ?? 0,
       privateDocumentsLimit: privateDocuments['limit'] as int? ?? 0,
       dailyQueriesUsed: dailyQueries['used'] as int? ?? 0,
       dailyQueriesLimit: dailyQueries['limit'] as int? ?? 0,
+    );
+  }
+}
+
+class SubscriptionOrderSummary {
+  const SubscriptionOrderSummary({
+    required this.id,
+    required this.planType,
+    required this.amount,
+    required this.paidAt,
+    required this.expiredAt,
+  });
+
+  final String id;
+  final String planType;
+  final String amount;
+  final String paidAt;
+  final String expiredAt;
+
+  factory SubscriptionOrderSummary.fromJson(Map<String, dynamic> json) {
+    return SubscriptionOrderSummary(
+      id: json['id'] as String? ?? '',
+      planType: json['planType'] as String? ?? '',
+      amount: json['amount'] as String? ?? '',
+      paidAt: json['paidAt'] as String? ?? '',
+      expiredAt: json['expiredAt'] as String? ?? '',
     );
   }
 }

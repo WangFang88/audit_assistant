@@ -293,6 +293,15 @@ export class SubscriptionsService {
       currentPlanId: latestOrder?.planType ?? this.currentPlanId,
       trialEndsAt: latestOrder?.expiredAt.slice(0, 10) ?? this.trialEndsAt,
       trialDays: this.trialDays,
+      latestOrder: latestOrder == null
+          ? null
+          : {
+              id: latestOrder.id,
+              planType: latestOrder.planType,
+              amount: latestOrder.amount,
+              paidAt: latestOrder.paidAt,
+              expiredAt: latestOrder.expiredAt,
+            },
       usage: {
         groups: { used: this.usage.groups, limit: plan.limits.groupCount },
         privateDocuments: { used: this.usage.privateDocuments, limit: plan.limits.privateDocuments },

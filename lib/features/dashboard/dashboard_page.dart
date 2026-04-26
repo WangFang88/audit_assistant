@@ -95,6 +95,10 @@ class _DashboardPageState extends State<DashboardPage> {
     return subscription.dailyQueriesUsed >= subscription.dailyQueriesLimit;
   }
 
+  bool _isCurrentPlan(String planId) {
+    return _overview?.subscription.planId == planId;
+  }
+
   String get _activeConversationType {
     final conversation = _selectedConversation;
     return conversation?.type == '群聊' ? 'group' : 'direct';
@@ -2060,22 +2064,34 @@ class _DashboardPageState extends State<DashboardPage> {
                     Text(subscription.documentUsage),
                     const SizedBox(height: 8),
                     Text(subscription.queryUsage),
+                    if (subscription.latestOrder != null) ...[
+                      const SizedBox(height: 8),
+                      Text('最近订单：${subscription.latestOrder!.id}'),
+                      const SizedBox(height: 8),
+                      Text('支付金额：¥${subscription.latestOrder!.amount}'),
+                      const SizedBox(height: 8),
+                      Text('支付时间：${subscription.latestOrder!.paidAt}'),
+                      const SizedBox(height: 8),
+                      Text('到期时间：${subscription.latestOrder!.expiredAt}'),
+                    ],
                     const SizedBox(height: 16),
                     Wrap(
                       spacing: 12,
                       runSpacing: 12,
                       children: [
                         FilledButton.tonal(
-                          onPressed: _subscribing ? null : () => _subscribe('weekly'),
-                          child: _subscribing ? const Text('处理中...') : const Text('开通周订阅'),
+                          onPressed: _subscribing || _isCurrentPlan('weekly') ? null : () => _subscribe('weekly'),
+                          child: _subscribing && !_isCurrentPlan('monthly') && !_isCurrentPlan('yearly')
+                              ? const Text('处理中...')
+                              : Text(_isCurrentPlan('weekly') ? '当前为周订阅' : '开通周订阅'),
                         ),
                         FilledButton.tonal(
-                          onPressed: _subscribing ? null : () => _subscribe('monthly'),
-                          child: const Text('开通月订阅'),
+                          onPressed: _subscribing || _isCurrentPlan('monthly') ? null : () => _subscribe('monthly'),
+                          child: Text(_isCurrentPlan('monthly') ? '当前为月订阅' : '开通月订阅'),
                         ),
                         FilledButton(
-                          onPressed: _subscribing ? null : () => _subscribe('yearly'),
-                          child: const Text('开通年订阅'),
+                          onPressed: _subscribing || _isCurrentPlan('yearly') ? null : () => _subscribe('yearly'),
+                          child: Text(_isCurrentPlan('yearly') ? '当前为年订阅' : '开通年订阅'),
                         ),
                       ],
                     ),
