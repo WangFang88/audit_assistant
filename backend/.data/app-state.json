@@ -2,7 +2,8 @@
   "usage": {
     "groups": 1,
     "privateDocuments": 2,
-    "dailyQueries": 9
+    "dailyQueries": 10,
+    "dailyQueryDate": "2026-04-26"
   },
   "groups": [
     {

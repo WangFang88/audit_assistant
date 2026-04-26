@@ -1547,7 +1547,7 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           FilledButton.tonal(onPressed: _documentsLoading ? null : _refreshDocuments, child: const Text('刷新任务')),
           FilledButton.tonal(
-            onPressed: _activeGroupId == null || _hasReachedPrivateDocumentLimit ? null : _showImportDocumentDialog,
+            onPressed: _hasReachedPrivateDocumentLimit && _activeGroupId != null ? null : _showImportDocumentDialog,
             child: const Text('导入文件'),
           ),
         ],
@@ -1559,7 +1559,7 @@ class _DashboardPageState extends State<DashboardPage> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
-                '当前未选择项目组，私有库导入仅作为能力说明；如需导入私有资料，请先进入项目组。',
+                '当前未选择项目组，仍可导入公共库资料；如需导入私有资料，请先进入项目组。',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
