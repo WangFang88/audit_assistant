@@ -56,7 +56,7 @@ export declare class GroupsService {
         groupId: string;
         inviteCode: string;
         phone: string;
-        role: "leader" | "member";
+        role: "member" | "leader";
         expiresAt: string;
     };
     transferLeader(groupId: string, dto: TransferLeaderDto): {
