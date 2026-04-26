@@ -1186,35 +1186,53 @@ class _DashboardPageState extends State<DashboardPage> {
           Wrap(
             spacing: 16,
             runSpacing: 16,
-            children: [
-              _StatChip(label: subscription.planName, value: subscription.priceLabel),
-              _StatChip(label: '项目组额度', value: subscription.groupUsage),
-              _StatChip(label: '私有文件额度', value: subscription.documentUsage),
-              _StatChip(label: '查询额度', value: subscription.queryUsage),
-            ],
+            children: _isAdmin
+                ? [
+                    _StatChip(label: '当前模式', value: '管理员公共库管理'),
+                    _StatChip(label: '公共库导入', value: '已开启'),
+                    _StatChip(label: '查询范围', value: '仅公共库'),
+                    _StatChip(label: '查询能力', value: '管理员预览'),
+                  ]
+                : [
+                    _StatChip(label: subscription.planName, value: subscription.priceLabel),
+                    _StatChip(label: '项目组额度', value: subscription.groupUsage),
+                    _StatChip(label: '私有文件额度', value: subscription.documentUsage),
+                    _StatChip(label: '查询额度', value: subscription.queryUsage),
+                  ],
           ),
           const SizedBox(height: 16),
           SectionCard(
-            title: '订阅限制与路线',
-            subtitle: '免费版限制、版本规划与目标架构。',
+            title: _isAdmin ? '公共库管理路线' : '订阅限制与路线',
+            subtitle: _isAdmin ? '管理员公共库视角、版本规划与目标架构。' : '免费版限制、版本规划与目标架构。',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
-                  children: subscription.planHighlights.map((item) => Chip(label: Text(item))).toList(),
+                  children: (_isAdmin
+                          ? const [
+                              '管理员不加入项目组，仅管理公共库资料',
+                              '公共库导入已开启，可直接导入制度与规范文件',
+                              '管理员查询不受演示额度限制',
+                              '私有库协作、群聊和成员管理已隐藏',
+                            ]
+                          : subscription.planHighlights)
+                      .map((item) => Chip(label: Text(item)))
+                      .toList(),
                 ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    SizedBox(width: 180, child: _MetricTile(label: '周订阅', value: subscription.weeklyPrice)),
-                    SizedBox(width: 180, child: _MetricTile(label: '月订阅', value: subscription.monthlyPrice)),
-                    SizedBox(width: 180, child: _MetricTile(label: '年订阅', value: subscription.yearlyPrice)),
-                  ],
-                ),
+                if (!_isAdmin) ...[
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      SizedBox(width: 180, child: _MetricTile(label: '周订阅', value: subscription.weeklyPrice)),
+                      SizedBox(width: 180, child: _MetricTile(label: '月订阅', value: subscription.monthlyPrice)),
+                      SizedBox(width: 180, child: _MetricTile(label: '年订阅', value: subscription.yearlyPrice)),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Text('版本路线', style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 8),
