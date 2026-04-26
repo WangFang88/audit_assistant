@@ -30,6 +30,9 @@ export declare class AuthService {
     private fromSnapshot;
     private toPublicUser;
     private persistUsers;
+    private hashPassword;
+    private verifyPassword;
+    private upgradeLegacyPassword;
     private buildAccessToken;
     private buildRefreshToken;
     private normalizePhone;

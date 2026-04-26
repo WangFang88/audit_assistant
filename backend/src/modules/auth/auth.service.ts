@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { IsString, Matches, MinLength } from 'class-validator';
 import { AuthUserRepository, AuthUserSnapshot } from '../../database/repositories/auth-user.repository';
@@ -38,7 +39,8 @@ type DemoUser = {
 };
 
 type AuthUserRecord = DemoUser & {
-  password: string;
+  passwordHash: string;
+  passwordIsLegacyPlaintext?: boolean;
   subscriptionType: string;
 };
 
@@ -58,7 +60,8 @@ export class AuthService {
           phone: user.phone,
           role: user.role,
           trialEndsAt: user.trialEndsAt,
-          password: user.password,
+          passwordHash: user.passwordHash ?? user.password ?? '',
+          passwordIsLegacyPlaintext: user.passwordHash == null,
           subscriptionType: 'free',
         }));
     }
@@ -71,7 +74,7 @@ export class AuthService {
       phone: '13800138000',
       role: 'admin',
       trialEndsAt: '2026-05-01',
-      password: '123456',
+      passwordHash: createHash('sha256').update('123456').digest('hex'),
       subscriptionType: 'admin-preview',
     },
     {
@@ -80,7 +83,7 @@ export class AuthService {
       phone: '13800138001',
       role: 'member',
       trialEndsAt: '2026-05-01',
-      password: '123456',
+      passwordHash: createHash('sha256').update('123456').digest('hex'),
       subscriptionType: 'free',
     },
     {
@@ -89,7 +92,7 @@ export class AuthService {
       phone: '13800138002',
       role: 'member',
       trialEndsAt: '2026-05-01',
-      password: '123456',
+      passwordHash: createHash('sha256').update('123456').digest('hex'),
       subscriptionType: 'free',
     },
     {
@@ -98,7 +101,7 @@ export class AuthService {
       phone: '13800138003',
       role: 'member',
       trialEndsAt: '2026-05-01',
-      password: '123456',
+      passwordHash: createHash('sha256').update('123456').digest('hex'),
       subscriptionType: 'free',
     },
   ];
@@ -117,7 +120,7 @@ export class AuthService {
       phone: user.phone,
       role: user.role,
       trialEndsAt: user.trialEndsAt,
-      passwordHash: user.password,
+      passwordHash: user.passwordHash,
       subscriptionType: user.subscriptionType,
     };
   }
@@ -129,7 +132,7 @@ export class AuthService {
       phone: snapshot.phone,
       role: snapshot.role,
       trialEndsAt: snapshot.trialEndsAt,
-      password: snapshot.passwordHash,
+      passwordHash: snapshot.passwordHash,
       subscriptionType: snapshot.subscriptionType,
     };
   }
@@ -154,10 +157,33 @@ export class AuthService {
           phone: entity.phone,
           role: entity.role,
           trialEndsAt: (entity.subscriptionExpiredAt ?? new Date('2026-05-01T00:00:00.000Z')).toISOString().slice(0, 10),
-          password: entity.passwordHash,
+          passwordHash: entity.passwordHash,
         };
       }),
     );
+  }
+
+  private hashPassword(password: string) {
+    return createHash('sha256').update(password).digest('hex');
+  }
+
+  private verifyPassword(user: AuthUserRecord, password: string) {
+    const normalizedPassword = password.trim();
+    if (user.passwordIsLegacyPlaintext) {
+      return user.passwordHash === normalizedPassword;
+    }
+
+    return user.passwordHash === this.hashPassword(normalizedPassword);
+  }
+
+  private upgradeLegacyPassword(user: AuthUserRecord) {
+    if (!user.passwordIsLegacyPlaintext) {
+      return;
+    }
+
+    user.passwordHash = this.hashPassword(user.passwordHash);
+    user.passwordIsLegacyPlaintext = false;
+    this.persistUsers();
   }
 
   private buildAccessToken(userId: string) {
@@ -169,7 +195,7 @@ export class AuthService {
   }
 
   private normalizePhone(phone: string) {
-    return phone.trim();
+    return phone.trim().replace(/[-\s()]/g, '');
   }
 
   private findUserByPhone(phone: string) {
@@ -211,16 +237,17 @@ export class AuthService {
       throw new UnauthorizedException('账号不存在，请先注册后再登录');
     }
 
-    if (user.password !== dto.password.trim()) {
+    if (!this.verifyPassword(user, dto.password)) {
       throw new UnauthorizedException('密码错误，请重新输入');
     }
 
+    this.upgradeLegacyPassword(user);
     return this.buildAuthResponse(user);
   }
 
   register(dto: RegisterDto) {
     const phone = this.normalizePhone(dto.phone);
-    const password = dto.password.trim();
+    const passwordHash = this.hashPassword(dto.password.trim());
     if (phone === 'admin') {
       throw new BadRequestException('admin 为保留账号，不能用于注册');
     }
@@ -235,7 +262,7 @@ export class AuthService {
       phone,
       role: 'member',
       trialEndsAt: '2026-05-01',
-      password,
+      passwordHash,
       subscriptionType: 'free',
     };
 

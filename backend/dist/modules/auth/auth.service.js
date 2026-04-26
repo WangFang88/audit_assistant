@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RegisterDto = exports.RefreshTokenDto = exports.LoginDto = exports.AuthService = void 0;
+const crypto_1 = require("crypto");
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
 const auth_user_repository_1 = require("../../database/repositories/auth-user.repository");
@@ -59,7 +60,7 @@ let AuthService = class AuthService {
                 phone: '13800138000',
                 role: 'admin',
                 trialEndsAt: '2026-05-01',
-                password: '123456',
+                passwordHash: (0, crypto_1.createHash)('sha256').update('123456').digest('hex'),
                 subscriptionType: 'admin-preview',
             },
             {
@@ -68,7 +69,7 @@ let AuthService = class AuthService {
                 phone: '13800138001',
                 role: 'member',
                 trialEndsAt: '2026-05-01',
-                password: '123456',
+                passwordHash: (0, crypto_1.createHash)('sha256').update('123456').digest('hex'),
                 subscriptionType: 'free',
             },
             {
@@ -77,7 +78,7 @@ let AuthService = class AuthService {
                 phone: '13800138002',
                 role: 'member',
                 trialEndsAt: '2026-05-01',
-                password: '123456',
+                passwordHash: (0, crypto_1.createHash)('sha256').update('123456').digest('hex'),
                 subscriptionType: 'free',
             },
             {
@@ -86,7 +87,7 @@ let AuthService = class AuthService {
                 phone: '13800138003',
                 role: 'member',
                 trialEndsAt: '2026-05-01',
-                password: '123456',
+                passwordHash: (0, crypto_1.createHash)('sha256').update('123456').digest('hex'),
                 subscriptionType: 'free',
             },
         ];
@@ -102,7 +103,8 @@ let AuthService = class AuthService {
                 phone: user.phone,
                 role: user.role,
                 trialEndsAt: user.trialEndsAt,
-                password: user.password,
+                passwordHash: user.passwordHash ?? user.password ?? '',
+                passwordIsLegacyPlaintext: user.passwordHash == null,
                 subscriptionType: 'free',
             }));
         }
@@ -117,7 +119,7 @@ let AuthService = class AuthService {
             phone: user.phone,
             role: user.role,
             trialEndsAt: user.trialEndsAt,
-            passwordHash: user.password,
+            passwordHash: user.passwordHash,
             subscriptionType: user.subscriptionType,
         };
     }
@@ -128,7 +130,7 @@ let AuthService = class AuthService {
             phone: snapshot.phone,
             role: snapshot.role,
             trialEndsAt: snapshot.trialEndsAt,
-            password: snapshot.passwordHash,
+            passwordHash: snapshot.passwordHash,
             subscriptionType: snapshot.subscriptionType,
         };
     }
@@ -150,9 +152,27 @@ let AuthService = class AuthService {
                 phone: entity.phone,
                 role: entity.role,
                 trialEndsAt: (entity.subscriptionExpiredAt ?? new Date('2026-05-01T00:00:00.000Z')).toISOString().slice(0, 10),
-                password: entity.passwordHash,
+                passwordHash: entity.passwordHash,
             };
         }));
+    }
+    hashPassword(password) {
+        return (0, crypto_1.createHash)('sha256').update(password).digest('hex');
+    }
+    verifyPassword(user, password) {
+        const normalizedPassword = password.trim();
+        if (user.passwordIsLegacyPlaintext) {
+            return user.passwordHash === normalizedPassword;
+        }
+        return user.passwordHash === this.hashPassword(normalizedPassword);
+    }
+    upgradeLegacyPassword(user) {
+        if (!user.passwordIsLegacyPlaintext) {
+            return;
+        }
+        user.passwordHash = this.hashPassword(user.passwordHash);
+        user.passwordIsLegacyPlaintext = false;
+        this.persistUsers();
     }
     buildAccessToken(userId) {
         return `demo-access-token-${userId}`;
@@ -161,7 +181,7 @@ let AuthService = class AuthService {
         return `demo-refresh-token-${userId}`;
     }
     normalizePhone(phone) {
-        return phone.trim();
+        return phone.trim().replace(/[-\s()]/g, '');
     }
     findUserByPhone(phone) {
         const normalizedPhone = this.normalizePhone(phone);
@@ -195,14 +215,15 @@ let AuthService = class AuthService {
         if (!user) {
             throw new common_1.UnauthorizedException('账号不存在，请先注册后再登录');
         }
-        if (user.password !== dto.password.trim()) {
+        if (!this.verifyPassword(user, dto.password)) {
             throw new common_1.UnauthorizedException('密码错误，请重新输入');
         }
+        this.upgradeLegacyPassword(user);
         return this.buildAuthResponse(user);
     }
     register(dto) {
         const phone = this.normalizePhone(dto.phone);
-        const password = dto.password.trim();
+        const passwordHash = this.hashPassword(dto.password.trim());
         if (phone === 'admin') {
             throw new common_1.BadRequestException('admin 为保留账号，不能用于注册');
         }
@@ -215,7 +236,7 @@ let AuthService = class AuthService {
             phone,
             role: 'member',
             trialEndsAt: '2026-05-01',
-            password,
+            passwordHash,
             subscriptionType: 'free',
         };
         this.registeredUsers = [...this.registeredUsers, user];

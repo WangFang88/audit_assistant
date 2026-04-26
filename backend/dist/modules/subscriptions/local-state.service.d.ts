@@ -75,7 +75,8 @@ type PersistedUserRecord = {
     phone: string;
     role: 'admin' | 'member';
     trialEndsAt: string;
-    password: string;
+    password?: string;
+    passwordHash?: string;
 };
 type PersistedQueryLogRecord = {
     id: string;

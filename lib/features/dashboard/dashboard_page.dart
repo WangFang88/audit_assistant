@@ -2060,6 +2060,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 8),
                     Text(subscription.priceLabel),
                     const SizedBox(height: 8),
+                    Text('当前状态：${subscription.statusLabel}'),
+                    const SizedBox(height: 8),
                     Text(subscription.groupUsage),
                     const SizedBox(height: 8),
                     Text(subscription.documentUsage),
@@ -2068,6 +2070,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     if (subscription.latestOrder != null) ...[
                       const SizedBox(height: 8),
                       Text('最近订单：${subscription.latestOrder!.id}'),
+                      const SizedBox(height: 8),
+                      Text('套餐类型：${subscription.latestOrder!.planLabel}'),
                       const SizedBox(height: 8),
                       Text('支付金额：¥${subscription.latestOrder!.amount}'),
                       const SizedBox(height: 8),
@@ -2082,7 +2086,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       ...subscription.orderHistory.map(
                         (order) => Padding(
                           padding: const EdgeInsets.only(bottom: 8),
-                          child: Text('${order.planType} · ¥${order.amount} · ${order.paidAt} → ${order.expiredAt}'),
+                          child: Text('${order.planLabel} · ¥${order.amount} · ${order.paidAt} → ${order.expiredAt}'),
                         ),
                       ),
                     ],
