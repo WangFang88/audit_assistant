@@ -11,7 +11,7 @@
       "name": "某区财政局审计组",
       "organizationName": "某区财政局",
       "ownerUserId": "user-2",
-      "memberCount": 3,
+      "memberCount": 1,
       "privateDocumentCount": 2,
       "lastQueryAt": "2026-04-25 16:20"
     }
@@ -24,22 +24,6 @@
       "name": "审计组长",
       "phone": "13800138001",
       "role": "leader"
-    },
-    {
-      "id": "member-2",
-      "groupId": "group-1",
-      "userId": "user-3",
-      "name": "审计助理",
-      "phone": "13800138002",
-      "role": "member"
-    },
-    {
-      "id": "member-3",
-      "groupId": "group-1",
-      "userId": "user-4",
-      "name": "法规顾问",
-      "phone": "13800138003",
-      "role": "member"
     }
   ],
   "documents": [

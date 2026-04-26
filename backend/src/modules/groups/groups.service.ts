@@ -278,10 +278,6 @@ export class GroupsService {
       throw new NotFoundException('项目组不存在');
     }
 
-    if (this.groups.length <= 1) {
-      throw new BadRequestException('至少需要保留 1 个项目组，暂不支持删除最后一个项目组');
-    }
-
     const group = this.groups[groupIndex];
     this.groups.splice(groupIndex, 1);
     this.members.splice(

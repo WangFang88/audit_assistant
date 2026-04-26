@@ -1647,14 +1647,6 @@ class _DashboardPageState extends State<DashboardPage> {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
-          if (groups.length <= 1)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                '当前仅剩 1 个项目组，暂不支持删除最后一个项目组。',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
           ...groups.map(
             (group) => ListTile(
               contentPadding: EdgeInsets.zero,
@@ -1668,7 +1660,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 children: [
                   Text(group.lastQueryAt),
                   TextButton(
-                    onPressed: groups.length <= 1 || _switchingGroup ? null : () => _deleteGroup(group),
+                    onPressed: _switchingGroup ? null : () => _deleteGroup(group),
                     child: const Text('删除'),
                   ),
                 ],

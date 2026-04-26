@@ -239,9 +239,6 @@ let GroupsService = class GroupsService {
         if (groupIndex < 0) {
             throw new common_1.NotFoundException('项目组不存在');
         }
-        if (this.groups.length <= 1) {
-            throw new common_1.BadRequestException('至少需要保留 1 个项目组，暂不支持删除最后一个项目组');
-        }
         const group = this.groups[groupIndex];
         this.groups.splice(groupIndex, 1);
         this.members.splice(0, this.members.length, ...this.members.filter((member) => member.groupId !== groupId));
