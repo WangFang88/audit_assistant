@@ -1,8 +1,14 @@
 import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
+import { IsIn } from 'class-validator';
 import { QueryLogRepository, QueryLogSnapshot } from '../../database/repositories/query-log.repository';
 import { SubscriptionOrderSnapshot, SubscriptionRepository } from '../../database/repositories/subscription.repository';
 import { AuthService } from '../auth/auth.service';
 import { LocalStateService } from './local-state.service';
+
+class CreateSubscriptionOrderDto {
+  @IsIn(['weekly', 'monthly', 'yearly'])
+  planType!: 'weekly' | 'monthly' | 'yearly';
+}
 
 type UsageSnapshot = {
   groups: number;
@@ -61,6 +67,18 @@ export class SubscriptionsService {
     privateDocuments: 2,
     dailyQueries: 6,
     dailyQueryDate: this.getCurrentDateKey(),
+  };
+
+  private readonly planPrices: Record<'weekly' | 'monthly' | 'yearly', string> = {
+    weekly: '70.00',
+    monthly: '200.00',
+    yearly: '2000.00',
+  };
+
+  private readonly planDurations: Record<'weekly' | 'monthly' | 'yearly', number> = {
+    weekly: 7,
+    monthly: 30,
+    yearly: 365,
   };
 
   private readonly plans = [
@@ -130,6 +148,16 @@ export class SubscriptionsService {
     const currentUserId = this.authService.me().id;
     const userOrders = this.subscriptionOrders.filter((order) => order.userId === currentUserId);
     return userOrders[userOrders.length - 1] ?? null;
+  }
+
+  private formatDateTime(date: Date) {
+    return date.toISOString().slice(0, 16).replace('T', ' ');
+  }
+
+  private addDays(baseDate: Date, days: number) {
+    const nextDate = new Date(baseDate.getTime());
+    nextDate.setUTCDate(nextDate.getUTCDate() + days);
+    return nextDate;
   }
 
   private rebuildDailyUsageFromLogs() {
@@ -235,6 +263,27 @@ export class SubscriptionsService {
     this.persistSubscriptions();
   }
 
+  createSubscriptionOrder(dto: CreateSubscriptionOrderDto) {
+    if (this.isAdmin()) {
+      throw new BadRequestException('管理员预览账号不支持创建订阅订单');
+    }
+
+    const now = new Date();
+    const expiredAt = this.addDays(now, this.planDurations[dto.planType]);
+
+    const order: SubscriptionOrderSnapshot = {
+      id: `order-${Date.now()}`,
+      userId: this.authService.me().id,
+      planType: dto.planType,
+      amount: this.planPrices[dto.planType],
+      paidAt: this.formatDateTime(now),
+      expiredAt: this.formatDateTime(expiredAt),
+    };
+
+    this.syncSubscriptionOrder(order);
+    return order;
+  }
+
   getOverview() {
     this.ensureDailyUsageIsCurrent();
     const plan = this.getCurrentPlan();
@@ -271,3 +320,5 @@ export class SubscriptionsService {
     };
   }
 }
+
+export { CreateSubscriptionOrderDto };

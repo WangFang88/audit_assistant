@@ -8,6 +8,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubscriptionsController = void 0;
 const common_1 = require("@nestjs/common");
@@ -19,6 +22,9 @@ let SubscriptionsController = class SubscriptionsController {
     getOverview() {
         return this.subscriptionsService.getOverview();
     }
+    createOrder(dto) {
+        return this.subscriptionsService.createSubscriptionOrder(dto);
+    }
 };
 exports.SubscriptionsController = SubscriptionsController;
 __decorate([
@@ -27,6 +33,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], SubscriptionsController.prototype, "getOverview", null);
+__decorate([
+    (0, common_1.Post)('orders'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [subscriptions_service_1.CreateSubscriptionOrderDto]),
+    __metadata("design:returntype", void 0)
+], SubscriptionsController.prototype, "createOrder", null);
 exports.SubscriptionsController = SubscriptionsController = __decorate([
     (0, common_1.Controller)('subscriptions'),
     __metadata("design:paramtypes", [subscriptions_service_1.SubscriptionsService])

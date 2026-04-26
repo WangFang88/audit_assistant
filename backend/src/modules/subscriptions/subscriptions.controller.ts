@@ -1,5 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
-import { SubscriptionsService } from './subscriptions.service';
+import { Body, Controller, Get, Post } from '@nestjs/common';
+import { CreateSubscriptionOrderDto, SubscriptionsService } from './subscriptions.service';
 
 @Controller('subscriptions')
 export class SubscriptionsController {
@@ -8,5 +8,10 @@ export class SubscriptionsController {
   @Get('overview')
   getOverview() {
     return this.subscriptionsService.getOverview();
+  }
+
+  @Post('orders')
+  createOrder(@Body() dto: CreateSubscriptionOrderDto) {
+    return this.subscriptionsService.createSubscriptionOrder(dto);
   }
 }

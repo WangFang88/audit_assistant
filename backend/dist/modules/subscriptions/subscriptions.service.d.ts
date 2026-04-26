@@ -2,6 +2,9 @@ import { QueryLogRepository, QueryLogSnapshot } from '../../database/repositorie
 import { SubscriptionOrderSnapshot, SubscriptionRepository } from '../../database/repositories/subscription.repository';
 import { AuthService } from '../auth/auth.service';
 import { LocalStateService } from './local-state.service';
+declare class CreateSubscriptionOrderDto {
+    planType: 'weekly' | 'monthly' | 'yearly';
+}
 type UsageSnapshot = {
     groups: number;
     privateDocuments: number;
@@ -20,12 +23,16 @@ export declare class SubscriptionsService {
     private queryLogs;
     private subscriptionOrders;
     private usage;
+    private readonly planPrices;
+    private readonly planDurations;
     private readonly plans;
     private isAdmin;
     private getCurrentDateKey;
     private persistQueryLogs;
     private persistSubscriptions;
     private getLatestSubscriptionOrder;
+    private formatDateTime;
+    private addDays;
     private rebuildDailyUsageFromLogs;
     private ensureDailyUsageIsCurrent;
     getCurrentPlan(): {
@@ -51,6 +58,7 @@ export declare class SubscriptionsService {
     assertCanRunQuery(currentDailyQueries: number): void;
     recordQueryLog(queryLog: QueryLogSnapshot): void;
     syncSubscriptionOrder(order: SubscriptionOrderSnapshot): void;
+    createSubscriptionOrder(dto: CreateSubscriptionOrderDto): SubscriptionOrderSnapshot;
     getOverview(): {
         currentPlanId: "free" | "weekly" | "monthly" | "yearly";
         trialEndsAt: string;
@@ -95,4 +103,4 @@ export declare class SubscriptionsService {
         };
     };
 }
-export {};
+export { CreateSubscriptionOrderDto };

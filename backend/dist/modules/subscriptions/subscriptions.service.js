@@ -12,12 +12,20 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SubscriptionsService = void 0;
+exports.CreateSubscriptionOrderDto = exports.SubscriptionsService = void 0;
 const common_1 = require("@nestjs/common");
+const class_validator_1 = require("class-validator");
 const query_log_repository_1 = require("../../database/repositories/query-log.repository");
 const subscription_repository_1 = require("../../database/repositories/subscription.repository");
 const auth_service_1 = require("../auth/auth.service");
 const local_state_service_1 = require("./local-state.service");
+class CreateSubscriptionOrderDto {
+}
+exports.CreateSubscriptionOrderDto = CreateSubscriptionOrderDto;
+__decorate([
+    (0, class_validator_1.IsIn)(['weekly', 'monthly', 'yearly']),
+    __metadata("design:type", String)
+], CreateSubscriptionOrderDto.prototype, "planType", void 0);
 let SubscriptionsService = class SubscriptionsService {
     constructor(localStateService, queryLogRepository, subscriptionRepository, authService) {
         this.localStateService = localStateService;
@@ -43,6 +51,16 @@ let SubscriptionsService = class SubscriptionsService {
             privateDocuments: 2,
             dailyQueries: 6,
             dailyQueryDate: this.getCurrentDateKey(),
+        };
+        this.planPrices = {
+            weekly: '70.00',
+            monthly: '200.00',
+            yearly: '2000.00',
+        };
+        this.planDurations = {
+            weekly: 7,
+            monthly: 30,
+            yearly: 365,
         };
         this.plans = [
             {
@@ -127,6 +145,14 @@ let SubscriptionsService = class SubscriptionsService {
         const currentUserId = this.authService.me().id;
         const userOrders = this.subscriptionOrders.filter((order) => order.userId === currentUserId);
         return userOrders[userOrders.length - 1] ?? null;
+    }
+    formatDateTime(date) {
+        return date.toISOString().slice(0, 16).replace('T', ' ');
+    }
+    addDays(baseDate, days) {
+        const nextDate = new Date(baseDate.getTime());
+        nextDate.setUTCDate(nextDate.getUTCDate() + days);
+        return nextDate;
     }
     rebuildDailyUsageFromLogs() {
         const currentDateKey = this.getCurrentDateKey();
@@ -216,6 +242,23 @@ let SubscriptionsService = class SubscriptionsService {
         nextOrders.push(snapshot);
         this.subscriptionOrders = nextOrders;
         this.persistSubscriptions();
+    }
+    createSubscriptionOrder(dto) {
+        if (this.isAdmin()) {
+            throw new common_1.BadRequestException('管理员预览账号不支持创建订阅订单');
+        }
+        const now = new Date();
+        const expiredAt = this.addDays(now, this.planDurations[dto.planType]);
+        const order = {
+            id: `order-${Date.now()}`,
+            userId: this.authService.me().id,
+            planType: dto.planType,
+            amount: this.planPrices[dto.planType],
+            paidAt: this.formatDateTime(now),
+            expiredAt: this.formatDateTime(expiredAt),
+        };
+        this.syncSubscriptionOrder(order);
+        return order;
     }
     getOverview() {
         this.ensureDailyUsageIsCurrent();

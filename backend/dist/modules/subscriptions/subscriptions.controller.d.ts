@@ -1,4 +1,4 @@
-import { SubscriptionsService } from './subscriptions.service';
+import { CreateSubscriptionOrderDto, SubscriptionsService } from './subscriptions.service';
 export declare class SubscriptionsController {
     private readonly subscriptionsService;
     constructor(subscriptionsService: SubscriptionsService);
@@ -45,4 +45,5 @@ export declare class SubscriptionsController {
             yearly: string;
         };
     };
+    createOrder(dto: CreateSubscriptionOrderDto): import("../../database/repositories/subscription.repository").SubscriptionOrderSnapshot;
 }
