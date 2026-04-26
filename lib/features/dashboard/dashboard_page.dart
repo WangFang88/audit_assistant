@@ -744,6 +744,56 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  TextSpan _buildHighlightedChunkText(BuildContext context, String content, List<String> keywords) {
+    final theme = Theme.of(context);
+    final normalizedKeywords = keywords
+        .map((item) => item.trim())
+        .where((item) => item.length >= 2)
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.length.compareTo(a.length));
+
+    if (normalizedKeywords.isEmpty) {
+      return TextSpan(text: content, style: theme.textTheme.bodyMedium);
+    }
+
+    final lowerContent = content.toLowerCase();
+    final spans = <TextSpan>[];
+    var index = 0;
+
+    while (index < content.length) {
+      String? matchedKeyword;
+      for (final keyword in normalizedKeywords) {
+        if (index + keyword.length > content.length) {
+          continue;
+        }
+        if (lowerContent.substring(index, index + keyword.length) == keyword.toLowerCase()) {
+          matchedKeyword = content.substring(index, index + keyword.length);
+          break;
+        }
+      }
+
+      if (matchedKeyword != null) {
+        spans.add(
+          TextSpan(
+            text: matchedKeyword,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              backgroundColor: const Color(0xFFFFF3BF),
+            ),
+          ),
+        );
+        index += matchedKeyword.length;
+        continue;
+      }
+
+      spans.add(TextSpan(text: content[index], style: theme.textTheme.bodyMedium));
+      index += 1;
+    }
+
+    return TextSpan(children: spans, style: theme.textTheme.bodyMedium);
+  }
+
   Future<void> _showDocumentChunksDialog(KnowledgeDocument document) async {
     try {
       final chunks = await widget.apiService.fetchDocumentChunks(document.id);
@@ -791,7 +841,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                     ],
                                   ),
                                   const SizedBox(height: 10),
-                                  Text(chunk.content),
+                                  RichText(text: _buildHighlightedChunkText(context, chunk.content, chunk.keywords)),
                                   const SizedBox(height: 10),
                                   Wrap(
                                     spacing: 8,
