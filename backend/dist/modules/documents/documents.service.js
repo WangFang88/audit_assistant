@@ -163,6 +163,9 @@ let DocumentsService = class DocumentsService {
         if (persistedState.documents) {
             this.documents.splice(0, this.documents.length, ...persistedState.documents);
         }
+        if (persistedState.chunks) {
+            this.chunks.splice(0, this.chunks.length, ...persistedState.chunks);
+        }
     }
     listDocuments(groupId) {
         return this.documents.filter((document) => {
@@ -198,6 +201,42 @@ let DocumentsService = class DocumentsService {
         }
         return document;
     }
+    buildChunksForDocument(document) {
+        const baseKeywords = document.title
+            .replace(/某/g, '')
+            .replace(/管理/g, '')
+            .replace(/制度/g, '')
+            .split(/[\s\-/_.]+/)
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0);
+        const chunkA = {
+            id: `chunk-${this.chunks.length + 1}`,
+            documentId: document.id,
+            groupId: document.groupId,
+            libraryType: document.libraryType,
+            title: document.title,
+            chapterTitle: '第一章 范围与职责',
+            articleRef: '第一条',
+            pageLabel: '第 1 页',
+            content: `${document.title}明确了适用范围、责任边界、审批职责与资料留痕要求。`,
+            keywords: [...baseKeywords, '范围', '职责', '审批', '留痕'],
+            indexStatus: 'ready',
+        };
+        const chunkB = {
+            id: `chunk-${this.chunks.length + 2}`,
+            documentId: document.id,
+            groupId: document.groupId,
+            libraryType: document.libraryType,
+            title: document.title,
+            chapterTitle: '第二章 执行与证据',
+            articleRef: '第二条',
+            pageLabel: '第 2 页',
+            content: `${document.title}要求对预算、采购、合同、验收、支付等关键节点保存完整依据。`,
+            keywords: [...baseKeywords, '预算', '采购', '合同', '验收', '支付'],
+            indexStatus: 'ready',
+        };
+        return [chunkA, chunkB];
+    }
     importDocument(dto) {
         if (dto.libraryType === 'private') {
             if (!dto.groupId) {
@@ -221,25 +260,29 @@ let DocumentsService = class DocumentsService {
                     lowerSourcePath.endsWith('.jpeg')
                     ? 'image'
                     : 'pdf';
+        const generatedChunkCount = 2;
         const document = {
             id: `doc-${this.documents.length + 1}`,
             title: dto.title,
             libraryType: dto.libraryType,
             sourcePath: dto.sourcePath,
-            chunkCount: 0,
+            chunkCount: generatedChunkCount,
             groupId: dto.groupId ?? null,
             fileType,
             extractionMode: isScan ? 'ocr' : 'text',
             uploadedAt: '2026-04-26 12:30',
-            indexStatus: 'queued',
+            indexStatus: 'ready',
             chunkStrategy: 'structure-first',
             parserTarget: 'multimodal-parser',
             embeddingTarget: 'bge-large-zh',
             vectorStoreTarget: 'pgvector',
-            pipelineStage: 'queued',
+            pipelineStage: isScan ? 'ocr' : 'indexed',
         };
         this.documents.push(document);
+        const generatedChunks = this.buildChunksForDocument(document);
+        this.chunks.push(...generatedChunks);
         this.localStateService.saveDocuments(this.documents);
+        this.localStateService.saveChunks(this.chunks);
         if (dto.libraryType === 'private') {
             const group = this.groupsService.getGroupById(dto.groupId);
             group.privateDocumentCount += 1;
@@ -254,8 +297,11 @@ let DocumentsService = class DocumentsService {
     }
     removeGroupDocuments(groupId) {
         const remainingDocuments = this.documents.filter((document) => document.groupId !== groupId);
+        const remainingChunks = this.chunks.filter((chunk) => chunk.groupId !== groupId);
         this.documents.splice(0, this.documents.length, ...remainingDocuments);
+        this.chunks.splice(0, this.chunks.length, ...remainingChunks);
         this.localStateService.saveDocuments(this.documents);
+        this.localStateService.saveChunks(this.chunks);
         const privateDocumentCount = this.documents.filter((document) => document.libraryType === 'private').length;
         this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
     }

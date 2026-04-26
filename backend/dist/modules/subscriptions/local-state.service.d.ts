@@ -32,6 +32,19 @@ type PersistedDocumentRecord = {
     vectorStoreTarget: 'pgvector';
     pipelineStage: 'indexed' | 'extracting' | 'ocr' | 'chunking' | 'vectorizing' | 'queued';
 };
+type PersistedChunkRecord = {
+    id: string;
+    documentId: string;
+    groupId: string | null;
+    libraryType: 'public' | 'private';
+    title: string;
+    chapterTitle: string;
+    articleRef: string;
+    pageLabel: string;
+    content: string;
+    keywords: string[];
+    indexStatus: 'ready' | 'processing';
+};
 type PersistedUsageSnapshot = {
     groups: number;
     privateDocuments: number;
@@ -41,6 +54,7 @@ type PersistedState = {
     groups?: PersistedGroupRecord[];
     members?: PersistedMemberRecord[];
     documents?: PersistedDocumentRecord[];
+    chunks?: PersistedChunkRecord[];
     usage?: PersistedUsageSnapshot;
 };
 export declare class LocalStateService {
@@ -48,6 +62,7 @@ export declare class LocalStateService {
     readState(): PersistedState;
     saveGroups(groups: PersistedGroupRecord[], members: PersistedMemberRecord[]): void;
     saveDocuments(documents: PersistedDocumentRecord[]): void;
+    saveChunks(chunks: PersistedChunkRecord[]): void;
     saveUsage(usage: PersistedUsageSnapshot): void;
     private writeState;
 }

@@ -42,16 +42,22 @@ export class QueryService {
     const readyChunks = this.documentsService.getReadyChunks(dto.groupId);
     const scopeSummary = this.documentsService.getLibraryScopeSummary(dto.groupId);
     const lowerQuestion = dto.question.toLowerCase();
-    const tokens = ['采购', '资金', '审批', '合同', '验收', '预算', '支付'].filter((token) =>
-      lowerQuestion.includes(token),
+    const tokens = Array.from(
+      new Set(
+        lowerQuestion
+          .split(/[\s，。、“”‘’；：,.;!?（）()【】\[\]\-]+/)
+          .map((token) => token.trim())
+          .filter((token) => token.length >= 2),
+      ),
     );
 
     const candidates: CitationRecord[] = readyChunks
       .map((chunk) => {
-        const keywordHits = chunk.keywords.filter((keyword) => lowerQuestion.includes(keyword)).length;
-        const semanticBoost = tokens.some((token) => chunk.content.includes(token)) ? 0.2 : 0.05;
+        const keywordHits = chunk.keywords.filter((keyword) => lowerQuestion.includes(keyword.toLowerCase())).length;
+        const contentHits = tokens.filter((token) => chunk.content.includes(token)).length;
+        const semanticBoost = contentHits > 0 ? 0.16 + Math.min(0.1, contentHits * 0.03) : 0.04;
         const scopeBoost = chunk.libraryType === 'private' ? 0.08 : 0.04;
-        const score = Math.min(0.99, 0.55 + keywordHits * 0.12 + semanticBoost + scopeBoost);
+        const score = Math.min(0.99, 0.48 + keywordHits * 0.14 + semanticBoost + scopeBoost);
 
         return {
           documentId: chunk.documentId,
@@ -60,18 +66,18 @@ export class QueryService {
           score,
           matchedChunk: `${chunk.articleRef}：${chunk.content}`,
           reason:
-            keywordHits > 0
-              ? '已先按公共库与当前项目组私有库范围过滤，再执行关键词与语义混合检索。'
-              : '已在候选文本块中完成语义召回与重排，未直接扫描原始文件。',
+            keywordHits > 0 || contentHits > 0
+              ? `已命中 ${keywordHits + contentHits} 个关键词/语义线索，并基于文本块完成范围过滤与混合召回。`
+              : '当前文本块通过范围过滤进入候选集，并在重排阶段被保留。',
           articleRef: chunk.articleRef,
           chapterTitle: chunk.chapterTitle,
           pageLabel: chunk.pageLabel,
         };
       })
       .sort((a, b) => b.score - a.score)
-      .slice(0, 4);
+      .slice(0, 6);
 
-    const queryMode = tokens.length === 0 ? '语义优先' : '关键词 + 语义融合';
+    const queryMode = tokens.length === 0 ? '范围优先 + 语义重排' : '关键词 + 语义融合';
     const publicHits = candidates.filter((candidate) => candidate.libraryType === 'public').length;
     const privateHits = candidates.filter((candidate) => candidate.libraryType === 'private').length;
 
@@ -103,16 +109,18 @@ export class QueryService {
       ragMeta: {
         retrievalMode: 'hybrid',
         generationProviderTarget: 'Qwen',
-        prototypeMode: 'mock',
+        prototypeMode: 'chunk-indexed-prototype',
         answerTraceable: true,
       },
       answer:
-        dto.groupId == null
-          ? '系统已在公共基础库中优先检索已抽取、已切分、已建索引的文本块，并返回可追溯的制度依据。'
-          : '系统已在公共基础库与当前项目组私有库中优先检索已抽取、已切分、已建索引的文本块，并返回可追溯的制度依据。',
+        candidates.length == 0
+          ? '当前范围内尚未命中可用条款，请尝试补充更明确的关键词、条款号或切换项目组后重试。'
+          : dto.groupId == null
+            ? '系统已在公共基础库中基于持久化文本块完成范围过滤与混合检索，并返回可追溯的制度依据。'
+            : '系统已在公共基础库与当前项目组私有库中基于持久化文本块完成范围过滤与混合检索，并返回可追溯的制度依据。',
       citations: candidates,
       explanation:
-        '该查询链路采用 RAG 思路：先过滤范围，再对文本块进行混合检索与重排，最后将命中条款作为上下文供目标大模型生成解释。',
+        '该查询链路已从固定示例命中过渡到基于持久化 chunk 的检索骨架：先过滤范围，再对文本块执行关键词与语义线索匹配，最后返回可溯源的候选条款。',
     };
   }
 }

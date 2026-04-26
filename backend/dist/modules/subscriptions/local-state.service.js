@@ -35,6 +35,9 @@ let LocalStateService = class LocalStateService {
     saveDocuments(documents) {
         this.writeState({ documents });
     }
+    saveChunks(chunks) {
+        this.writeState({ chunks });
+    }
     saveUsage(usage) {
         this.writeState({ usage });
     }

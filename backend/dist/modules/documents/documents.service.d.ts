@@ -58,6 +58,7 @@ export declare class DocumentsService {
     listExtractionJobs(groupId?: string): ExtractJobRecord[];
     getReadyChunks(groupId?: string): DocumentChunkRecord[];
     getDocumentById(documentId: string): DocumentRecord;
+    private buildChunksForDocument;
     importDocument(dto: ImportDocumentDto): {
         notes: string;
         id: string;

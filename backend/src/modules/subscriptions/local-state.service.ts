@@ -39,6 +39,20 @@ type PersistedDocumentRecord = {
   pipelineStage: 'indexed' | 'extracting' | 'ocr' | 'chunking' | 'vectorizing' | 'queued';
 };
 
+type PersistedChunkRecord = {
+  id: string;
+  documentId: string;
+  groupId: string | null;
+  libraryType: 'public' | 'private';
+  title: string;
+  chapterTitle: string;
+  articleRef: string;
+  pageLabel: string;
+  content: string;
+  keywords: string[];
+  indexStatus: 'ready' | 'processing';
+};
+
 type PersistedUsageSnapshot = {
   groups: number;
   privateDocuments: number;
@@ -49,6 +63,7 @@ type PersistedState = {
   groups?: PersistedGroupRecord[];
   members?: PersistedMemberRecord[];
   documents?: PersistedDocumentRecord[];
+  chunks?: PersistedChunkRecord[];
   usage?: PersistedUsageSnapshot;
 };
 
@@ -79,6 +94,10 @@ export class LocalStateService {
 
   saveDocuments(documents: PersistedDocumentRecord[]) {
     this.writeState({ documents });
+  }
+
+  saveChunks(chunks: PersistedChunkRecord[]) {
+    this.writeState({ chunks });
   }
 
   saveUsage(usage: PersistedUsageSnapshot) {
