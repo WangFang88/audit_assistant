@@ -19,7 +19,7 @@ let QueryController = class QueryController {
     constructor(queryService) {
         this.queryService = queryService;
     }
-    search(dto) {
+    async search(dto) {
         return this.queryService.search(dto);
     }
 };
@@ -29,7 +29,7 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [query_service_1.QueryRequestDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], QueryController.prototype, "search", null);
 exports.QueryController = QueryController = __decorate([
     (0, common_1.Controller)('query'),

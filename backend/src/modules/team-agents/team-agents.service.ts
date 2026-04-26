@@ -1,7 +1,9 @@
 import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { TeamAgentEntity } from '../../database/entities/team-agent.entity';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
-import { LocalStateService } from '../subscriptions/local-state.service';
 
 type TeamAgentCapability =
   | 'query'
@@ -28,38 +30,12 @@ type TeamAgentRecord = {
 @Injectable()
 export class TeamAgentsService {
   constructor(
-    private readonly localStateService: LocalStateService,
+    @InjectRepository(TeamAgentEntity)
+    private readonly teamAgentRepository: Repository<TeamAgentEntity>,
     private readonly authService: AuthService,
     @Inject(forwardRef(() => GroupsService))
     private readonly groupsService: GroupsService,
-  ) {
-    const persistedState = this.localStateService.readState();
-    if (persistedState.teamAgents && persistedState.teamAgents.length > 0) {
-      this.teamAgents.splice(
-        0,
-        this.teamAgents.length,
-        ...persistedState.teamAgents.map((agent) => ({
-          ...agent,
-          capabilities: agent.capabilities.filter(this.isCapability),
-        })),
-      );
-    }
-  }
-
-  private readonly teamAgents: TeamAgentRecord[] = [
-    {
-      id: 'team-agent-group-1',
-      groupId: 'group-1',
-      name: '某区财政局审计组 Agent',
-      status: 'active',
-      capabilities: ['query', 'article_explanation'],
-      createdAt: '2026-04-25 09:00',
-      defaultConversationId: 'conv-agent-1',
-      config: {
-        retrievalScope: 'public_plus_group_private',
-      },
-    },
-  ];
+  ) {}
 
   private isCapability = (value: string): value is TeamAgentCapability => {
     return [
@@ -73,12 +49,19 @@ export class TeamAgentsService {
     ].includes(value);
   };
 
-  private persistState() {
-    this.localStateService.saveTeamAgents(this.teamAgents);
-  }
-
-  private buildCreatedAt() {
-    return new Date().toISOString().slice(0, 16).replace('T', ' ');
+  private toRecord(entity: TeamAgentEntity): TeamAgentRecord {
+    return {
+      id: entity.id,
+      groupId: entity.teamId,
+      name: entity.name,
+      status: entity.status,
+      capabilities: entity.capabilities.filter(this.isCapability),
+      createdAt: entity.createdAt.toISOString().slice(0, 16).replace('T', ' '),
+      defaultConversationId: entity.defaultConversationId,
+      config: {
+        retrievalScope: 'public_plus_group_private',
+      },
+    };
   }
 
   private assertCanAccessGroupAgent(groupId: string) {
@@ -89,69 +72,64 @@ export class TeamAgentsService {
     this.groupsService.assertCanAccessGroup(groupId);
   }
 
-  createForGroup(group: { id: string; name: string }, defaultConversationId: string | null) {
-    const existing = this.teamAgents.find((agent) => agent.groupId === group.id && agent.status === 'active');
+  async createForGroup(group: { id: string; name: string }, defaultConversationId: string | null) {
+    const existing = await this.teamAgentRepository.findOneBy({ teamId: group.id, status: 'active' });
     if (existing) {
       existing.name = `${group.name} Agent`;
       existing.defaultConversationId = defaultConversationId;
-      this.persistState();
-      return existing;
+      const saved = await this.teamAgentRepository.save(existing);
+      return this.toRecord(saved);
     }
 
-    const agent: TeamAgentRecord = {
+    const agent = this.teamAgentRepository.create({
       id: `team-agent-${group.id}`,
-      groupId: group.id,
+      teamId: group.id,
       name: `${group.name} Agent`,
       status: 'active',
       capabilities: ['query', 'article_explanation'],
-      createdAt: this.buildCreatedAt(),
+      retrievalScope: 'public_plus_group_private',
       defaultConversationId,
-      config: {
-        retrievalScope: 'public_plus_group_private',
-      },
-    };
+      deletedAt: null,
+    });
 
-    this.teamAgents.push(agent);
-    this.persistState();
-    return agent;
+    const saved = await this.teamAgentRepository.save(agent);
+    return this.toRecord(saved);
   }
 
-  getByGroupId(groupId: string) {
-    const agent = this.teamAgents.find((item) => item.groupId === groupId && item.status === 'active');
+  async getByGroupId(groupId: string) {
+    const agent = await this.teamAgentRepository.findOneBy({ teamId: groupId, status: 'active' });
     if (!agent) {
       throw new NotFoundException('当前项目组 Agent 不存在');
     }
 
-    return agent;
+    return this.toRecord(agent);
   }
 
-  getVisibleAgentByGroupId(groupId: string) {
+  async getVisibleAgentByGroupId(groupId: string) {
     this.assertCanAccessGroupAgent(groupId);
     return this.getByGroupId(groupId);
   }
 
-  resolveGroupId(agentId?: string, groupId?: string) {
+  async resolveGroupId(agentId?: string, groupId?: string) {
     if (agentId == null || agentId.trim().length === 0) {
       return groupId;
     }
 
-    const agent = this.teamAgents.find((item) => item.id === agentId && item.status === 'active');
+    const agent = await this.teamAgentRepository.findOneBy({ id: agentId, status: 'active' });
     if (!agent) {
       throw new NotFoundException('项目组 Agent 不存在');
     }
 
-    this.assertCanAccessGroupAgent(agent.groupId);
-    if (groupId != null && groupId !== agent.groupId) {
+    this.assertCanAccessGroupAgent(agent.teamId);
+    if (groupId != null && groupId !== agent.teamId) {
       throw new NotFoundException('当前 Agent 不属于所选项目组');
     }
 
-    return agent.groupId;
+    return agent.teamId;
   }
 
-  deleteByGroupId(groupId: string) {
-    const nextAgents = this.teamAgents.filter((agent) => agent.groupId !== groupId);
-    this.teamAgents.splice(0, this.teamAgents.length, ...nextAgents);
-    this.persistState();
+  async deleteByGroupId(groupId: string) {
+    await this.teamAgentRepository.delete({ teamId: groupId });
   }
 }
 

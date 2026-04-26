@@ -53,7 +53,7 @@ export declare class GroupsService {
     assertCanAccessGroup(groupId: string): void;
     listGroups(): GroupRecord[];
     getGroupById(groupId: string): GroupRecord;
-    createGroup(dto: CreateGroupDto): {
+    createGroup(dto: CreateGroupDto): Promise<{
         id: string;
         name: string;
         organizationName: string;
@@ -61,7 +61,7 @@ export declare class GroupsService {
         memberCount: number;
         privateDocumentCount: number;
         lastQueryAt: null;
-    };
+    }>;
     listMembers(groupId: string): MemberRecord[];
     invite(groupId: string, dto: InviteMemberDto): {
         groupId: string;
@@ -85,11 +85,11 @@ export declare class GroupsService {
         removedAt: string;
         memberCount: number;
     };
-    deleteGroup(groupId: string): {
+    deleteGroup(groupId: string): Promise<{
         deletedGroupId: string;
         deletedGroupName: string;
         deletedAt: string;
         remainingGroups: number;
-    };
+    }>;
 }
 export { CreateGroupDto, InviteMemberDto, TransferLeaderDto };

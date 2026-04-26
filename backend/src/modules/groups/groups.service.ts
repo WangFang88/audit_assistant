@@ -199,7 +199,7 @@ export class GroupsService {
     return group;
   }
 
-  createGroup(dto: CreateGroupDto) {
+  async createGroup(dto: CreateGroupDto) {
     this.assertAdminCannotManageGroups();
     const currentUser = this.getCurrentUser();
     this.subscriptionsService.assertCanCreateGroup(this.listGroups().length);
@@ -225,7 +225,7 @@ export class GroupsService {
     });
 
     const conversation = this.chatService.createAgentConversation(group);
-    this.teamAgentsService.createForGroup(group, conversation.id);
+    await this.teamAgentsService.createForGroup(group, conversation.id);
     this.persistState();
     this.subscriptionsService.syncUsage({ groups: this.groups.length });
 
@@ -313,7 +313,7 @@ export class GroupsService {
     };
   }
 
-  deleteGroup(groupId: string) {
+  async deleteGroup(groupId: string) {
     this.assertAdminCannotManageGroups();
     this.assertCanAccessGroup(groupId);
     const groupIndex = this.groups.findIndex((group) => group.id === groupId);
@@ -330,7 +330,7 @@ export class GroupsService {
     );
     this.documentsService.removeGroupDocuments(groupId);
     this.chatService.removeGroupConversations(groupId);
-    this.teamAgentsService.deleteByGroupId(groupId);
+    await this.teamAgentsService.deleteByGroupId(groupId);
     this.persistState();
     this.subscriptionsService.syncUsage({ groups: this.groups.length });
 

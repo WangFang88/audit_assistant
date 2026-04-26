@@ -16,7 +16,7 @@ export class GroupsController {
   }
 
   @Post()
-  createGroup(@Body() dto: CreateGroupDto) {
+  async createGroup(@Body() dto: CreateGroupDto) {
     return this.groupsService.createGroup(dto);
   }
 
@@ -44,7 +44,7 @@ export class GroupsController {
   }
 
   @Delete(':groupId')
-  deleteGroup(@Param('groupId') groupId: string) {
+  async deleteGroup(@Param('groupId') groupId: string) {
     return this.groupsService.deleteGroup(groupId);
   }
 }

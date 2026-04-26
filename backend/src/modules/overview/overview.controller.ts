@@ -6,7 +6,7 @@ export class OverviewController {
   constructor(private readonly overviewService: OverviewService) {}
 
   @Get('dashboard')
-  getDashboard(@Query('groupId') groupId?: string) {
+  async getDashboard(@Query('groupId') groupId?: string) {
     return this.overviewService.getDashboard(groupId);
   }
 }

@@ -28,16 +28,16 @@ let OverviewService = class OverviewService {
         this.subscriptionsService = subscriptionsService;
         this.teamAgentsService = teamAgentsService;
     }
-    getDashboard(groupId) {
+    async getDashboard(groupId) {
         const user = this.authService.me();
         const isAdmin = user.role === 'admin';
         const visibleGroups = isAdmin ? [] : this.groupsService.listGroups();
         const effectiveGroupId = isAdmin ? undefined : groupId ?? visibleGroups[0]?.id;
         const activeGroup = effectiveGroupId ? this.groupsService.getGroupById(effectiveGroupId) : null;
-        const activeTeamAgent = effectiveGroupId ? this.teamAgentsService.getVisibleAgentByGroupId(effectiveGroupId) : null;
+        const activeTeamAgent = effectiveGroupId ? await this.teamAgentsService.getVisibleAgentByGroupId(effectiveGroupId) : null;
         let featuredQuery;
         try {
-            featuredQuery = this.queryService.search({
+            featuredQuery = await this.queryService.search({
                 question: '请检索与专项资金使用和采购审批相关的制度依据。',
                 groupId: effectiveGroupId,
                 agentId: activeTeamAgent?.id,

@@ -6,7 +6,7 @@ export class QueryController {
   constructor(private readonly queryService: QueryService) {}
 
   @Post('search')
-  search(@Body() dto: QueryRequestDto) {
+  async search(@Body() dto: QueryRequestDto) {
     return this.queryService.search(dto);
   }
 }

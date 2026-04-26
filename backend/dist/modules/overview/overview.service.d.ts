@@ -14,7 +14,7 @@ export declare class OverviewService {
     private readonly subscriptionsService;
     private readonly teamAgentsService;
     constructor(authService: AuthService, groupsService: GroupsService, documentsService: DocumentsService, queryService: QueryService, chatService: ChatService, subscriptionsService: SubscriptionsService, teamAgentsService: TeamAgentsService);
-    getDashboard(groupId?: string): {
+    getDashboard(groupId?: string): Promise<{
         user: {
             id: string;
             name: string;
@@ -224,5 +224,5 @@ export declare class OverviewService {
             }[];
             explanation: string;
         };
-    };
+    }>;
 }

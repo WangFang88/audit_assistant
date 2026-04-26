@@ -1,6 +1,7 @@
+import { Repository } from 'typeorm';
+import { TeamAgentEntity } from '../../database/entities/team-agent.entity';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
-import { LocalStateService } from '../subscriptions/local-state.service';
 type TeamAgentCapability = 'query' | 'article_explanation' | 'case_reference' | 'working_paper_draft' | 'risk_check' | 'usage_stats' | 'config_management';
 type TeamAgentRecord = {
     id: string;
@@ -15,22 +16,20 @@ type TeamAgentRecord = {
     };
 };
 export declare class TeamAgentsService {
-    private readonly localStateService;
+    private readonly teamAgentRepository;
     private readonly authService;
     private readonly groupsService;
-    constructor(localStateService: LocalStateService, authService: AuthService, groupsService: GroupsService);
-    private readonly teamAgents;
+    constructor(teamAgentRepository: Repository<TeamAgentEntity>, authService: AuthService, groupsService: GroupsService);
     private isCapability;
-    private persistState;
-    private buildCreatedAt;
+    private toRecord;
     private assertCanAccessGroupAgent;
     createForGroup(group: {
         id: string;
         name: string;
-    }, defaultConversationId: string | null): TeamAgentRecord;
-    getByGroupId(groupId: string): TeamAgentRecord;
-    getVisibleAgentByGroupId(groupId: string): TeamAgentRecord;
-    resolveGroupId(agentId?: string, groupId?: string): string | undefined;
-    deleteByGroupId(groupId: string): void;
+    }, defaultConversationId: string | null): Promise<TeamAgentRecord>;
+    getByGroupId(groupId: string): Promise<TeamAgentRecord>;
+    getVisibleAgentByGroupId(groupId: string): Promise<TeamAgentRecord>;
+    resolveGroupId(agentId?: string, groupId?: string): Promise<string | undefined>;
+    deleteByGroupId(groupId: string): Promise<void>;
 }
 export { TeamAgentCapability, TeamAgentRecord };

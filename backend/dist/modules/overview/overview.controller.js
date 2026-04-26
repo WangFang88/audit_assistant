@@ -19,7 +19,7 @@ let OverviewController = class OverviewController {
     constructor(overviewService) {
         this.overviewService = overviewService;
     }
-    getDashboard(groupId) {
+    async getDashboard(groupId) {
         return this.overviewService.getDashboard(groupId);
     }
 };
@@ -29,7 +29,7 @@ __decorate([
     __param(0, (0, common_1.Query)('groupId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], OverviewController.prototype, "getDashboard", null);
 exports.OverviewController = OverviewController = __decorate([
     (0, common_1.Controller)('overview'),

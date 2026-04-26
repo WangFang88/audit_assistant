@@ -11,7 +11,7 @@ export declare class GroupsController {
         privateDocumentCount: number;
         lastQueryAt: string | null;
     }[];
-    createGroup(dto: CreateGroupDto): {
+    createGroup(dto: CreateGroupDto): Promise<{
         id: string;
         name: string;
         organizationName: string;
@@ -19,7 +19,7 @@ export declare class GroupsController {
         memberCount: number;
         privateDocumentCount: number;
         lastQueryAt: null;
-    };
+    }>;
     listMembers(groupId: string): {
         id: string;
         groupId: string;
@@ -32,7 +32,7 @@ export declare class GroupsController {
         groupId: string;
         inviteCode: string;
         phone: string;
-        role: "member" | "leader";
+        role: "leader" | "member";
         expiresAt: string;
     };
     transferLeader(groupId: string, dto: TransferLeaderDto): {
@@ -50,10 +50,10 @@ export declare class GroupsController {
         removedAt: string;
         memberCount: number;
     };
-    deleteGroup(groupId: string): {
+    deleteGroup(groupId: string): Promise<{
         deletedGroupId: string;
         deletedGroupName: string;
         deletedAt: string;
         remainingGroups: number;
-    };
+    }>;
 }

@@ -42,12 +42,12 @@ export class QueryService {
     private readonly teamAgentsService: TeamAgentsService,
   ) {}
 
-  search(dto: QueryRequestDto) {
+  async search(dto: QueryRequestDto) {
     if (this.authService.isAdmin() && (dto.groupId != null || dto.agentId != null)) {
       throw new ForbiddenException('管理员仅可检索公共库，不能按项目组范围检索');
     }
 
-    const resolvedGroupId = this.teamAgentsService.resolveGroupId(dto.agentId, dto.groupId);
+    const resolvedGroupId = await this.teamAgentsService.resolveGroupId(dto.agentId, dto.groupId);
     if (!this.authService.isAdmin() && resolvedGroupId != null) {
       this.groupsService.assertCanAccessGroup(resolvedGroupId);
     }
@@ -56,7 +56,7 @@ export class QueryService {
     this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
 
     const group = resolvedGroupId ? this.groupsService.getGroupById(resolvedGroupId) : null;
-    const teamAgent = resolvedGroupId ? this.teamAgentsService.getVisibleAgentByGroupId(resolvedGroupId) : null;
+    const teamAgent = resolvedGroupId ? await this.teamAgentsService.getVisibleAgentByGroupId(resolvedGroupId) : null;
     const readyChunks = this.documentsService.getReadyChunks(resolvedGroupId);
     const scopeSummary = this.documentsService.getLibraryScopeSummary(resolvedGroupId);
     const lowerQuestion = dto.question.toLowerCase();

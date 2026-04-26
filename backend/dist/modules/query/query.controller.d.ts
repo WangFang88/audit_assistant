@@ -2,7 +2,7 @@ import { QueryRequestDto, QueryService } from './query.service';
 export declare class QueryController {
     private readonly queryService;
     constructor(queryService: QueryService);
-    search(dto: QueryRequestDto): {
+    search(dto: QueryRequestDto): Promise<{
         question: string;
         agentMode: boolean;
         agent: {
@@ -50,5 +50,5 @@ export declare class QueryController {
             pageLabel: string;
         }[];
         explanation: string;
-    };
+    }>;
 }

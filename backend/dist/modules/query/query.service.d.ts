@@ -26,7 +26,7 @@ export declare class QueryService {
     private readonly subscriptionsService;
     private readonly teamAgentsService;
     constructor(authService: AuthService, documentsService: DocumentsService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, teamAgentsService: TeamAgentsService);
-    search(dto: QueryRequestDto): {
+    search(dto: QueryRequestDto): Promise<{
         question: string;
         agentMode: boolean;
         agent: {
@@ -64,6 +64,6 @@ export declare class QueryService {
         answer: string;
         citations: CitationRecord[];
         explanation: string;
-    };
+    }>;
 }
 export { QueryRequestDto };

@@ -8,6 +8,8 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TeamAgentsModule = void 0;
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const team_agent_entity_1 = require("../../database/entities/team-agent.entity");
 const auth_module_1 = require("../auth/auth.module");
 const groups_module_1 = require("../groups/groups.module");
 const subscriptions_module_1 = require("../subscriptions/subscriptions.module");
@@ -17,7 +19,7 @@ let TeamAgentsModule = class TeamAgentsModule {
 exports.TeamAgentsModule = TeamAgentsModule;
 exports.TeamAgentsModule = TeamAgentsModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule, (0, common_1.forwardRef)(() => groups_module_1.GroupsModule), subscriptions_module_1.SubscriptionsModule],
+        imports: [typeorm_1.TypeOrmModule.forFeature([team_agent_entity_1.TeamAgentEntity]), auth_module_1.AuthModule, (0, common_1.forwardRef)(() => groups_module_1.GroupsModule), subscriptions_module_1.SubscriptionsModule],
         providers: [team_agents_service_1.TeamAgentsService],
         exports: [team_agents_service_1.TeamAgentsService],
     })

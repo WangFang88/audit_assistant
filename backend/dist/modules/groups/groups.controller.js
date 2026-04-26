@@ -22,7 +22,7 @@ let GroupsController = class GroupsController {
     listGroups() {
         return this.groupsService.listGroups();
     }
-    createGroup(dto) {
+    async createGroup(dto) {
         return this.groupsService.createGroup(dto);
     }
     listMembers(groupId) {
@@ -37,7 +37,7 @@ let GroupsController = class GroupsController {
     removeMember(groupId, memberId) {
         return this.groupsService.removeMember(groupId, memberId);
     }
-    deleteGroup(groupId) {
+    async deleteGroup(groupId) {
         return this.groupsService.deleteGroup(groupId);
     }
 };
@@ -53,7 +53,7 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [groups_service_1.CreateGroupDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], GroupsController.prototype, "createGroup", null);
 __decorate([
     (0, common_1.Get)(':groupId/members'),
@@ -91,7 +91,7 @@ __decorate([
     __param(0, (0, common_1.Param)('groupId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], GroupsController.prototype, "deleteGroup", null);
 exports.GroupsController = GroupsController = __decorate([
     (0, common_1.Controller)('groups'),

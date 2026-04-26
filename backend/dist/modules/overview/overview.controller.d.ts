@@ -2,7 +2,7 @@ import { OverviewService } from './overview.service';
 export declare class OverviewController {
     private readonly overviewService;
     constructor(overviewService: OverviewService);
-    getDashboard(groupId?: string): {
+    getDashboard(groupId?: string): Promise<{
         user: {
             id: string;
             name: string;
@@ -212,5 +212,5 @@ export declare class OverviewController {
             }[];
             explanation: string;
         };
-    };
+    }>;
 }

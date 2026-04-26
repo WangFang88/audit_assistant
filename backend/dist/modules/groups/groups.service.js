@@ -175,7 +175,7 @@ let GroupsService = class GroupsService {
         }
         return group;
     }
-    createGroup(dto) {
+    async createGroup(dto) {
         this.assertAdminCannotManageGroups();
         const currentUser = this.getCurrentUser();
         this.subscriptionsService.assertCanCreateGroup(this.listGroups().length);
@@ -198,7 +198,7 @@ let GroupsService = class GroupsService {
             role: 'leader',
         });
         const conversation = this.chatService.createAgentConversation(group);
-        this.teamAgentsService.createForGroup(group, conversation.id);
+        await this.teamAgentsService.createForGroup(group, conversation.id);
         this.persistState();
         this.subscriptionsService.syncUsage({ groups: this.groups.length });
         return group;
@@ -267,7 +267,7 @@ let GroupsService = class GroupsService {
             memberCount: group.memberCount,
         };
     }
-    deleteGroup(groupId) {
+    async deleteGroup(groupId) {
         this.assertAdminCannotManageGroups();
         this.assertCanAccessGroup(groupId);
         const groupIndex = this.groups.findIndex((group) => group.id === groupId);
@@ -279,7 +279,7 @@ let GroupsService = class GroupsService {
         this.members.splice(0, this.members.length, ...this.members.filter((member) => member.groupId !== groupId));
         this.documentsService.removeGroupDocuments(groupId);
         this.chatService.removeGroupConversations(groupId);
-        this.teamAgentsService.deleteByGroupId(groupId);
+        await this.teamAgentsService.deleteByGroupId(groupId);
         this.persistState();
         this.subscriptionsService.syncUsage({ groups: this.groups.length });
         return {
