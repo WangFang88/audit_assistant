@@ -326,7 +326,7 @@ let DocumentsService = class DocumentsService {
                     lowerSourcePath.endsWith('.jpeg')
                     ? 'image'
                     : 'pdf';
-        const generatedChunkCount = 2;
+        const generatedChunkCount = isScan ? 4 : 4;
         const document = {
             id: `doc-${this.documents.length + 1}`,
             title: dto.title,

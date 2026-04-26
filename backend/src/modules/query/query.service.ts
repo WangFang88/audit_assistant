@@ -50,24 +50,33 @@ export class QueryService {
           .filter((token) => token.length >= 2),
       ),
     );
+    const articleTokens = tokens.filter((token) => /第.+条|第.+章/.test(token));
+    const evidenceTokens = tokens.filter((token) => ['合同', '发票', '验收', '付款', '凭证', '依据', '归档'].includes(token));
 
     const candidates: CitationRecord[] = readyChunks
       .map((chunk) => {
         const keywordHits = chunk.keywords.filter((keyword) => lowerQuestion.includes(keyword.toLowerCase())).length;
         const contentHits = tokens.filter((token) => chunk.content.includes(token)).length;
+        const articleHits = articleTokens.filter(
+          (token) => chunk.articleRef.includes(token) || chunk.chapterTitle.includes(token),
+        ).length;
+        const evidenceHits = evidenceTokens.filter((token) => chunk.content.includes(token)).length;
         const semanticBoost = contentHits > 0 ? 0.16 + Math.min(0.1, contentHits * 0.03) : 0.04;
+        const articleBoost = articleHits > 0 ? 0.1 + Math.min(0.06, articleHits * 0.03) : 0;
+        const evidenceBoost = evidenceHits > 0 ? 0.08 + Math.min(0.06, evidenceHits * 0.03) : 0;
         const scopeBoost = chunk.libraryType === 'private' ? 0.08 : 0.04;
-        const score = Math.min(0.99, 0.48 + keywordHits * 0.14 + semanticBoost + scopeBoost);
+        const score = Math.min(0.99, 0.42 + keywordHits * 0.14 + semanticBoost + articleBoost + evidenceBoost + scopeBoost);
+        const matchedSignals = keywordHits + contentHits + articleHits + evidenceHits;
 
         return {
           documentId: chunk.documentId,
           title: chunk.title,
           libraryType: chunk.libraryType,
           score,
-          matchedChunk: `${chunk.articleRef}：${chunk.content}`,
+          matchedChunk: `${chunk.chapterTitle} ${chunk.articleRef}：${chunk.content}`,
           reason:
-            keywordHits > 0 || contentHits > 0
-              ? `已命中 ${keywordHits + contentHits} 个关键词/语义线索，并基于文本块完成范围过滤与混合召回。`
+            matchedSignals > 0
+              ? `已命中 ${matchedSignals} 个关键词/条款号/证据线索，并基于文本块完成范围过滤与混合召回。`
               : '当前文本块通过范围过滤进入候选集，并在重排阶段被保留。',
           articleRef: chunk.articleRef,
           chapterTitle: chunk.chapterTitle,

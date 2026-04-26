@@ -377,7 +377,7 @@ export class DocumentsService {
           ? 'image'
           : 'pdf';
 
-    const generatedChunkCount = 2;
+    const generatedChunkCount = isScan ? 4 : 4;
 
     const document: DocumentRecord = {
       id: `doc-${this.documents.length + 1}`,
