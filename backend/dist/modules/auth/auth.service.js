@@ -26,6 +26,7 @@ __decorate([
 ], LoginDto.prototype, "password", void 0);
 let AuthService = class AuthService {
     constructor() {
+        this.accessToken = 'demo-access-token';
         this.currentUser = {
             id: 'user-1',
             name: '审计专员',
@@ -36,13 +37,19 @@ let AuthService = class AuthService {
     }
     login(dto) {
         return {
-            accessToken: 'demo-access-token',
+            accessToken: this.accessToken,
             refreshToken: 'demo-refresh-token',
             user: {
                 ...this.currentUser,
                 phone: dto.phone,
             },
         };
+    }
+    validateAccessToken(token) {
+        if (token !== this.accessToken) {
+            return null;
+        }
+        return this.currentUser;
     }
     me() {
         return this.currentUser;

@@ -12,6 +12,8 @@ class LoginDto {
 
 @Injectable()
 export class AuthService {
+  private readonly accessToken = 'demo-access-token';
+
   private readonly currentUser = {
     id: 'user-1',
     name: '审计专员',
@@ -22,13 +24,21 @@ export class AuthService {
 
   login(dto: LoginDto) {
     return {
-      accessToken: 'demo-access-token',
+      accessToken: this.accessToken,
       refreshToken: 'demo-refresh-token',
       user: {
         ...this.currentUser,
         phone: dto.phone,
       },
     };
+  }
+
+  validateAccessToken(token: string) {
+    if (token !== this.accessToken) {
+      return null;
+    }
+
+    return this.currentUser;
   }
 
   me() {
