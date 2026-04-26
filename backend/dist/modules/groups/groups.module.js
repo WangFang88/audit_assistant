@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GroupsModule = void 0;
 const common_1 = require("@nestjs/common");
+const database_support_module_1 = require("../../database/database-support.module");
 const auth_module_1 = require("../auth/auth.module");
 const documents_module_1 = require("../documents/documents.module");
 const subscriptions_module_1 = require("../subscriptions/subscriptions.module");
@@ -18,7 +19,7 @@ let GroupsModule = class GroupsModule {
 exports.GroupsModule = GroupsModule;
 exports.GroupsModule = GroupsModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule, subscriptions_module_1.SubscriptionsModule, (0, common_1.forwardRef)(() => documents_module_1.DocumentsModule)],
+        imports: [database_support_module_1.DatabaseSupportModule, auth_module_1.AuthModule, subscriptions_module_1.SubscriptionsModule, (0, common_1.forwardRef)(() => documents_module_1.DocumentsModule)],
         controllers: [groups_controller_1.GroupsController],
         providers: [groups_service_1.GroupsService],
         exports: [groups_service_1.GroupsService],

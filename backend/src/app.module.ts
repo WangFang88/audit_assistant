@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { DocumentsModule } from './modules/documents/documents.module';
@@ -9,6 +10,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 
 @Module({
   imports: [
+    DatabaseModule,
     AuthModule,
     GroupsModule,
     DocumentsModule,
