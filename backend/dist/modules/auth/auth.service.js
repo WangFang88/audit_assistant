@@ -38,9 +38,9 @@ let AuthService = class AuthService {
         this.refreshToken = 'demo-refresh-token';
         this.currentUser = {
             id: 'user-1',
-            name: '审计专员',
+            name: '系统管理员',
             phone: '13800138000',
-            role: 'project_leader',
+            role: 'admin',
             trialEndsAt: '2026-05-01',
         };
     }
