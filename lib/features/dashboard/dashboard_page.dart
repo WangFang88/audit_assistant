@@ -268,7 +268,7 @@ class _DashboardPageState extends State<DashboardPage> {
       return;
     }
 
-    if (_hasReachedDailyQueryLimit) {
+    if (!_isAdmin && _hasReachedDailyQueryLimit) {
       if (!mounted) {
         return;
       }
@@ -926,7 +926,11 @@ class _DashboardPageState extends State<DashboardPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('当前未选择项目组，将按公共库导入。')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isAdmin ? '当前为管理员公共库视角，将导入到公共库。' : '当前未选择项目组，将按公共库导入。'),
+        ),
+      );
     }
 
     if (_hasReachedPrivateDocumentLimit) {
