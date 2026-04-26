@@ -44,6 +44,9 @@ let LocalStateService = class LocalStateService {
     saveChatState(conversations, messages) {
         this.writeState({ conversations, messages });
     }
+    saveUsers(users) {
+        this.writeState({ users });
+    }
     writeState(partial) {
         const nextState = {
             ...this.readState(),

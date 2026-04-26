@@ -17,7 +17,7 @@ let SubscriptionsModule = class SubscriptionsModule {
 exports.SubscriptionsModule = SubscriptionsModule;
 exports.SubscriptionsModule = SubscriptionsModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule],
+        imports: [(0, common_1.forwardRef)(() => auth_module_1.AuthModule)],
         controllers: [subscriptions_controller_1.SubscriptionsController],
         providers: [local_state_service_1.LocalStateService, subscriptions_service_1.SubscriptionsService],
         exports: [local_state_service_1.LocalStateService, subscriptions_service_1.SubscriptionsService],

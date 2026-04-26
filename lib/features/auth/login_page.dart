@@ -25,18 +25,40 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  bool _isValidPhone(String value) {
+    final phone = value.trim();
+    return phone.length == 11 && int.tryParse(phone) != null;
+  }
+
+  Future<void> _submit({required bool register}) async {
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text.trim();
     FocusScope.of(context).unfocus();
+
+    if (register) {
+      if (!_isValidPhone(phone)) {
+        setState(() {
+          _error = '请输入 11 位手机号后再注册。';
+        });
+        return;
+      }
+      if (password.length < 6) {
+        setState(() {
+          _error = '注册密码至少需要 6 位。';
+        });
+        return;
+      }
+    }
+
     setState(() {
       _submitting = true;
       _error = null;
     });
 
     try {
-      final result = await widget.apiService.login(
-        phone: _phoneController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      final result = register
+          ? await widget.apiService.register(phone: phone, password: password)
+          : await widget.apiService.login(phone: phone, password: password);
       if (!mounted) {
         return;
       }
@@ -47,7 +69,7 @@ class _LoginPageState extends State<LoginPage> {
       });
     } catch (_) {
       setState(() {
-        _error = '登录失败，请检查后端服务是否已启动。';
+        _error = register ? '注册失败，请检查后端服务是否已启动。' : '登录失败，请检查后端服务是否已启动。';
       });
     } finally {
       if (mounted) {
@@ -88,7 +110,7 @@ class _LoginPageState extends State<LoginPage> {
                     TextField(
                       controller: _passwordController,
                       obscureText: true,
-                      onSubmitted: (_) => _submitting ? null : _submit(),
+                      onSubmitted: (_) => _submitting ? null : _submit(register: false),
                       decoration: const InputDecoration(labelText: '密码'),
                     ),
                     if (_error != null) ...[
@@ -100,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                     const SizedBox(height: 20),
                     FilledButton(
-                      onPressed: _submitting ? null : _submit,
+                      onPressed: _submitting ? null : () => _submit(register: false),
                       child: _submitting
                           ? const SizedBox(
                               height: 18,
@@ -110,8 +132,13 @@ class _LoginPageState extends State<LoginPage> {
                           : const Text('登录并进入工作台'),
                     ),
                     const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: _submitting ? null : () => _submit(register: true),
+                      child: const Text('注册并登录'),
+                    ),
+                    const SizedBox(height: 12),
                     Text(
-                      '请先启动 backend 服务。演示账号：审计组长 13800138001、审计助理 13800138002、法规顾问 13800138003、管理员 admin / 13800138000；默认密码均为 123456。',
+                      '请先启动 backend 服务。演示账号：审计组长 13800138001、审计助理 13800138002、法规顾问 13800138003、管理员 admin / 13800138000；默认密码均为 123456。也支持输入新手机号后直接注册并登录。',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
 import { LocalStateService } from './local-state.service';
 
@@ -13,7 +13,7 @@ type UsageSnapshot = {
 export class SubscriptionsService {
   constructor(
     private readonly localStateService: LocalStateService,
-    private readonly authService: AuthService,
+    @Inject(forwardRef(() => AuthService)) private readonly authService: AuthService,
   ) {
     const persistedState = this.localStateService.readState();
     if (persistedState.usage) {

@@ -77,6 +77,15 @@ type PersistedMessageRecord = {
   sentAt: string;
 };
 
+type PersistedUserRecord = {
+  id: string;
+  name: string;
+  phone: string;
+  role: 'admin' | 'member';
+  trialEndsAt: string;
+  password: string;
+};
+
 type PersistedState = {
   groups?: PersistedGroupRecord[];
   members?: PersistedMemberRecord[];
@@ -85,6 +94,7 @@ type PersistedState = {
   usage?: PersistedUsageSnapshot;
   conversations?: PersistedConversationRecord[];
   messages?: PersistedMessageRecord[];
+  users?: PersistedUserRecord[];
 };
 
 @Injectable()
@@ -126,6 +136,10 @@ export class LocalStateService {
 
   saveChatState(conversations: PersistedConversationRecord[], messages: PersistedMessageRecord[]) {
     this.writeState({ conversations, messages });
+  }
+
+  saveUsers(users: PersistedUserRecord[]) {
+    this.writeState({ users });
   }
 
   private writeState(partial: PersistedState) {

@@ -127,6 +127,17 @@ class ApiService {
     return LoginResponse.fromJson(json);
   }
 
+  Future<LoginResponse> register({required String phone, required String password}) async {
+    final response = await _client.post(
+      Uri.parse('$_baseUrl/auth/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'phone': phone, 'password': password}),
+    );
+
+    final json = _decodeMap(response);
+    return LoginResponse.fromJson(json);
+  }
+
   Future<AppUser> fetchCurrentUser() async {
     final response = await _requestWithRefresh(
       (headers) => _client.get(

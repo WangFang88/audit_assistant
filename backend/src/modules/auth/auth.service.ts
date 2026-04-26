@@ -1,5 +1,6 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { IsString, MinLength } from 'class-validator';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { IsString, Matches, MinLength } from 'class-validator';
+import { LocalStateService } from '../subscriptions/local-state.service';
 
 class LoginDto {
   @IsString()
@@ -17,6 +18,16 @@ class RefreshTokenDto {
   refreshToken!: string;
 }
 
+class RegisterDto {
+  @IsString()
+  @Matches(/^\d{11}$/)
+  phone!: string;
+
+  @IsString()
+  @MinLength(6)
+  password!: string;
+}
+
 type DemoUser = {
   id: string;
   name: string;
@@ -25,15 +36,27 @@ type DemoUser = {
   trialEndsAt: string;
 };
 
+type AuthUserRecord = DemoUser & {
+  password: string;
+};
+
 @Injectable()
 export class AuthService {
-  private readonly users: DemoUser[] = [
+  constructor(private readonly localStateService: LocalStateService) {
+    const persistedUsers = this.localStateService.readState().users;
+    if (persistedUsers && persistedUsers.length > 0) {
+      this.registeredUsers = persistedUsers.filter((user) => !this.demoUsers.some((demoUser) => demoUser.id === user.id));
+    }
+  }
+
+  private readonly demoUsers: AuthUserRecord[] = [
     {
       id: 'user-1',
       name: '系统管理员',
       phone: '13800138000',
       role: 'admin',
       trialEndsAt: '2026-05-01',
+      password: '123456',
     },
     {
       id: 'user-2',
@@ -41,6 +64,7 @@ export class AuthService {
       phone: '13800138001',
       role: 'member',
       trialEndsAt: '2026-05-01',
+      password: '123456',
     },
     {
       id: 'user-3',
@@ -48,6 +72,7 @@ export class AuthService {
       phone: '13800138002',
       role: 'member',
       trialEndsAt: '2026-05-01',
+      password: '123456',
     },
     {
       id: 'user-4',
@@ -55,10 +80,30 @@ export class AuthService {
       phone: '13800138003',
       role: 'member',
       trialEndsAt: '2026-05-01',
+      password: '123456',
     },
-  ] as const;
+  ];
 
-  private currentUser = this.users[0];
+  private registeredUsers: AuthUserRecord[] = [];
+  private currentUser: DemoUser = this.toPublicUser(this.demoUsers[0]);
+
+  private get users() {
+    return [...this.demoUsers, ...this.registeredUsers];
+  }
+
+  private toPublicUser(user: AuthUserRecord): DemoUser {
+    return {
+      id: user.id,
+      name: user.name,
+      phone: user.phone,
+      role: user.role,
+      trialEndsAt: user.trialEndsAt,
+    };
+  }
+
+  private persistUsers() {
+    this.localStateService.saveUsers(this.registeredUsers);
+  }
 
   private buildAccessToken(userId: string) {
     return `demo-access-token-${userId}`;
@@ -68,9 +113,13 @@ export class AuthService {
     return `demo-refresh-token-${userId}`;
   }
 
+  private normalizePhone(phone: string) {
+    return phone.trim();
+  }
+
   private findUserByPhone(phone: string) {
-    const normalizedPhone = phone.trim();
-    return this.users.find((user) => user.phone === normalizedPhone || (normalizedPhone == 'admin' && user.role === 'admin'));
+    const normalizedPhone = this.normalizePhone(phone);
+    return this.users.find((user) => user.phone === normalizedPhone || (normalizedPhone === 'admin' && user.role === 'admin')) ?? null;
   }
 
   private findUserByToken(token: string, prefix: 'demo-access-token-' | 'demo-refresh-token-') {
@@ -87,19 +136,56 @@ export class AuthService {
     return user;
   }
 
-  login(dto: LoginDto) {
-    const user = this.findUserByPhone(dto.phone);
-    if (!user) {
-      throw new UnauthorizedException('账号不存在，请使用演示账号登录');
-    }
-
-    this.setCurrentUser(user);
-
+  private buildAuthResponse(user: AuthUserRecord) {
+    const publicUser = this.toPublicUser(user);
+    this.setCurrentUser(publicUser);
     return {
       accessToken: this.buildAccessToken(user.id),
       refreshToken: this.buildRefreshToken(user.id),
-      user,
+      user: publicUser,
     };
+  }
+
+  private createUserName(phone: string) {
+    return `新用户${phone.slice(-4)}`;
+  }
+
+  login(dto: LoginDto) {
+    const user = this.findUserByPhone(dto.phone);
+    if (!user) {
+      throw new UnauthorizedException('账号不存在，请先注册后再登录');
+    }
+
+    if (user.password !== dto.password.trim()) {
+      throw new UnauthorizedException('密码错误，请重新输入');
+    }
+
+    return this.buildAuthResponse(user);
+  }
+
+  register(dto: RegisterDto) {
+    const phone = this.normalizePhone(dto.phone);
+    const password = dto.password.trim();
+    if (phone === 'admin') {
+      throw new BadRequestException('admin 为保留账号，不能用于注册');
+    }
+
+    if (this.findUserByPhone(phone)) {
+      throw new BadRequestException('该手机号已注册，请直接登录');
+    }
+
+    const user: AuthUserRecord = {
+      id: `user-${Date.now()}`,
+      name: this.createUserName(phone),
+      phone,
+      role: 'member',
+      trialEndsAt: '2026-05-01',
+      password,
+    };
+
+    this.registeredUsers = [...this.registeredUsers, user];
+    this.persistUsers();
+    return this.buildAuthResponse(user);
   }
 
   refresh(dto: RefreshTokenDto) {
@@ -108,13 +194,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token 无效');
     }
 
-    this.setCurrentUser(user);
-
-    return {
-      accessToken: this.buildAccessToken(user.id),
-      refreshToken: this.buildRefreshToken(user.id),
-      user,
-    };
+    return this.buildAuthResponse(user);
   }
 
   validateAccessToken(token: string) {
@@ -123,7 +203,7 @@ export class AuthService {
       return null;
     }
 
-    return this.setCurrentUser(user);
+    return this.setCurrentUser(this.toPublicUser(user));
   }
 
   me() {
@@ -135,4 +215,4 @@ export class AuthService {
   }
 }
 
-export { LoginDto, RefreshTokenDto };
+export { LoginDto, RefreshTokenDto, RegisterDto };
