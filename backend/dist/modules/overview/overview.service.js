@@ -29,8 +29,8 @@ let OverviewService = class OverviewService {
     getDashboard(groupId) {
         const user = this.authService.me();
         const isAdmin = user.role === 'admin';
-        const groups = this.groupsService.listGroups();
-        const effectiveGroupId = isAdmin ? undefined : groupId ?? groups[0]?.id;
+        const visibleGroups = isAdmin ? [] : this.groupsService.listGroups();
+        const effectiveGroupId = isAdmin ? undefined : groupId ?? visibleGroups[0]?.id;
         const activeGroup = effectiveGroupId ? this.groupsService.getGroupById(effectiveGroupId) : null;
         return {
             user,
@@ -71,7 +71,7 @@ let OverviewService = class OverviewService {
                 parserTarget: 'multimodal-parser',
                 deliveryMode: 'browser + mobile + PWA',
             },
-            groups,
+            groups: visibleGroups,
             members: effectiveGroupId ? this.groupsService.listMembers(effectiveGroupId) : [],
             documents: this.documentsService.listDocuments(effectiveGroupId),
             extractJobs: this.documentsService.listExtractionJobs(effectiveGroupId),
