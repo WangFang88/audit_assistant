@@ -1051,11 +1051,12 @@ class _DashboardPageState extends State<DashboardPage> {
           overview.architectureTargets,
         ),
       ),
-      _NavPage(
-        label: '对话',
-        icon: Icons.chat_bubble_outline,
-        child: _buildChat(),
-      ),
+      if (!_isAdmin)
+        _NavPage(
+          label: '对话',
+          icon: Icons.chat_bubble_outline,
+          child: _buildChat(),
+        ),
       _NavPage(
         label: '我的',
         icon: Icons.person_outline,
@@ -1250,8 +1251,10 @@ class _DashboardPageState extends State<DashboardPage> {
                     _buildQueryPanel(activeContext),
                     const SizedBox(height: 16),
                     _buildResultPanel(context, result),
-                    const SizedBox(height: 16),
-                    _buildGroupPanel(groups),
+                    if (!_isAdmin) ...[
+                      const SizedBox(height: 16),
+                      _buildGroupPanel(groups),
+                    ],
                     const SizedBox(height: 16),
                     _buildDocumentPanel(documents, extractJobs),
                   ],
@@ -1269,14 +1272,17 @@ class _DashboardPageState extends State<DashboardPage> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _buildGroupPanel(groups)),
-                      const SizedBox(width: 16),
-                      Expanded(child: _buildDocumentPanel(documents, extractJobs)),
-                    ],
-                  ),
+                  if (_isAdmin)
+                    _buildDocumentPanel(documents, extractJobs)
+                  else
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildGroupPanel(groups)),
+                        const SizedBox(width: 16),
+                        Expanded(child: _buildDocumentPanel(documents, extractJobs)),
+                      ],
+                    ),
                 ],
               );
             },
