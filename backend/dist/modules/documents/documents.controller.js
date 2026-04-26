@@ -25,6 +25,9 @@ let DocumentsController = class DocumentsController {
     listExtractionJobs(groupId) {
         return this.documentsService.listExtractionJobs(groupId);
     }
+    listDocumentChunks(documentId) {
+        return this.documentsService.listDocumentChunks(documentId);
+    }
     importDocument(dto) {
         return this.documentsService.importDocument(dto);
     }
@@ -44,6 +47,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], DocumentsController.prototype, "listExtractionJobs", null);
+__decorate([
+    (0, common_1.Get)(':documentId/chunks'),
+    __param(0, (0, common_1.Param)('documentId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], DocumentsController.prototype, "listDocumentChunks", null);
 __decorate([
     (0, common_1.Post)('import-from-file-server'),
     __param(0, (0, common_1.Body)()),

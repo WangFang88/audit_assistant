@@ -290,6 +290,11 @@ export class DocumentsService {
     });
   }
 
+  listDocumentChunks(documentId: string) {
+    this.getDocumentById(documentId);
+    return this.chunks.filter((chunk) => chunk.documentId === documentId);
+  }
+
   getDocumentById(documentId: string) {
     const document = this.documents.find((item) => item.id === documentId);
     if (!document) {

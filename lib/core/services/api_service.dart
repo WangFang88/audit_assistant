@@ -237,6 +237,14 @@ class ApiService {
     return list.map(ExtractionJob.fromJson).toList();
   }
 
+  Future<List<DocumentChunkPreview>> fetchDocumentChunks(String documentId) async {
+    final response = await _requestWithRefresh(
+      (headers) => _client.get(Uri.parse('$_baseUrl/documents/$documentId/chunks'), headers: headers),
+    );
+    final list = _decodeList(response);
+    return list.map(DocumentChunkPreview.fromJson).toList();
+  }
+
   Future<ImportDocumentResult> importDocument({
     required String title,
     required String libraryType,

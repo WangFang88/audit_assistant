@@ -28,6 +28,19 @@ export declare class DocumentsController {
         progress: number;
         startedAt: string;
     }[];
+    listDocumentChunks(documentId: string): {
+        id: string;
+        documentId: string;
+        groupId: string | null;
+        libraryType: "public" | "private";
+        title: string;
+        chapterTitle: string;
+        articleRef: string;
+        pageLabel: string;
+        content: string;
+        keywords: string[];
+        indexStatus: "ready" | "processing";
+    }[];
     importDocument(dto: ImportDocumentDto): {
         notes: string;
         id: string;

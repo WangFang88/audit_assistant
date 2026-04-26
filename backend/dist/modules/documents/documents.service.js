@@ -252,6 +252,10 @@ let DocumentsService = class DocumentsService {
             return groupId != null && chunk.groupId === groupId;
         });
     }
+    listDocumentChunks(documentId) {
+        this.getDocumentById(documentId);
+        return this.chunks.filter((chunk) => chunk.documentId === documentId);
+    }
     getDocumentById(documentId) {
         const document = this.documents.find((item) => item.id === documentId);
         if (!document) {

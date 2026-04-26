@@ -744,6 +744,81 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  Future<void> _showDocumentChunksDialog(KnowledgeDocument document) async {
+    try {
+      final chunks = await widget.apiService.fetchDocumentChunks(document.id);
+      if (!mounted) {
+        return;
+      }
+
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(document.title),
+          content: SizedBox(
+            width: 720,
+            child: chunks.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text('当前文档还没有可预览的文本块。'),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: chunks
+                          .map(
+                            (chunk) => Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFF),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: const Color(0xFFDCE6F5)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      Chip(label: Text(chunk.chapterTitle)),
+                                      Chip(label: Text(chunk.articleRef)),
+                                      Chip(label: Text(chunk.pageLabel)),
+                                      Chip(label: Text(chunk.indexStatus)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(chunk.content),
+                                  const SizedBox(height: 10),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: chunk.keywords.map((keyword) => Chip(label: Text(keyword))).toList(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭'))],
+        ),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.message;
+      });
+    }
+  }
+
   Future<void> _showImportDocumentDialog() async {
     if (_activeGroupId == null) {
       if (!mounted) {
@@ -1462,6 +1537,14 @@ class _DashboardPageState extends State<DashboardPage> {
                       Chip(label: Text('向量库：${document.vectorStoreTarget}')),
                       Chip(label: Text(document.chunkCount == 0 ? '文本块：待生成' : '文本块：${document.chunkCount}')),
                     ],
+                  ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () => _showDocumentChunksDialog(document),
+                      child: const Text('查看文本块'),
+                    ),
                   ),
                 ],
               ),

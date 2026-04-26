@@ -139,6 +139,47 @@ class KnowledgeDocument {
   }
 }
 
+class DocumentChunkPreview {
+  const DocumentChunkPreview({
+    required this.id,
+    required this.documentId,
+    required this.libraryType,
+    required this.title,
+    required this.chapterTitle,
+    required this.articleRef,
+    required this.pageLabel,
+    required this.content,
+    required this.keywords,
+    required this.indexStatus,
+  });
+
+  final String id;
+  final String documentId;
+  final String libraryType;
+  final String title;
+  final String chapterTitle;
+  final String articleRef;
+  final String pageLabel;
+  final String content;
+  final List<String> keywords;
+  final String indexStatus;
+
+  factory DocumentChunkPreview.fromJson(Map<String, dynamic> json) {
+    return DocumentChunkPreview(
+      id: json['id'] as String? ?? '',
+      documentId: json['documentId'] as String? ?? '',
+      libraryType: _mapLibraryType(json['libraryType'] as String? ?? ''),
+      title: json['title'] as String? ?? '',
+      chapterTitle: json['chapterTitle'] as String? ?? '',
+      articleRef: json['articleRef'] as String? ?? '',
+      pageLabel: json['pageLabel'] as String? ?? '',
+      content: json['content'] as String? ?? '',
+      keywords: (json['keywords'] as List<dynamic>? ?? const []).map((item) => item.toString()).toList(),
+      indexStatus: _mapIndexStatus(json['indexStatus'] as String? ?? ''),
+    );
+  }
+}
+
 class QueryCitation {
   const QueryCitation({
     required this.title,
