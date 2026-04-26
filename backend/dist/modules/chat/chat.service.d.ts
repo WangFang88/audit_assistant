@@ -1,3 +1,4 @@
+import { MessageRepository } from '../../database/repositories/message.repository';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
@@ -18,18 +19,24 @@ type ConversationRecord = {
 type MessageRecord = {
     id: string;
     conversationId: string;
+    senderUserId: string;
+    receiverUserId: string | null;
     senderName: string;
     content: string;
     sentAt: string;
+    readStatus: boolean;
 };
 export declare class ChatService {
     private readonly authService;
     private readonly groupsService;
     private readonly localStateService;
-    constructor(authService: AuthService, groupsService: GroupsService, localStateService: LocalStateService);
+    private readonly messageRepository;
+    constructor(authService: AuthService, groupsService: GroupsService, localStateService: LocalStateService, messageRepository: MessageRepository);
     private readonly conversations;
     private readonly messages;
     private assertAdminCannotUseChat;
+    private toGroupMessageSnapshot;
+    private toPrivateMessageSnapshot;
     private persistState;
     private assertCanAccessConversation;
     private getConversationById;
@@ -38,9 +45,12 @@ export declare class ChatService {
     sendMessage(dto: SendMessageDto): {
         id: string;
         conversationId: string;
+        senderUserId: string;
+        receiverUserId: string | null;
         senderName: string;
         content: string;
         sentAt: string;
+        readStatus: boolean;
         conversationType: "group" | "direct";
         groupId: string | null;
     };

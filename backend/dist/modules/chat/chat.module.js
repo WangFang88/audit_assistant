@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChatModule = void 0;
 const common_1 = require("@nestjs/common");
+const database_support_module_1 = require("../../database/database-support.module");
 const auth_module_1 = require("../auth/auth.module");
 const groups_module_1 = require("../groups/groups.module");
 const subscriptions_module_1 = require("../subscriptions/subscriptions.module");
@@ -18,7 +19,7 @@ let ChatModule = class ChatModule {
 exports.ChatModule = ChatModule;
 exports.ChatModule = ChatModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule, groups_module_1.GroupsModule, subscriptions_module_1.SubscriptionsModule],
+        imports: [database_support_module_1.DatabaseSupportModule, auth_module_1.AuthModule, groups_module_1.GroupsModule, subscriptions_module_1.SubscriptionsModule],
         controllers: [chat_controller_1.ChatController],
         providers: [chat_service_1.ChatService],
         exports: [chat_service_1.ChatService],

@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SendMessageDto = exports.ChatService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const message_repository_1 = require("../../database/repositories/message.repository");
 const auth_service_1 = require("../auth/auth.service");
 const groups_service_1 = require("../groups/groups.service");
 const local_state_service_1 = require("../subscriptions/local-state.service");
@@ -38,10 +39,11 @@ __decorate([
     __metadata("design:type", String)
 ], SendMessageDto.prototype, "groupId", void 0);
 let ChatService = class ChatService {
-    constructor(authService, groupsService, localStateService) {
+    constructor(authService, groupsService, localStateService, messageRepository) {
         this.authService = authService;
         this.groupsService = groupsService;
         this.localStateService = localStateService;
+        this.messageRepository = messageRepository;
         this.conversations = [
             {
                 id: 'conv-group-1',
@@ -64,16 +66,22 @@ let ChatService = class ChatService {
             {
                 id: 'msg-1',
                 conversationId: 'conv-group-1',
+                senderUserId: 'user-2',
+                receiverUserId: null,
                 senderName: '审计组长',
                 content: '请同步采购抽查结果。',
                 sentAt: '2026-04-25 16:40',
+                readStatus: true,
             },
             {
                 id: 'msg-2',
                 conversationId: 'conv-direct-1',
+                senderUserId: 'user-4',
+                receiverUserId: 'user-2',
                 senderName: '法规顾问',
                 content: '我已整理出相关条款。',
                 sentAt: '2026-04-25 15:20',
+                readStatus: false,
             },
         ];
         const persistedState = this.localStateService.readState();
@@ -81,7 +89,12 @@ let ChatService = class ChatService {
             this.conversations.splice(0, this.conversations.length, ...persistedState.conversations);
         }
         if (persistedState.messages) {
-            this.messages.splice(0, this.messages.length, ...persistedState.messages);
+            this.messages.splice(0, this.messages.length, ...persistedState.messages.map((message) => ({
+                ...message,
+                senderUserId: 'unknown-user',
+                receiverUserId: null,
+                readStatus: false,
+            })));
         }
     }
     assertAdminCannotUseChat() {
@@ -90,8 +103,60 @@ let ChatService = class ChatService {
         }
         throw new common_1.ForbiddenException('管理员不参与项目组协作，无法使用对话功能');
     }
+    toGroupMessageSnapshot(message, groupId) {
+        return {
+            id: message.id,
+            teamId: groupId,
+            senderUserId: message.senderUserId,
+            senderName: message.senderName,
+            conversationId: message.conversationId,
+            content: message.content,
+            sentAt: message.sentAt,
+        };
+    }
+    toPrivateMessageSnapshot(message) {
+        return {
+            id: message.id,
+            senderUserId: message.senderUserId,
+            receiverUserId: message.receiverUserId ?? 'unknown-user',
+            senderName: message.senderName,
+            conversationId: message.conversationId,
+            content: message.content,
+            sentAt: message.sentAt,
+            readStatus: message.readStatus,
+        };
+    }
     persistState() {
-        this.localStateService.saveChatState(this.conversations, this.messages);
+        const persistedMessages = this.messages.map((message) => {
+            const conversation = this.getConversationById(message.conversationId);
+            if (conversation.type === 'group') {
+                const entity = this.messageRepository.createGroupMessageEntity(this.toGroupMessageSnapshot(message, conversation.groupId ?? 'unknown-group'));
+                const snapshot = this.messageRepository.mapGroupMessageEntity(entity, {
+                    senderName: message.senderName,
+                    conversationId: message.conversationId,
+                });
+                return {
+                    id: snapshot.id,
+                    conversationId: snapshot.conversationId,
+                    senderName: snapshot.senderName,
+                    content: snapshot.content,
+                    sentAt: snapshot.sentAt,
+                };
+            }
+            const entity = this.messageRepository.createPrivateMessageEntity(this.toPrivateMessageSnapshot(message));
+            const snapshot = this.messageRepository.mapPrivateMessageEntity(entity, {
+                senderName: message.senderName,
+                conversationId: message.conversationId,
+            });
+            return {
+                id: snapshot.id,
+                conversationId: snapshot.conversationId,
+                senderName: snapshot.senderName,
+                content: snapshot.content,
+                sentAt: snapshot.sentAt,
+            };
+        });
+        this.localStateService.saveChatState(this.conversations, persistedMessages);
     }
     assertCanAccessConversation(conversation, groupId) {
         if (conversation.type === 'direct') {
@@ -138,21 +203,31 @@ let ChatService = class ChatService {
         }
         this.assertCanAccessConversation(conversation, dto.groupId);
         const currentUser = this.authService.me();
+        const directMessages = this.messages.filter((message) => message.conversationId === dto.conversationId);
+        const receiverUserId = conversation.type === 'direct'
+            ? directMessages.find((message) => message.senderUserId !== currentUser.id)?.senderUserId ?? currentUser.id
+            : null;
         const message = {
             id: `msg-${this.messages.length + 1}`,
             conversationId: dto.conversationId,
+            senderUserId: currentUser.id,
+            receiverUserId,
             senderName: currentUser.name,
             content: dto.content,
-            sentAt: '2026-04-26 13:30',
+            sentAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+            readStatus: conversation.type === 'group',
             conversationType: dto.conversationType,
             groupId: conversation.groupId,
         };
         this.messages.push({
             id: message.id,
             conversationId: message.conversationId,
+            senderUserId: message.senderUserId,
+            receiverUserId: message.receiverUserId,
             senderName: message.senderName,
             content: message.content,
             sentAt: message.sentAt,
+            readStatus: message.readStatus,
         });
         conversation.lastMessage = dto.content;
         conversation.unreadCount = 0;
@@ -165,6 +240,7 @@ exports.ChatService = ChatService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
         groups_service_1.GroupsService,
-        local_state_service_1.LocalStateService])
+        local_state_service_1.LocalStateService,
+        message_repository_1.MessageRepository])
 ], ChatService);
 //# sourceMappingURL=chat.service.js.map
