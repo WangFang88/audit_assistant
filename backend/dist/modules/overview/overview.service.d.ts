@@ -160,7 +160,7 @@ export declare class OverviewService {
         };
         conversations: {
             id: string;
-            type: "group" | "direct" | "agent";
+            type: "agent" | "group" | "direct";
             title: string;
             groupId: string | null;
             isTeamAgent: boolean;
