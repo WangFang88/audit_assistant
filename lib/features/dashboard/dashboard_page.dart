@@ -938,61 +938,60 @@ class _DashboardPageState extends State<DashboardPage> {
                     padding: EdgeInsets.symmetric(vertical: 12),
                     child: Text('当前文档还没有可预览的文本块。'),
                   )
-                : SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: chunks
-                          .map(
-                            (chunk) => Container(
-                              width: double.infinity,
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFF),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFFDCE6F5)),
+                : SizedBox(
+                    height: 600,
+                    child: ListView.builder(
+                      itemCount: chunks.length,
+                      itemBuilder: (context, i) {
+                        final chunk = chunks[i];
+                        return Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFF),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFDCE6F5)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  Chip(label: Text(chunk.chapterTitle)),
+                                  Chip(label: Text(chunk.articleRef)),
+                                  Chip(label: Text(chunk.pageLabel)),
+                                  Chip(label: Text(chunk.indexStatus)),
+                                ],
                               ),
-                              child: Column(
+                              const SizedBox(height: 10),
+                              Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: [
-                                      Chip(label: Text(chunk.chapterTitle)),
-                                      Chip(label: Text(chunk.articleRef)),
-                                      Chip(label: Text(chunk.pageLabel)),
-                                      Chip(label: Text(chunk.indexStatus)),
-                                    ],
+                                  Expanded(
+                                    child: RichText(
+                                      text: _buildHighlightedChunkText(context, chunk.content, chunk.keywords),
+                                    ),
                                   ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: RichText(
-                                          text: _buildHighlightedChunkText(context, chunk.content, chunk.keywords),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      TextButton(
-                                        onPressed: () => _copyChunkContent(chunk.content),
-                                        child: const Text('复制文本块'),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: chunk.keywords.map((keyword) => Chip(label: Text(keyword))).toList(),
+                                  const SizedBox(width: 8),
+                                  TextButton(
+                                    onPressed: () => _copyChunkContent(chunk.content),
+                                    child: const Text('复制文本块'),
                                   ),
                                 ],
                               ),
-                            ),
-                          )
-                          .toList(),
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: chunk.keywords.map((keyword) => Chip(label: Text(keyword))).toList(),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ),
           ),
