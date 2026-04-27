@@ -1,4 +1,8 @@
 import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { DocumentChunkEntity } from '../../database/entities/document-chunk.entity';
+import { DocumentEntity } from '../../database/entities/document.entity';
 import { DocumentMetadataSnapshot, DocumentRepository } from '../../database/repositories/document.repository';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { AuthService } from '../auth/auth.service';
@@ -72,6 +76,10 @@ type DocumentChunkRecord = {
 @Injectable()
 export class DocumentsService {
   constructor(
+    @InjectRepository(DocumentEntity)
+    private readonly persistedDocumentRepository: Repository<DocumentEntity>,
+    @InjectRepository(DocumentChunkEntity)
+    private readonly persistedChunkRepository: Repository<DocumentChunkEntity>,
     private readonly authService: AuthService,
     @Inject(forwardRef(() => GroupsService))
     private readonly groupsService: GroupsService,
@@ -294,6 +302,7 @@ export class DocumentsService {
     throw new ForbiddenException('管理员仅可访问公共库文档，不能查看项目组私有资料');
   }
 
+  // 下一阶段将逐步切换为读取 documents / document_chunks 表；当前先注册仓储并保留现有内存/本地状态行为。
   listDocuments(groupId?: string) {
     this.assertAdminPublicLibraryOnly(groupId);
     if (!this.authService.isAdmin() && groupId != null) {

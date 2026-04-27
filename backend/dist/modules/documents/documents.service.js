@@ -14,6 +14,10 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ImportDocumentDto = exports.DocumentsService = void 0;
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
+const document_chunk_entity_1 = require("../../database/entities/document-chunk.entity");
+const document_entity_1 = require("../../database/entities/document.entity");
 const document_repository_1 = require("../../database/repositories/document.repository");
 const class_validator_1 = require("class-validator");
 const auth_service_1 = require("../auth/auth.service");
@@ -45,7 +49,9 @@ __decorate([
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "groupId", void 0);
 let DocumentsService = class DocumentsService {
-    constructor(authService, groupsService, localStateService, subscriptionsService, documentRepository, fileStorageService) {
+    constructor(persistedDocumentRepository, persistedChunkRepository, authService, groupsService, localStateService, subscriptionsService, documentRepository, fileStorageService) {
+        this.persistedDocumentRepository = persistedDocumentRepository;
+        this.persistedChunkRepository = persistedChunkRepository;
         this.authService = authService;
         this.groupsService = groupsService;
         this.localStateService = localStateService;
@@ -587,8 +593,12 @@ let DocumentsService = class DocumentsService {
 exports.DocumentsService = DocumentsService;
 exports.DocumentsService = DocumentsService = __decorate([
     (0, common_1.Injectable)(),
-    __param(1, (0, common_1.Inject)((0, common_1.forwardRef)(() => groups_service_1.GroupsService))),
-    __metadata("design:paramtypes", [auth_service_1.AuthService,
+    __param(0, (0, typeorm_1.InjectRepository)(document_entity_1.DocumentEntity)),
+    __param(1, (0, typeorm_1.InjectRepository)(document_chunk_entity_1.DocumentChunkEntity)),
+    __param(3, (0, common_1.Inject)((0, common_1.forwardRef)(() => groups_service_1.GroupsService))),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        auth_service_1.AuthService,
         groups_service_1.GroupsService,
         local_state_service_1.LocalStateService,
         subscriptions_service_1.SubscriptionsService,

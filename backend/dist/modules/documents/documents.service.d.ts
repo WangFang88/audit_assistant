@@ -1,3 +1,6 @@
+import { Repository } from 'typeorm';
+import { DocumentChunkEntity } from '../../database/entities/document-chunk.entity';
+import { DocumentEntity } from '../../database/entities/document.entity';
 import { DocumentRepository } from '../../database/repositories/document.repository';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
@@ -52,13 +55,15 @@ type DocumentChunkRecord = {
     indexStatus: 'ready' | 'processing';
 };
 export declare class DocumentsService {
+    private readonly persistedDocumentRepository;
+    private readonly persistedChunkRepository;
     private readonly authService;
     private readonly groupsService;
     private readonly localStateService;
     private readonly subscriptionsService;
     private readonly documentRepository;
     private readonly fileStorageService;
-    constructor(authService: AuthService, groupsService: GroupsService, localStateService: LocalStateService, subscriptionsService: SubscriptionsService, documentRepository: DocumentRepository, fileStorageService: FileStorageService);
+    constructor(persistedDocumentRepository: Repository<DocumentEntity>, persistedChunkRepository: Repository<DocumentChunkEntity>, authService: AuthService, groupsService: GroupsService, localStateService: LocalStateService, subscriptionsService: SubscriptionsService, documentRepository: DocumentRepository, fileStorageService: FileStorageService);
     private readonly documents;
     private readonly extractJobs;
     private readonly chunks;

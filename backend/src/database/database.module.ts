@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConversationParticipantEntity } from './entities/conversation-participant.entity';
 import { ConversationEntity } from './entities/conversation.entity';
+import { DocumentChunkEntity } from './entities/document-chunk.entity';
+import { DocumentEntity } from './entities/document.entity';
 import { GroupMessageEntity } from './entities/group-message.entity';
 import { MessageEntity } from './entities/message.entity';
 import { PrivateDocEntity } from './entities/private-doc.entity';
@@ -21,6 +23,8 @@ const entities = [
   TeamAgentEntity,
   PublicDocEntity,
   PrivateDocEntity,
+  DocumentEntity,
+  DocumentChunkEntity,
   GroupMessageEntity,
   PrivateMessageEntity,
   ConversationEntity,

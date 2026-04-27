@@ -11,6 +11,8 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const conversation_participant_entity_1 = require("./entities/conversation-participant.entity");
 const conversation_entity_1 = require("./entities/conversation.entity");
+const document_chunk_entity_1 = require("./entities/document-chunk.entity");
+const document_entity_1 = require("./entities/document.entity");
 const group_message_entity_1 = require("./entities/group-message.entity");
 const message_entity_1 = require("./entities/message.entity");
 const private_doc_entity_1 = require("./entities/private-doc.entity");
@@ -29,6 +31,8 @@ const entities = [
     team_agent_entity_1.TeamAgentEntity,
     public_doc_entity_1.PublicDocEntity,
     private_doc_entity_1.PrivateDocEntity,
+    document_entity_1.DocumentEntity,
+    document_chunk_entity_1.DocumentChunkEntity,
     group_message_entity_1.GroupMessageEntity,
     private_message_entity_1.PrivateMessageEntity,
     conversation_entity_1.ConversationEntity,
