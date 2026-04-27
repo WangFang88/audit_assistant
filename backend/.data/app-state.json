@@ -2,7 +2,7 @@
   "usage": {
     "groups": 1,
     "privateDocuments": 3,
-    "dailyQueries": 1,
+    "dailyQueries": 2,
     "dailyQueryDate": "2026-04-27"
   },
   "groups": [],
@@ -861,6 +861,14 @@
       "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
       "queriedAt": "2026-04-27 06:10:57",
       "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777299160796",
+      "userId": "user-1777299160049",
+      "teamId": null,
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-27 06:12:40",
+      "consumedQuota": 1
     }
   ],
   "subscriptions": [
@@ -902,6 +910,14 @@
       "id": "user-1777296688437",
       "name": "新用户9000",
       "phone": "13256789000",
+      "role": "member",
+      "trialEndsAt": "2026-05-01",
+      "passwordHash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
+    },
+    {
+      "id": "user-1777299160049",
+      "name": "新用户9000",
+      "phone": "13456789000",
       "role": "member",
       "trialEndsAt": "2026-05-01",
       "passwordHash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
