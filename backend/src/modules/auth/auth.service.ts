@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { IsString, Matches, MinLength } from 'class-validator';
+import { IsString, Matches, MinLength, MaxLength } from 'class-validator';
 import { AuthUserRepository, AuthUserSnapshot } from '../../database/repositories/auth-user.repository';
 import { LocalStateService } from '../subscriptions/local-state.service';
 
@@ -28,6 +28,13 @@ class RegisterDto {
   @IsString()
   @MinLength(6)
   password!: string;
+}
+
+class UpdateProfileDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(20)
+  name!: string;
 }
 
 type DemoUser = {
@@ -297,9 +304,19 @@ export class AuthService {
     return this.findUserByPhone(phone);
   }
 
+  updateProfile(dto: UpdateProfileDto) {
+    const user = this.users.find((u) => u.id === this.currentUser.id);
+    if (!user) {
+      throw new UnauthorizedException('用户不存在');
+    }
+    user.name = dto.name;
+    this.currentUser = { ...this.currentUser, name: dto.name };
+    return this.currentUser;
+  }
+
   isAdmin() {
     return this.currentUser.role === 'admin';
   }
 }
 
-export { LoginDto, RefreshTokenDto, RegisterDto };
+export { LoginDto, RefreshTokenDto, RegisterDto, UpdateProfileDto };

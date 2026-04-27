@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
-import { AuthService, LoginDto, RefreshTokenDto, RegisterDto } from './auth.service';
+import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
+import { AuthService, LoginDto, RefreshTokenDto, RegisterDto, UpdateProfileDto } from './auth.service';
 import { Public } from './public.decorator';
 
 @Controller('auth')
@@ -27,5 +27,10 @@ export class AuthController {
   @Get('me')
   me() {
     return this.authService.me();
+  }
+
+  @Patch('me')
+  updateProfile(@Body() dto: UpdateProfileDto) {
+    return this.authService.updateProfile(dto);
   }
 }

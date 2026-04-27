@@ -1,9 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import {
   CreateGroupDto,
   GroupsService,
   InviteMemberDto,
   TransferLeaderDto,
+  UpdateMemberRoleDto,
 } from './groups.service';
 
 @Controller('groups')
@@ -41,6 +42,15 @@ export class GroupsController {
   @Delete(':groupId/members/:memberId')
   async removeMember(@Param('groupId') groupId: string, @Param('memberId') memberId: string) {
     return this.groupsService.removeMember(groupId, memberId);
+  }
+
+  @Patch(':groupId/members/:memberId')
+  async updateMemberRole(
+    @Param('groupId') groupId: string,
+    @Param('memberId') memberId: string,
+    @Body() dto: UpdateMemberRoleDto,
+  ) {
+    return this.groupsService.updateMemberRole(groupId, memberId, dto);
   }
 
   @Delete(':groupId')

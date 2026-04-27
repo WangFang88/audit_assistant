@@ -33,6 +33,11 @@ class TransferLeaderDto {
   targetUserId!: string;
 }
 
+class UpdateMemberRoleDto {
+  @IsIn(['member', 'leader'])
+  role!: 'member' | 'leader';
+}
+
 type GroupRecord = {
   id: string;
   name: string;
@@ -224,6 +229,25 @@ export class GroupsService {
     return members.map((m) => this.toMemberRecord(m));
   }
 
+  async updateMemberRole(groupId: string, memberId: string, dto: UpdateMemberRoleDto) {
+    this.assertAdminCannotManageGroups();
+    await this.assertCanAccessGroup(groupId);
+
+    const currentUser = this.getCurrentUser();
+    const currentMember = await this.teamMemberRepository.findOneBy({ teamId: groupId, userId: currentUser.id });
+    if (currentMember?.role !== 'leader') {
+      throw new ForbiddenException('只有组长才能修改成员角色');
+    }
+
+    const target = await this.teamMemberRepository.findOneBy({ teamId: groupId, id: Number(memberId) });
+    if (!target) {
+      throw new NotFoundException('成员不存在');
+    }
+
+    await this.teamMemberRepository.update({ id: Number(memberId) }, { role: dto.role });
+    return { groupId, memberId, role: dto.role };
+  }
+
   async invite(groupId: string, dto: InviteMemberDto) {
     this.assertAdminCannotManageGroups();
     await this.assertCanAccessGroup(groupId);
@@ -334,4 +358,4 @@ export class GroupsService {
   }
 }
 
-export { CreateGroupDto, InviteMemberDto, TransferLeaderDto };
+export { CreateGroupDto, InviteMemberDto, TransferLeaderDto, UpdateMemberRoleDto };
