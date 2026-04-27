@@ -1441,11 +1441,6 @@ class _DashboardPageState extends State<DashboardPage> {
             runSpacing: 12,
             children: [
               Chip(label: Text('检索范围：${activeContext.queryScopeLabel}')),
-              if (activeContext.agentName != null) Chip(label: Text('当前Agent：${activeContext.agentName}')),
-              if (activeContext.knowledgeScopeLabel.isNotEmpty) Chip(label: Text('知识范围：${activeContext.knowledgeScopeLabel}')),
-              Chip(label: Text(activeContext.isolationNotice)),
-              const Chip(label: Text('检索策略：关键词 + 语义混合召回')),
-              const Chip(label: Text('扫描件：仅必要时 OCR')),
               if (!_isAdmin && _hasReachedDailyQueryLimit) const Chip(label: Text('今日查询额度已用尽')),
             ],
           ),

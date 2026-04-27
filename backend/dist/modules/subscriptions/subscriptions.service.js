@@ -75,7 +75,7 @@ let SubscriptionsService = class SubscriptionsService {
                 priceLabel: '¥0 / 1天试用',
                 limits: {
                     groupCount: 1,
-                    privateDocuments: 2,
+                    privateDocuments: 20,
                     dailyQueries: 10,
                     caseSearch: false,
                 },
