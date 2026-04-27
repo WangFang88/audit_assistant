@@ -268,5 +268,15 @@
       "content": "你好",
       "sentAt": "2026-04-26 13:30"
     }
+  ],
+  "queryLogs": [
+    {
+      "id": "query-log-1777262229558",
+      "userId": "user-2",
+      "teamId": "group-1",
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-26 19:57:09",
+      "consumedQuota": 1
+    }
   ]
 }
