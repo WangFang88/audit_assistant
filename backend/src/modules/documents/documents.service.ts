@@ -891,6 +891,14 @@ export class DocumentsService {
     }
   }
 
+  async reembedAll(): Promise<{ total: number }> {
+    const chunks = await this.persistedChunkRepository.find({ where: { indexStatus: 'ready' } });
+    setImmediate(() => {
+      this.embedChunksAsync(chunks.map((c) => c.id)).catch(() => {});
+    });
+    return { total: chunks.length };
+  }
+
   async removeGroupDocuments(groupId: string) {
     await this.ensurePersistedDocumentSeedData();
     const documents = await this.persistedDocumentRepository.find({ where: { teamId: groupId, deletedAt: IsNull() } });

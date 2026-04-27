@@ -64,4 +64,7 @@ export declare class DocumentsController {
         vectorStoreTarget: "pgvector";
         pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
     }>;
+    reembedAll(): Promise<{
+        total: number;
+    }>;
 }

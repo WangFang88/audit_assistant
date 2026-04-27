@@ -110,6 +110,9 @@ export declare class DocumentsService {
         pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
     }>;
     private embedChunksAsync;
+    reembedAll(): Promise<{
+        total: number;
+    }>;
     removeGroupDocuments(groupId: string): Promise<void>;
     getLibraryScopeSummary(groupId?: string): Promise<{
         scopeMode: string;

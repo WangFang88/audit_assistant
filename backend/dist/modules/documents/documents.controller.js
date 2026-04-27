@@ -32,6 +32,9 @@ let DocumentsController = class DocumentsController {
     async importDocument(file, dto) {
         return this.documentsService.importDocument(dto, file);
     }
+    async reembedAll() {
+        return this.documentsService.reembedAll();
+    }
 };
 exports.DocumentsController = DocumentsController;
 __decorate([
@@ -64,6 +67,12 @@ __decorate([
     __metadata("design:paramtypes", [Object, documents_service_1.ImportDocumentDto]),
     __metadata("design:returntype", Promise)
 ], DocumentsController.prototype, "importDocument", null);
+__decorate([
+    (0, common_1.Post)('reembed-all'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], DocumentsController.prototype, "reembedAll", null);
 exports.DocumentsController = DocumentsController = __decorate([
     (0, common_1.Controller)('documents'),
     __metadata("design:paramtypes", [documents_service_1.DocumentsService])

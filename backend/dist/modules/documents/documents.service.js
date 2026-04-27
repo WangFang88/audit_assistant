@@ -776,6 +776,13 @@ let DocumentsService = class DocumentsService {
             }
         }
     }
+    async reembedAll() {
+        const chunks = await this.persistedChunkRepository.find({ where: { indexStatus: 'ready' } });
+        setImmediate(() => {
+            this.embedChunksAsync(chunks.map((c) => c.id)).catch(() => { });
+        });
+        return { total: chunks.length };
+    }
     async removeGroupDocuments(groupId) {
         await this.ensurePersistedDocumentSeedData();
         const documents = await this.persistedDocumentRepository.find({ where: { teamId: groupId, deletedAt: (0, typeorm_2.IsNull)() } });

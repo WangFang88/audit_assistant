@@ -26,4 +26,9 @@ export class DocumentsController {
   async importDocument(@UploadedFile() file: Express.Multer.File | undefined, @Body() dto: ImportDocumentDto) {
     return this.documentsService.importDocument(dto, file);
   }
+
+  @Post('reembed-all')
+  async reembedAll() {
+    return this.documentsService.reembedAll();
+  }
 }
