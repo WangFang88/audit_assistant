@@ -4,6 +4,7 @@ import { IsIn, IsString, MinLength } from 'class-validator';
 import { Repository } from 'typeorm';
 import { TeamMemberEntity } from '../../database/entities/team-member.entity';
 import { TeamEntity } from '../../database/entities/team.entity';
+import { UserEntity } from '../../database/entities/user.entity';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
 import { DocumentsService } from '../documents/documents.service';
@@ -66,6 +67,8 @@ export class GroupsService {
     private readonly teamRepository: Repository<TeamEntity>,
     @InjectRepository(TeamMemberEntity)
     private readonly teamMemberRepository: Repository<TeamMemberEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
     @Inject(forwardRef(() => DocumentsService))
     private readonly documentsService: DocumentsService,
     @Inject(forwardRef(() => ChatService))
@@ -235,7 +238,20 @@ export class GroupsService {
     this.assertAdminCannotManageGroups();
     await this.assertCanAccessGroup(groupId);
     const members = await this.teamMemberRepository.findBy({ teamId: groupId });
-    return members.map((m) => this.toMemberRecord(m));
+    const userIds = members.map((m) => m.userId);
+    const users = userIds.length > 0 ? await this.userRepository.findByIds(userIds) : [];
+    const userMap = new Map(users.map((u) => [u.id, u]));
+    return members.map((m) => {
+      const user = userMap.get(m.userId);
+      return {
+        id: String(m.id),
+        groupId: m.teamId,
+        userId: m.userId,
+        name: user?.nickname ?? m.userId,
+        phone: user?.phone ?? '',
+        role: m.role,
+      };
+    });
   }
 
   async updateMemberRole(groupId: string, memberId: string, dto: UpdateMemberRoleDto) {
