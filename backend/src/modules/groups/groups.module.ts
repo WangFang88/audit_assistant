@@ -1,4 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { TeamMemberEntity } from '../../database/entities/team-member.entity';
+import { TeamEntity } from '../../database/entities/team.entity';
 import { DatabaseSupportModule } from '../../database/database-support.module';
 import { AuthModule } from '../auth/auth.module';
 import { ChatModule } from '../chat/chat.module';
@@ -10,6 +13,7 @@ import { GroupsService } from './groups.service';
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([TeamEntity, TeamMemberEntity]),
     DatabaseSupportModule,
     AuthModule,
     SubscriptionsModule,
