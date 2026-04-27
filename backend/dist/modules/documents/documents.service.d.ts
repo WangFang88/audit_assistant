@@ -2,10 +2,8 @@ import { Repository } from 'typeorm';
 import { DocumentChunkEntity } from '../../database/entities/document-chunk.entity';
 import { DocumentEntity } from '../../database/entities/document.entity';
 import { DocumentExtractionJobEntity } from '../../database/entities/document-extraction-job.entity';
-import { DocumentRepository } from '../../database/repositories/document.repository';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
-import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { FileStorageService } from './file-storage.service';
 declare class ImportDocumentDto {
@@ -61,11 +59,9 @@ export declare class DocumentsService {
     private readonly persistedExtractionJobRepository;
     private readonly authService;
     private readonly groupsService;
-    private readonly localStateService;
     private readonly subscriptionsService;
-    private readonly documentRepository;
     private readonly fileStorageService;
-    constructor(persistedDocumentRepository: Repository<DocumentEntity>, persistedChunkRepository: Repository<DocumentChunkEntity>, persistedExtractionJobRepository: Repository<DocumentExtractionJobEntity>, authService: AuthService, groupsService: GroupsService, localStateService: LocalStateService, subscriptionsService: SubscriptionsService, documentRepository: DocumentRepository, fileStorageService: FileStorageService);
+    constructor(persistedDocumentRepository: Repository<DocumentEntity>, persistedChunkRepository: Repository<DocumentChunkEntity>, persistedExtractionJobRepository: Repository<DocumentExtractionJobEntity>, authService: AuthService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, fileStorageService: FileStorageService);
     private readonly documents;
     private readonly extractJobs;
     private readonly chunks;
@@ -82,7 +78,6 @@ export declare class DocumentsService {
     getDocumentById(documentId: string): Promise<DocumentRecord>;
     private buildChunksFromRawText;
     private buildChunksForDocument;
-    private toMetadataSnapshot;
     private classifyUploadedFile;
     private saveUploadedFile;
     private toDocumentEntity;

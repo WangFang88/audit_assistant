@@ -4,11 +4,9 @@ import { IsNull, Repository } from 'typeorm';
 import { DocumentChunkEntity } from '../../database/entities/document-chunk.entity';
 import { DocumentEntity } from '../../database/entities/document.entity';
 import { DocumentExtractionJobEntity } from '../../database/entities/document-extraction-job.entity';
-import { DocumentMetadataSnapshot, DocumentRepository } from '../../database/repositories/document.repository';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
-import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { FileStorageService } from './file-storage.service';
 
@@ -86,27 +84,9 @@ export class DocumentsService {
     private readonly authService: AuthService,
     @Inject(forwardRef(() => GroupsService))
     private readonly groupsService: GroupsService,
-    private readonly localStateService: LocalStateService,
     private readonly subscriptionsService: SubscriptionsService,
-    private readonly documentRepository: DocumentRepository,
     private readonly fileStorageService: FileStorageService,
-  ) {
-    const persistedState = this.localStateService.readState();
-    if (persistedState.documents) {
-      this.documents.splice(
-        0,
-        this.documents.length,
-        ...persistedState.documents.map((document) => ({
-          ...document,
-          fileName: document.sourcePath.split('/').pop() ?? `${document.id}.bin`,
-          uploadedBy: document.libraryType === 'public' ? 'user-1' : 'user-2',
-        })),
-      );
-    }
-    if (persistedState.chunks) {
-      this.chunks.splice(0, this.chunks.length, ...persistedState.chunks);
-    }
-  }
+  ) {}
 
   private readonly documents: DocumentRecord[] = [
     {
@@ -677,24 +657,6 @@ export class DocumentsService {
     }));
   }
 
-  private toMetadataSnapshot(document: DocumentRecord): DocumentMetadataSnapshot {
-    return {
-      id: document.id,
-      title: document.title,
-      libraryType: document.libraryType,
-      sourcePath: document.sourcePath,
-      fileName: document.fileName,
-      uploadedBy: document.uploadedBy,
-      uploadedAt: document.uploadedAt,
-      indexStatus: document.indexStatus,
-      groupId: document.groupId,
-      fileType: document.fileType,
-      parserTarget: document.parserTarget,
-      embeddingTarget: document.embeddingTarget,
-      vectorStoreTarget: document.vectorStoreTarget,
-    };
-  }
-
   private classifyUploadedFile(fileName: string) {
     const lowerName = fileName.toLowerCase();
     if (lowerName.endsWith('.docx')) {
@@ -839,9 +801,7 @@ export class DocumentsService {
       );
     }
 
-    const metadataSnapshot = this.toMetadataSnapshot(document);
     if (document.libraryType === 'private') {
-      this.documentRepository.createPrivateDocEntity(metadataSnapshot);
       const group = this.groupsService.getGroupById(dto.groupId!);
       group.privateDocumentCount += 1;
       this.groupsService.persistState();
@@ -849,8 +809,6 @@ export class DocumentsService {
         where: { libraryType: 'private', deletedAt: IsNull() },
       });
       this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
-    } else {
-      this.documentRepository.createPublicDocEntity(metadataSnapshot);
     }
 
     return {

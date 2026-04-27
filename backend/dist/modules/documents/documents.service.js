@@ -19,11 +19,9 @@ const typeorm_2 = require("typeorm");
 const document_chunk_entity_1 = require("../../database/entities/document-chunk.entity");
 const document_entity_1 = require("../../database/entities/document.entity");
 const document_extraction_job_entity_1 = require("../../database/entities/document-extraction-job.entity");
-const document_repository_1 = require("../../database/repositories/document.repository");
 const class_validator_1 = require("class-validator");
 const auth_service_1 = require("../auth/auth.service");
 const groups_service_1 = require("../groups/groups.service");
-const local_state_service_1 = require("../subscriptions/local-state.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 const file_storage_service_1 = require("./file-storage.service");
 class ImportDocumentDto {
@@ -50,15 +48,13 @@ __decorate([
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "groupId", void 0);
 let DocumentsService = class DocumentsService {
-    constructor(persistedDocumentRepository, persistedChunkRepository, persistedExtractionJobRepository, authService, groupsService, localStateService, subscriptionsService, documentRepository, fileStorageService) {
+    constructor(persistedDocumentRepository, persistedChunkRepository, persistedExtractionJobRepository, authService, groupsService, subscriptionsService, fileStorageService) {
         this.persistedDocumentRepository = persistedDocumentRepository;
         this.persistedChunkRepository = persistedChunkRepository;
         this.persistedExtractionJobRepository = persistedExtractionJobRepository;
         this.authService = authService;
         this.groupsService = groupsService;
-        this.localStateService = localStateService;
         this.subscriptionsService = subscriptionsService;
-        this.documentRepository = documentRepository;
         this.fileStorageService = fileStorageService;
         this.documents = [
             {
@@ -236,17 +232,6 @@ let DocumentsService = class DocumentsService {
                 indexStatus: 'ready',
             },
         ];
-        const persistedState = this.localStateService.readState();
-        if (persistedState.documents) {
-            this.documents.splice(0, this.documents.length, ...persistedState.documents.map((document) => ({
-                ...document,
-                fileName: document.sourcePath.split('/').pop() ?? `${document.id}.bin`,
-                uploadedBy: document.libraryType === 'public' ? 'user-1' : 'user-2',
-            })));
-        }
-        if (persistedState.chunks) {
-            this.chunks.splice(0, this.chunks.length, ...persistedState.chunks);
-        }
     }
     assertAdminPublicLibraryOnly(groupId) {
         if (!this.authService.isAdmin()) {
@@ -583,23 +568,6 @@ let DocumentsService = class DocumentsService {
             indexStatus: 'ready',
         }));
     }
-    toMetadataSnapshot(document) {
-        return {
-            id: document.id,
-            title: document.title,
-            libraryType: document.libraryType,
-            sourcePath: document.sourcePath,
-            fileName: document.fileName,
-            uploadedBy: document.uploadedBy,
-            uploadedAt: document.uploadedAt,
-            indexStatus: document.indexStatus,
-            groupId: document.groupId,
-            fileType: document.fileType,
-            parserTarget: document.parserTarget,
-            embeddingTarget: document.embeddingTarget,
-            vectorStoreTarget: document.vectorStoreTarget,
-        };
-    }
     classifyUploadedFile(fileName) {
         const lowerName = fileName.toLowerCase();
         if (lowerName.endsWith('.docx')) {
@@ -730,9 +698,7 @@ let DocumentsService = class DocumentsService {
                 finishedAt: hasRawText ? new Date(document.uploadedAt.replace(' ', 'T')) : null,
             }));
         }
-        const metadataSnapshot = this.toMetadataSnapshot(document);
         if (document.libraryType === 'private') {
-            this.documentRepository.createPrivateDocEntity(metadataSnapshot);
             const group = this.groupsService.getGroupById(dto.groupId);
             group.privateDocumentCount += 1;
             this.groupsService.persistState();
@@ -740,9 +706,6 @@ let DocumentsService = class DocumentsService {
                 where: { libraryType: 'private', deletedAt: (0, typeorm_2.IsNull)() },
             });
             this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
-        }
-        else {
-            this.documentRepository.createPublicDocEntity(metadataSnapshot);
         }
         return {
             ...document,
@@ -791,9 +754,7 @@ exports.DocumentsService = DocumentsService = __decorate([
         typeorm_2.Repository,
         auth_service_1.AuthService,
         groups_service_1.GroupsService,
-        local_state_service_1.LocalStateService,
         subscriptions_service_1.SubscriptionsService,
-        document_repository_1.DocumentRepository,
         file_storage_service_1.FileStorageService])
 ], DocumentsService);
 //# sourceMappingURL=documents.service.js.map
