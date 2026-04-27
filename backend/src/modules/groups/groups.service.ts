@@ -225,6 +225,7 @@ export class GroupsService {
     });
 
     const conversation = await this.chatService.createAgentConversation(group);
+    await this.chatService.syncGroupConversationParticipants(group.id, [currentUser.id]);
     await this.teamAgentsService.createForGroup(group, conversation.id);
     this.persistState();
     this.subscriptionsService.syncUsage({ groups: this.groups.length });
@@ -282,7 +283,7 @@ export class GroupsService {
     };
   }
 
-  removeMember(groupId: string, memberId: string) {
+  async removeMember(groupId: string, memberId: string) {
     this.assertAdminCannotManageGroups();
     const group = this.getGroupById(groupId);
     this.assertCanAccessGroup(groupId);
@@ -301,6 +302,7 @@ export class GroupsService {
 
     this.members.splice(memberIndex, 1);
     group.memberCount = this.members.filter((item) => item.groupId === groupId).length;
+    await this.chatService.removeUserFromGroupConversations(groupId, member.userId);
     this.persistState();
 
     return {

@@ -77,14 +77,14 @@ export declare class GroupsService {
         newLeaderId: string;
         transferredAt: string;
     };
-    removeMember(groupId: string, memberId: string): {
+    removeMember(groupId: string, memberId: string): Promise<{
         groupId: string;
         groupName: string;
         removedMemberId: string;
         removedUserId: string;
         removedAt: string;
         memberCount: number;
-    };
+    }>;
     deleteGroup(groupId: string): Promise<{
         deletedGroupId: string;
         deletedGroupName: string;

@@ -34,7 +34,7 @@ let GroupsController = class GroupsController {
     transferLeader(groupId, dto) {
         return this.groupsService.transferLeader(groupId, dto);
     }
-    removeMember(groupId, memberId) {
+    async removeMember(groupId, memberId) {
         return this.groupsService.removeMember(groupId, memberId);
     }
     async deleteGroup(groupId) {
@@ -84,7 +84,7 @@ __decorate([
     __param(1, (0, common_1.Param)('memberId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], GroupsController.prototype, "removeMember", null);
 __decorate([
     (0, common_1.Delete)(':groupId'),

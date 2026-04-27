@@ -39,7 +39,7 @@ export class GroupsController {
   }
 
   @Delete(':groupId/members/:memberId')
-  removeMember(@Param('groupId') groupId: string, @Param('memberId') memberId: string) {
+  async removeMember(@Param('groupId') groupId: string, @Param('memberId') memberId: string) {
     return this.groupsService.removeMember(groupId, memberId);
   }
 

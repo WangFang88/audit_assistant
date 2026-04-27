@@ -198,6 +198,7 @@ let GroupsService = class GroupsService {
             role: 'leader',
         });
         const conversation = await this.chatService.createAgentConversation(group);
+        await this.chatService.syncGroupConversationParticipants(group.id, [currentUser.id]);
         await this.teamAgentsService.createForGroup(group, conversation.id);
         this.persistState();
         this.subscriptionsService.syncUsage({ groups: this.groups.length });
@@ -243,7 +244,7 @@ let GroupsService = class GroupsService {
             transferredAt: '2026-04-25 18:00',
         };
     }
-    removeMember(groupId, memberId) {
+    async removeMember(groupId, memberId) {
         this.assertAdminCannotManageGroups();
         const group = this.getGroupById(groupId);
         this.assertCanAccessGroup(groupId);
@@ -257,6 +258,7 @@ let GroupsService = class GroupsService {
         }
         this.members.splice(memberIndex, 1);
         group.memberCount = this.members.filter((item) => item.groupId === groupId).length;
+        await this.chatService.removeUserFromGroupConversations(groupId, member.userId);
         this.persistState();
         return {
             groupId,

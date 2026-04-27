@@ -223,6 +223,34 @@ export class ChatService {
     }
   }
 
+  async syncGroupConversationParticipants(groupId: string, userIds: string[]) {
+    await this.ensureSeedData();
+    const conversations = await this.conversationRepository.find({
+      where: { teamId: groupId, status: 'active' },
+    });
+
+    await Promise.all(
+      conversations.map((conversation) => this.ensureConversationParticipants(conversation.id, userIds)),
+    );
+  }
+
+  async removeUserFromGroupConversations(groupId: string, userId: string) {
+    await this.ensureSeedData();
+    const conversations = await this.conversationRepository.find({
+      where: { teamId: groupId, status: 'active' },
+    });
+    if (conversations.length === 0) {
+      return;
+    }
+
+    await this.conversationParticipantRepository.delete(
+      conversations.map((conversation) => ({
+        conversationId: conversation.id,
+        userId,
+      })),
+    );
+  }
+
   private async ensureSeedData() {
     const conversationCount = await this.conversationRepository.count();
     if (conversationCount > 0) {

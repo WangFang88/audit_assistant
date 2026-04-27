@@ -31,6 +31,8 @@ export declare class ChatService {
     private buildSeedMessages;
     private buildSeedParticipants;
     private ensureConversationParticipants;
+    syncGroupConversationParticipants(groupId: string, userIds: string[]): Promise<void>;
+    removeUserFromGroupConversations(groupId: string, userId: string): Promise<void>;
     private ensureSeedData;
     private toConversationRecord;
     private toMessageRecord;

@@ -206,6 +206,26 @@ let ChatService = class ChatService {
             await this.conversationParticipantRepository.save(missingParticipants);
         }
     }
+    async syncGroupConversationParticipants(groupId, userIds) {
+        await this.ensureSeedData();
+        const conversations = await this.conversationRepository.find({
+            where: { teamId: groupId, status: 'active' },
+        });
+        await Promise.all(conversations.map((conversation) => this.ensureConversationParticipants(conversation.id, userIds)));
+    }
+    async removeUserFromGroupConversations(groupId, userId) {
+        await this.ensureSeedData();
+        const conversations = await this.conversationRepository.find({
+            where: { teamId: groupId, status: 'active' },
+        });
+        if (conversations.length === 0) {
+            return;
+        }
+        await this.conversationParticipantRepository.delete(conversations.map((conversation) => ({
+            conversationId: conversation.id,
+            userId,
+        })));
+    }
     async ensureSeedData() {
         const conversationCount = await this.conversationRepository.count();
         if (conversationCount > 0) {
