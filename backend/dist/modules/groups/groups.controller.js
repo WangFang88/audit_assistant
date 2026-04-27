@@ -25,13 +25,13 @@ let GroupsController = class GroupsController {
     async createGroup(dto) {
         return this.groupsService.createGroup(dto);
     }
-    listMembers(groupId) {
+    async listMembers(groupId) {
         return this.groupsService.listMembers(groupId);
     }
-    invite(groupId, dto) {
+    async invite(groupId, dto) {
         return this.groupsService.invite(groupId, dto);
     }
-    transferLeader(groupId, dto) {
+    async transferLeader(groupId, dto) {
         return this.groupsService.transferLeader(groupId, dto);
     }
     async removeMember(groupId, memberId) {
@@ -60,7 +60,7 @@ __decorate([
     __param(0, (0, common_1.Param)('groupId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], GroupsController.prototype, "listMembers", null);
 __decorate([
     (0, common_1.Post)(':groupId/invites'),
@@ -68,7 +68,7 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, groups_service_1.InviteMemberDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], GroupsController.prototype, "invite", null);
 __decorate([
     (0, common_1.Post)(':groupId/transfer-leader'),
@@ -76,7 +76,7 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, groups_service_1.TransferLeaderDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], GroupsController.prototype, "transferLeader", null);
 __decorate([
     (0, common_1.Delete)(':groupId/members/:memberId'),
