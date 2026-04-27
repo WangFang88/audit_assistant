@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { Repository } from 'typeorm';
+import { ConversationParticipantEntity } from '../../database/entities/conversation-participant.entity';
 import { ConversationEntity } from '../../database/entities/conversation.entity';
 import { MessageEntity } from '../../database/entities/message.entity';
 import { AuthService } from '../auth/auth.service';
@@ -49,6 +50,8 @@ export class ChatService {
   constructor(
     @InjectRepository(ConversationEntity)
     private readonly conversationRepository: Repository<ConversationEntity>,
+    @InjectRepository(ConversationParticipantEntity)
+    private readonly conversationParticipantRepository: Repository<ConversationParticipantEntity>,
     @InjectRepository(MessageEntity)
     private readonly messageRepository: Repository<MessageEntity>,
     private readonly authService: AuthService,
@@ -146,6 +149,80 @@ export class ChatService {
     ];
   }
 
+  private buildSeedParticipants() {
+    return [
+      this.conversationParticipantRepository.create({
+        conversationId: 'conv-group-1',
+        userId: 'user-2',
+        lastReadAt: new Date('2026-04-25T16:40:00'),
+        unreadCount: 0,
+        status: 'active',
+      }),
+      this.conversationParticipantRepository.create({
+        conversationId: 'conv-group-1',
+        userId: 'user-3',
+        lastReadAt: null,
+        unreadCount: 1,
+        status: 'active',
+      }),
+      this.conversationParticipantRepository.create({
+        conversationId: 'conv-group-1',
+        userId: 'user-4',
+        lastReadAt: null,
+        unreadCount: 1,
+        status: 'active',
+      }),
+      this.conversationParticipantRepository.create({
+        conversationId: 'conv-agent-1',
+        userId: 'user-2',
+        lastReadAt: new Date('2026-04-25T16:55:00'),
+        unreadCount: 0,
+        status: 'active',
+      }),
+      this.conversationParticipantRepository.create({
+        conversationId: 'conv-direct-1',
+        userId: 'user-2',
+        lastReadAt: null,
+        unreadCount: 1,
+        status: 'active',
+      }),
+      this.conversationParticipantRepository.create({
+        conversationId: 'conv-direct-1',
+        userId: 'user-4',
+        lastReadAt: new Date('2026-04-25T15:20:00'),
+        unreadCount: 0,
+        status: 'active',
+      }),
+    ];
+  }
+
+  private async ensureConversationParticipants(conversationId: string, userIds: string[]) {
+    const uniqueUserIds = Array.from(new Set(userIds.filter((userId) => userId.length > 0)));
+    if (uniqueUserIds.length === 0) {
+      return;
+    }
+
+    const existingParticipants = await this.conversationParticipantRepository.find({
+      where: { conversationId },
+    });
+    const existingUserIds = new Set(existingParticipants.map((participant) => participant.userId));
+    const missingParticipants = uniqueUserIds
+      .filter((userId) => !existingUserIds.has(userId))
+      .map((userId) =>
+        this.conversationParticipantRepository.create({
+          conversationId,
+          userId,
+          lastReadAt: null,
+          unreadCount: 0,
+          status: 'active',
+        }),
+      );
+
+    if (missingParticipants.length > 0) {
+      await this.conversationParticipantRepository.save(missingParticipants);
+    }
+  }
+
   private async ensureSeedData() {
     const conversationCount = await this.conversationRepository.count();
     if (conversationCount > 0) {
@@ -154,6 +231,7 @@ export class ChatService {
 
     await this.conversationRepository.save(this.buildSeedConversations());
     await this.messageRepository.save(this.buildSeedMessages());
+    await this.conversationParticipantRepository.save(this.buildSeedParticipants());
   }
 
   private toConversationRecord(entity: ConversationEntity): ConversationRecord {
@@ -187,14 +265,14 @@ export class ChatService {
     };
   }
 
-  private toPublicConversation(conversation: ConversationRecord, messages: MessageRecord[]) {
+  private toPublicConversation(conversation: ConversationRecord, messages: MessageRecord[], unreadCount: number) {
     return {
       id: conversation.id,
       type: conversation.type,
       title: conversation.title,
       groupId: conversation.groupId,
       isTeamAgent: conversation.type === 'agent',
-      unreadCount: messages.filter((message) => !message.readStatus).length,
+      unreadCount,
       lastMessage: messages[messages.length - 1]?.content ?? '',
     };
   }
@@ -242,6 +320,32 @@ export class ChatService {
     return entities.map((entity) => this.toMessageRecord(entity, conversation));
   }
 
+  private async getUnreadCount(conversationId: string, userId: string) {
+    const participant = await this.conversationParticipantRepository.findOne({
+      where: { conversationId, userId, status: 'active' },
+    });
+    return participant?.unreadCount ?? 0;
+  }
+
+  private async bumpUnreadCountForConversation(conversationId: string, senderUserId: string | null) {
+    const participants = await this.conversationParticipantRepository.find({
+      where: { conversationId, status: 'active' },
+    });
+
+    await Promise.all(
+      participants.map(async (participant) => {
+        const isSender = senderUserId != null && participant.userId === senderUserId;
+        await this.conversationParticipantRepository.update(
+          { id: participant.id },
+          {
+            unreadCount: isSender ? 0 : participant.unreadCount + 1,
+            lastReadAt: isSender ? new Date() : participant.lastReadAt,
+          },
+        );
+      }),
+    );
+  }
+
   private async updateConversationLastMessage(conversationId: string, content: string, sentAt: Date) {
     await this.conversationRepository.update(
       { id: conversationId },
@@ -269,6 +373,7 @@ export class ChatService {
       this.groupsService.assertCanAccessGroup(groupId);
     }
 
+    const currentUser = this.authService.me();
     const entities = await this.conversationRepository.find({
       where: { status: 'active' },
       order: { lastMessageAt: 'DESC', createdAt: 'ASC' },
@@ -294,8 +399,11 @@ export class ChatService {
 
     const items = await Promise.all(
       visibleConversations.map(async (conversation) => {
-        const messages = await this.getConversationMessages(conversation.id, conversation);
-        return this.toPublicConversation(conversation, messages);
+        const [messages, unreadCount] = await Promise.all([
+          this.getConversationMessages(conversation.id, conversation),
+          this.getUnreadCount(conversation.id, currentUser.id),
+        ]);
+        return this.toPublicConversation(conversation, messages, unreadCount);
       }),
     );
 
@@ -306,6 +414,15 @@ export class ChatService {
     this.assertAdminCannotUseChat();
     const conversation = await this.getConversationById(conversationId);
     this.assertCanAccessConversation(conversation);
+    const currentUser = this.authService.me();
+    await this.ensureConversationParticipants(conversationId, [currentUser.id]);
+    await this.conversationParticipantRepository.update(
+      { conversationId, userId: currentUser.id, status: 'active' },
+      {
+        unreadCount: 0,
+        lastReadAt: new Date(),
+      },
+    );
     const messages = await this.getConversationMessages(conversationId, conversation);
     return messages.map((message) => this.toPublicMessage(message));
   }
@@ -342,8 +459,10 @@ export class ChatService {
       sentAt,
     });
 
+    await this.ensureConversationParticipants(dto.conversationId, [currentUser.id, ...(receiverUserId != null ? [receiverUserId] : [])]);
     const savedMessage = await this.messageRepository.save(messageEntity);
     await this.updateConversationLastMessage(dto.conversationId, dto.content, sentAt);
+    await this.bumpUnreadCountForConversation(dto.conversationId, currentUser.id);
 
     if (conversation.type === 'agent') {
       const replySentAt = new Date();
@@ -363,6 +482,7 @@ export class ChatService {
           sentAt: replySentAt,
         }),
       );
+      await this.bumpUnreadCountForConversation(dto.conversationId, null);
       await this.updateConversationLastMessage(
         dto.conversationId,
         '已收到本次提问。当前项目组 Agent 将在公共库与本组私有库范围内完成检索，并返回可溯源依据。',
@@ -383,6 +503,7 @@ export class ChatService {
     if (existing) {
       existing.title = `${group.name} Agent`;
       const saved = await this.conversationRepository.save(existing);
+      await this.ensureConversationParticipants(saved.id, [this.authService.me().id]);
       return this.toConversationRecord(saved);
     }
 
@@ -399,6 +520,7 @@ export class ChatService {
       deletedAt: null,
     });
     const saved = await this.conversationRepository.save(conversation);
+    await this.ensureConversationParticipants(saved.id, [this.authService.me().id]);
     return this.toConversationRecord(saved);
   }
 
@@ -413,6 +535,7 @@ export class ChatService {
 
     const conversationIds = conversations.map((conversation) => conversation.id);
     await this.messageRepository.delete(conversationIds.map((conversationId) => ({ conversationId })));
+    await this.conversationParticipantRepository.delete(conversationIds.map((conversationId) => ({ conversationId })));
     await this.conversationRepository.delete(conversationIds.map((id) => ({ id })));
   }
 

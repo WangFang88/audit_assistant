@@ -1,4 +1,5 @@
 import { Repository } from 'typeorm';
+import { ConversationParticipantEntity } from '../../database/entities/conversation-participant.entity';
 import { ConversationEntity } from '../../database/entities/conversation.entity';
 import { MessageEntity } from '../../database/entities/message.entity';
 import { AuthService } from '../auth/auth.service';
@@ -19,14 +20,17 @@ type ConversationRecord = {
 };
 export declare class ChatService {
     private readonly conversationRepository;
+    private readonly conversationParticipantRepository;
     private readonly messageRepository;
     private readonly authService;
     private readonly groupsService;
-    constructor(conversationRepository: Repository<ConversationEntity>, messageRepository: Repository<MessageEntity>, authService: AuthService, groupsService: GroupsService);
+    constructor(conversationRepository: Repository<ConversationEntity>, conversationParticipantRepository: Repository<ConversationParticipantEntity>, messageRepository: Repository<MessageEntity>, authService: AuthService, groupsService: GroupsService);
     private formatDateTime;
     private assertAdminCannotUseChat;
     private buildSeedConversations;
     private buildSeedMessages;
+    private buildSeedParticipants;
+    private ensureConversationParticipants;
     private ensureSeedData;
     private toConversationRecord;
     private toMessageRecord;
@@ -35,6 +39,8 @@ export declare class ChatService {
     private assertCanAccessConversation;
     private getConversationById;
     private getConversationMessages;
+    private getUnreadCount;
+    private bumpUnreadCountForConversation;
     private updateConversationLastMessage;
     private getDirectConversationPeerUserId;
     listConversations(groupId?: string): Promise<{

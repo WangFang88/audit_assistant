@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const class_validator_1 = require("class-validator");
 const typeorm_2 = require("typeorm");
+const conversation_participant_entity_1 = require("../../database/entities/conversation-participant.entity");
 const conversation_entity_1 = require("../../database/entities/conversation.entity");
 const message_entity_1 = require("../../database/entities/message.entity");
 const auth_service_1 = require("../auth/auth.service");
@@ -44,8 +45,9 @@ __decorate([
     __metadata("design:type", String)
 ], SendMessageDto.prototype, "groupId", void 0);
 let ChatService = class ChatService {
-    constructor(conversationRepository, messageRepository, authService, groupsService) {
+    constructor(conversationRepository, conversationParticipantRepository, messageRepository, authService, groupsService) {
         this.conversationRepository = conversationRepository;
+        this.conversationParticipantRepository = conversationParticipantRepository;
         this.messageRepository = messageRepository;
         this.authService = authService;
         this.groupsService = groupsService;
@@ -136,6 +138,74 @@ let ChatService = class ChatService {
             }),
         ];
     }
+    buildSeedParticipants() {
+        return [
+            this.conversationParticipantRepository.create({
+                conversationId: 'conv-group-1',
+                userId: 'user-2',
+                lastReadAt: new Date('2026-04-25T16:40:00'),
+                unreadCount: 0,
+                status: 'active',
+            }),
+            this.conversationParticipantRepository.create({
+                conversationId: 'conv-group-1',
+                userId: 'user-3',
+                lastReadAt: null,
+                unreadCount: 1,
+                status: 'active',
+            }),
+            this.conversationParticipantRepository.create({
+                conversationId: 'conv-group-1',
+                userId: 'user-4',
+                lastReadAt: null,
+                unreadCount: 1,
+                status: 'active',
+            }),
+            this.conversationParticipantRepository.create({
+                conversationId: 'conv-agent-1',
+                userId: 'user-2',
+                lastReadAt: new Date('2026-04-25T16:55:00'),
+                unreadCount: 0,
+                status: 'active',
+            }),
+            this.conversationParticipantRepository.create({
+                conversationId: 'conv-direct-1',
+                userId: 'user-2',
+                lastReadAt: null,
+                unreadCount: 1,
+                status: 'active',
+            }),
+            this.conversationParticipantRepository.create({
+                conversationId: 'conv-direct-1',
+                userId: 'user-4',
+                lastReadAt: new Date('2026-04-25T15:20:00'),
+                unreadCount: 0,
+                status: 'active',
+            }),
+        ];
+    }
+    async ensureConversationParticipants(conversationId, userIds) {
+        const uniqueUserIds = Array.from(new Set(userIds.filter((userId) => userId.length > 0)));
+        if (uniqueUserIds.length === 0) {
+            return;
+        }
+        const existingParticipants = await this.conversationParticipantRepository.find({
+            where: { conversationId },
+        });
+        const existingUserIds = new Set(existingParticipants.map((participant) => participant.userId));
+        const missingParticipants = uniqueUserIds
+            .filter((userId) => !existingUserIds.has(userId))
+            .map((userId) => this.conversationParticipantRepository.create({
+            conversationId,
+            userId,
+            lastReadAt: null,
+            unreadCount: 0,
+            status: 'active',
+        }));
+        if (missingParticipants.length > 0) {
+            await this.conversationParticipantRepository.save(missingParticipants);
+        }
+    }
     async ensureSeedData() {
         const conversationCount = await this.conversationRepository.count();
         if (conversationCount > 0) {
@@ -143,6 +213,7 @@ let ChatService = class ChatService {
         }
         await this.conversationRepository.save(this.buildSeedConversations());
         await this.messageRepository.save(this.buildSeedMessages());
+        await this.conversationParticipantRepository.save(this.buildSeedParticipants());
     }
     toConversationRecord(entity) {
         return {
@@ -171,14 +242,14 @@ let ChatService = class ChatService {
             readStatus: metadata.readStatus !== false,
         };
     }
-    toPublicConversation(conversation, messages) {
+    toPublicConversation(conversation, messages, unreadCount) {
         return {
             id: conversation.id,
             type: conversation.type,
             title: conversation.title,
             groupId: conversation.groupId,
             isTeamAgent: conversation.type === 'agent',
-            unreadCount: messages.filter((message) => !message.readStatus).length,
+            unreadCount,
             lastMessage: messages[messages.length - 1]?.content ?? '',
         };
     }
@@ -218,6 +289,24 @@ let ChatService = class ChatService {
         });
         return entities.map((entity) => this.toMessageRecord(entity, conversation));
     }
+    async getUnreadCount(conversationId, userId) {
+        const participant = await this.conversationParticipantRepository.findOne({
+            where: { conversationId, userId, status: 'active' },
+        });
+        return participant?.unreadCount ?? 0;
+    }
+    async bumpUnreadCountForConversation(conversationId, senderUserId) {
+        const participants = await this.conversationParticipantRepository.find({
+            where: { conversationId, status: 'active' },
+        });
+        await Promise.all(participants.map(async (participant) => {
+            const isSender = senderUserId != null && participant.userId === senderUserId;
+            await this.conversationParticipantRepository.update({ id: participant.id }, {
+                unreadCount: isSender ? 0 : participant.unreadCount + 1,
+                lastReadAt: isSender ? new Date() : participant.lastReadAt,
+            });
+        }));
+    }
     async updateConversationLastMessage(conversationId, content, sentAt) {
         await this.conversationRepository.update({ id: conversationId }, {
             lastMessage: content,
@@ -238,6 +327,7 @@ let ChatService = class ChatService {
         if (groupId != null) {
             this.groupsService.assertCanAccessGroup(groupId);
         }
+        const currentUser = this.authService.me();
         const entities = await this.conversationRepository.find({
             where: { status: 'active' },
             order: { lastMessageAt: 'DESC', createdAt: 'ASC' },
@@ -260,8 +350,11 @@ let ChatService = class ChatService {
             return 0;
         });
         const items = await Promise.all(visibleConversations.map(async (conversation) => {
-            const messages = await this.getConversationMessages(conversation.id, conversation);
-            return this.toPublicConversation(conversation, messages);
+            const [messages, unreadCount] = await Promise.all([
+                this.getConversationMessages(conversation.id, conversation),
+                this.getUnreadCount(conversation.id, currentUser.id),
+            ]);
+            return this.toPublicConversation(conversation, messages, unreadCount);
         }));
         return items;
     }
@@ -269,6 +362,12 @@ let ChatService = class ChatService {
         this.assertAdminCannotUseChat();
         const conversation = await this.getConversationById(conversationId);
         this.assertCanAccessConversation(conversation);
+        const currentUser = this.authService.me();
+        await this.ensureConversationParticipants(conversationId, [currentUser.id]);
+        await this.conversationParticipantRepository.update({ conversationId, userId: currentUser.id, status: 'active' }, {
+            unreadCount: 0,
+            lastReadAt: new Date(),
+        });
         const messages = await this.getConversationMessages(conversationId, conversation);
         return messages.map((message) => this.toPublicMessage(message));
     }
@@ -299,8 +398,10 @@ let ChatService = class ChatService {
             },
             sentAt,
         });
+        await this.ensureConversationParticipants(dto.conversationId, [currentUser.id, ...(receiverUserId != null ? [receiverUserId] : [])]);
         const savedMessage = await this.messageRepository.save(messageEntity);
         await this.updateConversationLastMessage(dto.conversationId, dto.content, sentAt);
+        await this.bumpUnreadCountForConversation(dto.conversationId, currentUser.id);
         if (conversation.type === 'agent') {
             const replySentAt = new Date();
             await this.messageRepository.save(this.messageRepository.create({
@@ -317,6 +418,7 @@ let ChatService = class ChatService {
                 },
                 sentAt: replySentAt,
             }));
+            await this.bumpUnreadCountForConversation(dto.conversationId, null);
             await this.updateConversationLastMessage(dto.conversationId, '已收到本次提问。当前项目组 Agent 将在公共库与本组私有库范围内完成检索，并返回可溯源依据。', replySentAt);
         }
         return this.toPublicMessage(this.toMessageRecord(savedMessage, conversation));
@@ -331,6 +433,7 @@ let ChatService = class ChatService {
         if (existing) {
             existing.title = `${group.name} Agent`;
             const saved = await this.conversationRepository.save(existing);
+            await this.ensureConversationParticipants(saved.id, [this.authService.me().id]);
             return this.toConversationRecord(saved);
         }
         const conversation = this.conversationRepository.create({
@@ -346,6 +449,7 @@ let ChatService = class ChatService {
             deletedAt: null,
         });
         const saved = await this.conversationRepository.save(conversation);
+        await this.ensureConversationParticipants(saved.id, [this.authService.me().id]);
         return this.toConversationRecord(saved);
     }
     async removeGroupConversations(groupId) {
@@ -358,6 +462,7 @@ let ChatService = class ChatService {
         }
         const conversationIds = conversations.map((conversation) => conversation.id);
         await this.messageRepository.delete(conversationIds.map((conversationId) => ({ conversationId })));
+        await this.conversationParticipantRepository.delete(conversationIds.map((conversationId) => ({ conversationId })));
         await this.conversationRepository.delete(conversationIds.map((id) => ({ id })));
     }
     async syncGroupAgent(group, agent) {
@@ -373,8 +478,10 @@ exports.ChatService = ChatService;
 exports.ChatService = ChatService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(conversation_entity_1.ConversationEntity)),
-    __param(1, (0, typeorm_1.InjectRepository)(message_entity_1.MessageEntity)),
+    __param(1, (0, typeorm_1.InjectRepository)(conversation_participant_entity_1.ConversationParticipantEntity)),
+    __param(2, (0, typeorm_1.InjectRepository)(message_entity_1.MessageEntity)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         auth_service_1.AuthService,
         groups_service_1.GroupsService])
