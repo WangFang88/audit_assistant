@@ -255,6 +255,13 @@ export class GroupsService {
   async transferLeader(groupId: string, dto: TransferLeaderDto) {
     this.assertAdminCannotManageGroups();
     await this.assertCanAccessGroup(groupId);
+
+    const currentUser = this.getCurrentUser();
+    const currentMember = await this.teamMemberRepository.findOneBy({ teamId: groupId, userId: currentUser.id });
+    if (currentMember?.role !== 'leader') {
+      throw new ForbiddenException('只有组长才能移交组长权限');
+    }
+
     const group = await this.getGroupById(groupId);
 
     const newLeader = await this.teamMemberRepository.findOneBy({ teamId: groupId, userId: dto.targetUserId });

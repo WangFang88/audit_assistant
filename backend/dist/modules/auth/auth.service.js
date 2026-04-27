@@ -260,6 +260,9 @@ let AuthService = class AuthService {
     me() {
         return this.currentUser;
     }
+    getUserByPhone(phone) {
+        return this.findUserByPhone(phone);
+    }
     isAdmin() {
         return this.currentUser.role === 'admin';
     }

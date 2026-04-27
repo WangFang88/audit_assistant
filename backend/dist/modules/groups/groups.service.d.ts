@@ -55,13 +55,12 @@ export declare class GroupsService {
     getGroupById(groupId: string): Promise<GroupRecord>;
     createGroup(dto: CreateGroupDto): Promise<GroupRecord>;
     listMembers(groupId: string): Promise<MemberRecord[]>;
-    invite(groupId: string, dto: InviteMemberDto): {
+    invite(groupId: string, dto: InviteMemberDto): Promise<{
         groupId: string;
-        inviteCode: string;
         phone: string;
         role: "member" | "leader";
-        expiresAt: string;
-    };
+        memberCount: number;
+    }>;
     transferLeader(groupId: string, dto: TransferLeaderDto): Promise<{
         groupId: string;
         groupName: string;

@@ -30,10 +30,9 @@ export declare class GroupsController {
     }[]>;
     invite(groupId: string, dto: InviteMemberDto): Promise<{
         groupId: string;
-        inviteCode: string;
         phone: string;
-        role: "leader" | "member";
-        expiresAt: string;
+        role: "member" | "leader";
+        memberCount: number;
     }>;
     transferLeader(groupId: string, dto: TransferLeaderDto): Promise<{
         groupId: string;

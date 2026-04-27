@@ -18,6 +18,11 @@ type DemoUser = {
     role: 'admin' | 'member';
     trialEndsAt: string;
 };
+type AuthUserRecord = DemoUser & {
+    passwordHash: string;
+    passwordIsLegacyPlaintext?: boolean;
+    subscriptionType: string;
+};
 export declare class AuthService {
     private readonly localStateService;
     private readonly authUserRepository;
@@ -58,6 +63,7 @@ export declare class AuthService {
     };
     validateAccessToken(token: string): DemoUser | null;
     me(): DemoUser;
+    getUserByPhone(phone: string): AuthUserRecord | null;
     isAdmin(): boolean;
 }
 export { LoginDto, RefreshTokenDto, RegisterDto };
