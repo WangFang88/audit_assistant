@@ -1471,7 +1471,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return SectionCard(
       title: '检索结果',
-      subtitle: _isAdmin ? '返回答案、公共库引用条款与管理员检索元信息。' : '返回答案、引用条款、范围说明与当前原型的 RAG 元信息。',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
