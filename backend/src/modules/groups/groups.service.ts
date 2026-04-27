@@ -1,6 +1,9 @@
 import { forwardRef, Inject, BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { IsIn, IsString, MinLength } from 'class-validator';
-import { TeamMemberSnapshot, TeamRepository, TeamSnapshot } from '../../database/repositories/team.repository';
+import { Repository } from 'typeorm';
+import { TeamMemberEntity } from '../../database/entities/team-member.entity';
+import { TeamEntity } from '../../database/entities/team.entity';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
 import { DocumentsService } from '../documents/documents.service';
@@ -56,7 +59,10 @@ export class GroupsService {
     private readonly authService: AuthService,
     private readonly subscriptionsService: SubscriptionsService,
     private readonly localStateService: LocalStateService,
-    private readonly teamRepository: TeamRepository,
+    @InjectRepository(TeamEntity)
+    private readonly teamRepository: Repository<TeamEntity>,
+    @InjectRepository(TeamMemberEntity)
+    private readonly teamMemberRepository: Repository<TeamMemberEntity>,
     @Inject(forwardRef(() => DocumentsService))
     private readonly documentsService: DocumentsService,
     @Inject(forwardRef(() => ChatService))
@@ -112,39 +118,18 @@ export class GroupsService {
     },
   ];
 
-  private toTeamSnapshot(group: GroupRecord): TeamSnapshot {
-    return {
-      id: group.id,
-      name: group.name,
-      organizationName: group.organizationName,
-      ownerUserId: group.ownerUserId,
-      memberCount: group.memberCount,
-      privateDocumentCount: group.privateDocumentCount,
-      lastQueryAt: group.lastQueryAt,
-    };
-  }
-
-  private toMemberSnapshot(member: MemberRecord): TeamMemberSnapshot {
-    return {
-      id: member.id,
-      groupId: member.groupId,
-      userId: member.userId,
-      name: member.name,
-      phone: member.phone,
-      role: member.role,
-    };
-  }
-
   persistState() {
     this.localStateService.saveGroups(
-      this.groups.map((group) => {
-        const teamEntity = this.teamRepository.createTeamEntity(this.toTeamSnapshot(group));
-        return this.teamRepository.mapTeamEntity(teamEntity, group.memberCount, group.privateDocumentCount);
-      }),
-      this.members.map((member) => {
-        this.teamRepository.createTeamMemberEntity(this.toMemberSnapshot(member));
-        return member;
-      }),
+      this.groups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        organizationName: group.organizationName,
+        ownerUserId: group.ownerUserId,
+        memberCount: group.memberCount,
+        privateDocumentCount: group.privateDocumentCount,
+        lastQueryAt: group.lastQueryAt,
+      })),
+      this.members.map((member) => member),
     );
   }
 

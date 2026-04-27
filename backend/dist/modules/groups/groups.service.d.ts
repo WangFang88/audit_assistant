@@ -1,4 +1,6 @@
-import { TeamRepository } from '../../database/repositories/team.repository';
+import { Repository } from 'typeorm';
+import { TeamMemberEntity } from '../../database/entities/team-member.entity';
+import { TeamEntity } from '../../database/entities/team.entity';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
 import { DocumentsService } from '../documents/documents.service';
@@ -38,14 +40,13 @@ export declare class GroupsService {
     private readonly subscriptionsService;
     private readonly localStateService;
     private readonly teamRepository;
+    private readonly teamMemberRepository;
     private readonly documentsService;
     private readonly chatService;
     private readonly teamAgentsService;
-    constructor(authService: AuthService, subscriptionsService: SubscriptionsService, localStateService: LocalStateService, teamRepository: TeamRepository, documentsService: DocumentsService, chatService: ChatService, teamAgentsService: TeamAgentsService);
+    constructor(authService: AuthService, subscriptionsService: SubscriptionsService, localStateService: LocalStateService, teamRepository: Repository<TeamEntity>, teamMemberRepository: Repository<TeamMemberEntity>, documentsService: DocumentsService, chatService: ChatService, teamAgentsService: TeamAgentsService);
     private readonly groups;
     private readonly members;
-    private toTeamSnapshot;
-    private toMemberSnapshot;
     persistState(): void;
     private assertAdminCannotManageGroups;
     private getCurrentUser;

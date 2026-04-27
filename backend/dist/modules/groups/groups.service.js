@@ -14,8 +14,11 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransferLeaderDto = exports.InviteMemberDto = exports.CreateGroupDto = exports.GroupsService = void 0;
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
 const class_validator_1 = require("class-validator");
-const team_repository_1 = require("../../database/repositories/team.repository");
+const typeorm_2 = require("typeorm");
+const team_member_entity_1 = require("../../database/entities/team-member.entity");
+const team_entity_1 = require("../../database/entities/team.entity");
 const auth_service_1 = require("../auth/auth.service");
 const chat_service_1 = require("../chat/chat.service");
 const documents_service_1 = require("../documents/documents.service");
@@ -54,11 +57,12 @@ __decorate([
     __metadata("design:type", String)
 ], TransferLeaderDto.prototype, "targetUserId", void 0);
 let GroupsService = class GroupsService {
-    constructor(authService, subscriptionsService, localStateService, teamRepository, documentsService, chatService, teamAgentsService) {
+    constructor(authService, subscriptionsService, localStateService, teamRepository, teamMemberRepository, documentsService, chatService, teamAgentsService) {
         this.authService = authService;
         this.subscriptionsService = subscriptionsService;
         this.localStateService = localStateService;
         this.teamRepository = teamRepository;
+        this.teamMemberRepository = teamMemberRepository;
         this.documentsService = documentsService;
         this.chatService = chatService;
         this.teamAgentsService = teamAgentsService;
@@ -107,8 +111,8 @@ let GroupsService = class GroupsService {
             this.members.splice(0, this.members.length, ...persistedState.members);
         }
     }
-    toTeamSnapshot(group) {
-        return {
+    persistState() {
+        this.localStateService.saveGroups(this.groups.map((group) => ({
             id: group.id,
             name: group.name,
             organizationName: group.organizationName,
@@ -116,26 +120,7 @@ let GroupsService = class GroupsService {
             memberCount: group.memberCount,
             privateDocumentCount: group.privateDocumentCount,
             lastQueryAt: group.lastQueryAt,
-        };
-    }
-    toMemberSnapshot(member) {
-        return {
-            id: member.id,
-            groupId: member.groupId,
-            userId: member.userId,
-            name: member.name,
-            phone: member.phone,
-            role: member.role,
-        };
-    }
-    persistState() {
-        this.localStateService.saveGroups(this.groups.map((group) => {
-            const teamEntity = this.teamRepository.createTeamEntity(this.toTeamSnapshot(group));
-            return this.teamRepository.mapTeamEntity(teamEntity, group.memberCount, group.privateDocumentCount);
-        }), this.members.map((member) => {
-            this.teamRepository.createTeamMemberEntity(this.toMemberSnapshot(member));
-            return member;
-        }));
+        })), this.members.map((member) => member));
     }
     assertAdminCannotManageGroups() {
         if (!this.authService.isAdmin()) {
@@ -295,13 +280,16 @@ let GroupsService = class GroupsService {
 exports.GroupsService = GroupsService;
 exports.GroupsService = GroupsService = __decorate([
     (0, common_1.Injectable)(),
-    __param(4, (0, common_1.Inject)((0, common_1.forwardRef)(() => documents_service_1.DocumentsService))),
-    __param(5, (0, common_1.Inject)((0, common_1.forwardRef)(() => chat_service_1.ChatService))),
-    __param(6, (0, common_1.Inject)((0, common_1.forwardRef)(() => team_agents_service_1.TeamAgentsService))),
+    __param(3, (0, typeorm_1.InjectRepository)(team_entity_1.TeamEntity)),
+    __param(4, (0, typeorm_1.InjectRepository)(team_member_entity_1.TeamMemberEntity)),
+    __param(5, (0, common_1.Inject)((0, common_1.forwardRef)(() => documents_service_1.DocumentsService))),
+    __param(6, (0, common_1.Inject)((0, common_1.forwardRef)(() => chat_service_1.ChatService))),
+    __param(7, (0, common_1.Inject)((0, common_1.forwardRef)(() => team_agents_service_1.TeamAgentsService))),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
         subscriptions_service_1.SubscriptionsService,
         local_state_service_1.LocalStateService,
-        team_repository_1.TeamRepository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         documents_service_1.DocumentsService,
         chat_service_1.ChatService,
         team_agents_service_1.TeamAgentsService])
