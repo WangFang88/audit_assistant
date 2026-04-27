@@ -1106,10 +1106,10 @@ class _DashboardPageState extends State<DashboardPage> {
                   DropdownButtonFormField<String>(
                     initialValue: libraryType,
                     items: [
-                      const DropdownMenuItem(value: '公共库', child: Text('公共库')),
-                      if (!_isAdmin && _activeGroupId != null) const DropdownMenuItem(value: '私有库', child: Text('私有库')),
+                      if (_isAdmin) const DropdownMenuItem(value: '公共库', child: Text('公共库')),
+                      if (_isCurrentUserLeader && _activeGroupId != null) const DropdownMenuItem(value: '私有库', child: Text('私有库')),
                     ],
-                    onChanged: (value) => setDialogState(() => libraryType = value ?? (_isAdmin || _activeGroupId == null ? '公共库' : '私有库')),
+                    onChanged: (value) => setDialogState(() => libraryType = value ?? libraryType),
                     decoration: const InputDecoration(labelText: '入库范围'),
                   ),
                   const SizedBox(height: 12),
@@ -1769,7 +1769,7 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           FilledButton.tonal(onPressed: _documentsLoading ? null : _refreshDocuments, child: const Text('刷新任务')),
           FilledButton.tonal(
-            onPressed: (_activeGroupId != null || _canImportPublicDocuments) && !(_hasReachedPrivateDocumentLimit && _activeGroupId != null)
+            onPressed: (_isCurrentUserLeader || _canImportPublicDocuments) && !(_hasReachedPrivateDocumentLimit && _activeGroupId != null)
                 ? _showImportDocumentDialog
                 : null,
             child: const Text('导入文件'),

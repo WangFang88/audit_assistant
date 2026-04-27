@@ -760,7 +760,7 @@ export class DocumentsService {
       if (!dto.groupId) {
         throw new BadRequestException('私有库导入必须指定项目组');
       }
-      this.groupsService.assertCanAccessGroup(dto.groupId);
+      await this.groupsService.assertIsLeader(dto.groupId);
       const currentPrivateDocuments = await this.persistedDocumentRepository.count({
         where: { libraryType: 'private', deletedAt: IsNull() },
       });
