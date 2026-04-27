@@ -64,12 +64,12 @@ export class TeamAgentsService {
     };
   }
 
-  private assertCanAccessGroupAgent(groupId: string) {
+  private async assertCanAccessGroupAgent(groupId: string) {
     if (this.authService.isAdmin()) {
       throw new NotFoundException('管理员不参与项目组 Agent');
     }
 
-    this.groupsService.assertCanAccessGroup(groupId);
+    await this.groupsService.assertCanAccessGroup(groupId);
   }
 
   async createForGroup(group: { id: string; name: string }, defaultConversationId: string | null) {

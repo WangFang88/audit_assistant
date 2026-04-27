@@ -2,7 +2,7 @@ import { CreateGroupDto, GroupsService, InviteMemberDto, TransferLeaderDto } fro
 export declare class GroupsController {
     private readonly groupsService;
     constructor(groupsService: GroupsService);
-    listGroups(): {
+    listGroups(): Promise<{
         id: string;
         name: string;
         organizationName: string;
@@ -10,7 +10,7 @@ export declare class GroupsController {
         memberCount: number;
         privateDocumentCount: number;
         lastQueryAt: string | null;
-    }[];
+    }[]>;
     createGroup(dto: CreateGroupDto): Promise<{
         id: string;
         name: string;
@@ -18,16 +18,16 @@ export declare class GroupsController {
         ownerUserId: string;
         memberCount: number;
         privateDocumentCount: number;
-        lastQueryAt: null;
+        lastQueryAt: string | null;
     }>;
-    listMembers(groupId: string): {
+    listMembers(groupId: string): Promise<{
         id: string;
         groupId: string;
         userId: string;
         name: string;
         phone: string;
         role: "leader" | "member";
-    }[];
+    }[]>;
     invite(groupId: string, dto: InviteMemberDto): {
         groupId: string;
         inviteCode: string;
@@ -35,13 +35,13 @@ export declare class GroupsController {
         role: "member" | "leader";
         expiresAt: string;
     };
-    transferLeader(groupId: string, dto: TransferLeaderDto): {
+    transferLeader(groupId: string, dto: TransferLeaderDto): Promise<{
         groupId: string;
         groupName: string;
         previousLeaderId: string;
         newLeaderId: string;
         transferredAt: string;
-    };
+    }>;
     removeMember(groupId: string, memberId: string): Promise<{
         groupId: string;
         groupName: string;

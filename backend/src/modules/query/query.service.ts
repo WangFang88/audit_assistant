@@ -49,13 +49,13 @@ export class QueryService {
 
     const resolvedGroupId = await this.teamAgentsService.resolveGroupId(dto.agentId, dto.groupId);
     if (!this.authService.isAdmin() && resolvedGroupId != null) {
-      this.groupsService.assertCanAccessGroup(resolvedGroupId);
+      await this.groupsService.assertCanAccessGroup(resolvedGroupId);
     }
 
     const usage = this.subscriptionsService.getUsage();
     this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
 
-    const group = resolvedGroupId ? this.groupsService.getGroupById(resolvedGroupId) : null;
+    const group = resolvedGroupId ? await this.groupsService.getGroupById(resolvedGroupId) : null;
     const teamAgent = resolvedGroupId ? await this.teamAgentsService.getVisibleAgentByGroupId(resolvedGroupId) : null;
     const readyChunks = await this.documentsService.getReadyChunks(resolvedGroupId);
     const scopeSummary = await this.documentsService.getLibraryScopeSummary(resolvedGroupId);

@@ -22,9 +22,9 @@ export class OverviewService {
   async getDashboard(groupId?: string) {
     const user = this.authService.me();
     const isAdmin = user.role === 'admin';
-    const visibleGroups = isAdmin ? [] : this.groupsService.listGroups();
+    const visibleGroups = isAdmin ? [] : await this.groupsService.listGroups();
     const effectiveGroupId = isAdmin ? undefined : groupId ?? visibleGroups[0]?.id;
-    const activeGroup = effectiveGroupId ? this.groupsService.getGroupById(effectiveGroupId) : null;
+    const activeGroup = effectiveGroupId ? await this.groupsService.getGroupById(effectiveGroupId) : null;
     const activeTeamAgent = effectiveGroupId ? await this.teamAgentsService.getVisibleAgentByGroupId(effectiveGroupId) : null;
     let featuredQuery;
 

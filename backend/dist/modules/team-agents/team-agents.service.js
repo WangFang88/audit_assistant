@@ -50,11 +50,11 @@ let TeamAgentsService = class TeamAgentsService {
             },
         };
     }
-    assertCanAccessGroupAgent(groupId) {
+    async assertCanAccessGroupAgent(groupId) {
         if (this.authService.isAdmin()) {
             throw new common_1.NotFoundException('管理员不参与项目组 Agent');
         }
-        this.groupsService.assertCanAccessGroup(groupId);
+        await this.groupsService.assertCanAccessGroup(groupId);
     }
     async createForGroup(group, defaultConversationId) {
         const existing = await this.teamAgentRepository.findOneBy({ teamId: group.id, status: 'active' });

@@ -282,14 +282,14 @@ let ChatService = class ChatService {
             sentAt: message.sentAt,
         };
     }
-    assertCanAccessConversation(conversation, groupId) {
+    async assertCanAccessConversation(conversation, groupId) {
         if (conversation.type === 'direct') {
             return;
         }
         if (conversation.groupId == null) {
             throw new common_1.ForbiddenException('当前群聊未绑定项目组，暂不可访问');
         }
-        this.groupsService.assertCanAccessGroup(conversation.groupId);
+        await this.groupsService.assertCanAccessGroup(conversation.groupId);
         if (groupId != null && conversation.groupId !== groupId) {
             throw new common_1.ForbiddenException('当前会话不属于所选项目组');
         }
@@ -345,7 +345,7 @@ let ChatService = class ChatService {
         this.assertAdminCannotUseChat();
         await this.ensureSeedData();
         if (groupId != null) {
-            this.groupsService.assertCanAccessGroup(groupId);
+            await this.groupsService.assertCanAccessGroup(groupId);
         }
         const currentUser = this.authService.me();
         const entities = await this.conversationRepository.find({
@@ -381,7 +381,7 @@ let ChatService = class ChatService {
     async listMessages(conversationId) {
         this.assertAdminCannotUseChat();
         const conversation = await this.getConversationById(conversationId);
-        this.assertCanAccessConversation(conversation);
+        await this.assertCanAccessConversation(conversation);
         const currentUser = this.authService.me();
         await this.ensureConversationParticipants(conversationId, [currentUser.id]);
         await this.conversationParticipantRepository.update({ conversationId, userId: currentUser.id, status: 'active' }, {
@@ -397,7 +397,7 @@ let ChatService = class ChatService {
         if (conversation.type !== dto.conversationType) {
             throw new common_1.ForbiddenException('当前会话类型与发送目标不一致');
         }
-        this.assertCanAccessConversation(conversation, dto.groupId);
+        await this.assertCanAccessConversation(conversation, dto.groupId);
         const currentUser = this.authService.me();
         const receiverUserId = conversation.type === 'direct'
             ? (await this.getDirectConversationPeerUserId(dto.conversationId, currentUser.id)) ?? currentUser.id

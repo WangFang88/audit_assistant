@@ -426,7 +426,7 @@ export class DocumentsService {
   async listDocuments(groupId?: string) {
     this.assertAdminPublicLibraryOnly(groupId);
     if (!this.authService.isAdmin() && groupId != null) {
-      this.groupsService.assertCanAccessGroup(groupId);
+      await this.groupsService.assertCanAccessGroup(groupId);
     }
 
     await this.ensurePersistedDocumentSeedData();
@@ -447,7 +447,7 @@ export class DocumentsService {
   async listExtractionJobs(groupId?: string) {
     this.assertAdminPublicLibraryOnly(groupId);
     if (!this.authService.isAdmin() && groupId != null) {
-      this.groupsService.assertCanAccessGroup(groupId);
+      await this.groupsService.assertCanAccessGroup(groupId);
     }
 
     await this.ensurePersistedDocumentSeedData();
@@ -467,7 +467,7 @@ export class DocumentsService {
   async getReadyChunks(groupId?: string) {
     this.assertAdminPublicLibraryOnly(groupId);
     if (!this.authService.isAdmin() && groupId != null) {
-      this.groupsService.assertCanAccessGroup(groupId);
+      await this.groupsService.assertCanAccessGroup(groupId);
     }
 
     await this.ensurePersistedDocumentSeedData();
@@ -817,9 +817,6 @@ export class DocumentsService {
     }
 
     if (document.libraryType === 'private') {
-      const group = this.groupsService.getGroupById(dto.groupId!);
-      group.privateDocumentCount += 1;
-      this.groupsService.persistState();
       const privateDocumentCount = await this.persistedDocumentRepository.count({
         where: { libraryType: 'private', deletedAt: IsNull() },
       });

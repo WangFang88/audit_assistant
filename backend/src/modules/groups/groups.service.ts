@@ -8,7 +8,6 @@ import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
 import { DocumentsService } from '../documents/documents.service';
 import { TeamAgentsService } from '../team-agents/team-agents.service';
-import { LocalStateService } from '../subscriptions/local-state.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 class CreateGroupDto {
@@ -58,7 +57,6 @@ export class GroupsService {
   constructor(
     private readonly authService: AuthService,
     private readonly subscriptionsService: SubscriptionsService,
-    private readonly localStateService: LocalStateService,
     @InjectRepository(TeamEntity)
     private readonly teamRepository: Repository<TeamEntity>,
     @InjectRepository(TeamMemberEntity)
@@ -69,68 +67,56 @@ export class GroupsService {
     private readonly chatService: ChatService,
     @Inject(forwardRef(() => TeamAgentsService))
     private readonly teamAgentsService: TeamAgentsService,
-  ) {
-    const persistedState = this.localStateService.readState();
-    if (persistedState.groups) {
-      this.groups.splice(0, this.groups.length, ...persistedState.groups);
-    }
-    if (persistedState.members) {
-      this.members.splice(0, this.members.length, ...persistedState.members);
-    }
+  ) {}
+
+  private toGroupRecord(entity: TeamEntity, memberCount: number, privateDocumentCount: number): GroupRecord {
+    return {
+      id: entity.id,
+      name: entity.name,
+      organizationName: entity.organizationName,
+      ownerUserId: entity.ownerUserId,
+      memberCount,
+      privateDocumentCount,
+      lastQueryAt: entity.lastQueryAt ? entity.lastQueryAt.toISOString().slice(0, 16).replace('T', ' ') : null,
+    };
   }
 
-  private readonly groups: GroupRecord[] = [
-    {
-      id: 'group-1',
-      name: '某区财政局审计组',
-      organizationName: '某区财政局',
-      ownerUserId: 'user-2',
-      memberCount: 3,
-      privateDocumentCount: 2,
-      lastQueryAt: '2026-04-25 16:20',
-    },
-  ];
+  private toMemberRecord(entity: TeamMemberEntity): MemberRecord {
+    return {
+      id: String(entity.id),
+      groupId: entity.teamId,
+      userId: entity.userId,
+      name: entity.userId,
+      phone: '',
+      role: entity.role,
+    };
+  }
 
-  private readonly members: MemberRecord[] = [
-    {
-      id: 'member-1',
-      groupId: 'group-1',
-      userId: 'user-2',
-      name: '审计组长',
-      phone: '13800138001',
-      role: 'leader',
-    },
-    {
-      id: 'member-2',
-      groupId: 'group-1',
-      userId: 'user-3',
-      name: '审计助理',
-      phone: '13800138002',
-      role: 'member',
-    },
-    {
-      id: 'member-3',
-      groupId: 'group-1',
-      userId: 'user-4',
-      name: '法规顾问',
-      phone: '13800138003',
-      role: 'member',
-    },
-  ];
+  private async ensureSeedData() {
+    const count = await this.teamRepository.count();
+    if (count > 0) {
+      return;
+    }
+
+    await this.teamRepository.save(
+      this.teamRepository.create({
+        id: 'group-1',
+        name: '某区财政局审计组',
+        organizationName: '某区财政局',
+        ownerUserId: 'user-2',
+        lastQueryAt: new Date('2026-04-25T16:20:00'),
+      }),
+    );
+
+    await this.teamMemberRepository.save([
+      this.teamMemberRepository.create({ teamId: 'group-1', userId: 'user-2', role: 'leader' }),
+      this.teamMemberRepository.create({ teamId: 'group-1', userId: 'user-3', role: 'member' }),
+      this.teamMemberRepository.create({ teamId: 'group-1', userId: 'user-4', role: 'member' }),
+    ]);
+  }
 
   persistState() {
-    this.localStateService.saveGroups(
-      this.groups.map((group) => ({
-        id: group.id,
-        name: group.name,
-        organizationName: group.organizationName,
-        ownerUserId: group.ownerUserId,
-        memberCount: group.memberCount,
-        privateDocumentCount: group.privateDocumentCount,
-        lastQueryAt: group.lastQueryAt,
-      })),
-      this.members.map((member) => member),
-    );
+    // no-op: state is now persisted in the database
   }
 
   private assertAdminCannotManageGroups() {
@@ -145,88 +131,96 @@ export class GroupsService {
     return this.authService.me();
   }
 
-  private isCurrentUserMemberOfGroup(groupId: string) {
+  private async isCurrentUserMemberOfGroup(groupId: string) {
     const user = this.getCurrentUser();
-    return this.members.some((member) => member.groupId === groupId && member.userId === user.id);
+    const member = await this.teamMemberRepository.findOneBy({ teamId: groupId, userId: user.id });
+    return member != null;
   }
 
-  assertCanAccessGroup(groupId: string) {
+  async assertCanAccessGroup(groupId: string) {
     if (this.authService.isAdmin()) {
       throw new ForbiddenException('管理员不参与项目组，无法访问项目组相关数据');
     }
 
-    this.getGroupById(groupId);
-    if (this.isCurrentUserMemberOfGroup(groupId)) {
+    await this.getGroupById(groupId);
+    if (await this.isCurrentUserMemberOfGroup(groupId)) {
       return;
     }
 
     throw new ForbiddenException('当前账号不属于该项目组，无法访问相关数据');
   }
 
-  listGroups() {
+  async listGroups() {
     if (this.authService.isAdmin()) {
       return [];
     }
 
+    await this.ensureSeedData();
     const currentUserId = this.getCurrentUser().id;
-    const memberGroupIds = new Set(
-      this.members.filter((member) => member.userId === currentUserId).map((member) => member.groupId),
+    const memberships = await this.teamMemberRepository.findBy({ userId: currentUserId });
+    const groupIds = memberships.map((m) => m.teamId);
+    if (groupIds.length === 0) {
+      return [];
+    }
+
+    const teams = await this.teamRepository.findByIds(groupIds);
+    return Promise.all(
+      teams.map(async (team) => {
+        const memberCount = await this.teamMemberRepository.countBy({ teamId: team.id });
+        return this.toGroupRecord(team, memberCount, 0);
+      }),
     );
-    return this.groups.filter((group) => memberGroupIds.has(group.id));
   }
 
-  getGroupById(groupId: string) {
-    const group = this.groups.find((item) => item.id === groupId);
-    if (!group) {
+  async getGroupById(groupId: string) {
+    await this.ensureSeedData();
+    const team = await this.teamRepository.findOneBy({ id: groupId });
+    if (!team) {
       throw new NotFoundException('项目组不存在');
     }
 
-    return group;
+    const memberCount = await this.teamMemberRepository.countBy({ teamId: groupId });
+    return this.toGroupRecord(team, memberCount, 0);
   }
 
   async createGroup(dto: CreateGroupDto) {
     this.assertAdminCannotManageGroups();
     const currentUser = this.getCurrentUser();
-    this.subscriptionsService.assertCanCreateGroup(this.listGroups().length);
+    const existingGroups = await this.listGroups();
+    this.subscriptionsService.assertCanCreateGroup(existingGroups.length);
 
-    const group = {
-      id: `group-${this.groups.length + 1}`,
-      name: dto.name,
-      organizationName: dto.organizationName,
-      ownerUserId: currentUser.id,
-      memberCount: 1,
-      privateDocumentCount: 0,
-      lastQueryAt: null,
-    };
+    const groupId = `group-${Date.now()}`;
+    await this.teamRepository.save(
+      this.teamRepository.create({
+        id: groupId,
+        name: dto.name,
+        organizationName: dto.organizationName,
+        ownerUserId: currentUser.id,
+        lastQueryAt: null,
+      }),
+    );
+    await this.teamMemberRepository.save(
+      this.teamMemberRepository.create({ teamId: groupId, userId: currentUser.id, role: 'leader' }),
+    );
 
-    this.groups.push(group);
-    this.members.push({
-      id: `member-${this.members.length + 1}`,
-      groupId: group.id,
-      userId: currentUser.id,
-      name: currentUser.name,
-      phone: currentUser.phone,
-      role: 'leader',
-    });
-
+    const group = await this.getGroupById(groupId);
     const conversation = await this.chatService.createAgentConversation(group);
-    await this.chatService.syncGroupConversationParticipants(group.id, [currentUser.id]);
+    await this.chatService.syncGroupConversationParticipants(groupId, [currentUser.id]);
     await this.teamAgentsService.createForGroup(group, conversation.id);
-    this.persistState();
-    this.subscriptionsService.syncUsage({ groups: this.groups.length });
+    this.subscriptionsService.syncUsage({ groups: existingGroups.length + 1 });
 
     return group;
   }
 
-  listMembers(groupId: string) {
+  async listMembers(groupId: string) {
     this.assertAdminCannotManageGroups();
-    this.assertCanAccessGroup(groupId);
-    return this.members.filter((member) => member.groupId === groupId);
+    await this.assertCanAccessGroup(groupId);
+    const members = await this.teamMemberRepository.findBy({ teamId: groupId });
+    return members.map((m) => this.toMemberRecord(m));
   }
 
   invite(groupId: string, dto: InviteMemberDto) {
     this.assertAdminCannotManageGroups();
-    this.assertCanAccessGroup(groupId);
     return {
       groupId,
       inviteCode: 'INVITE-2026',
@@ -236,96 +230,77 @@ export class GroupsService {
     };
   }
 
-  transferLeader(groupId: string, dto: TransferLeaderDto) {
+  async transferLeader(groupId: string, dto: TransferLeaderDto) {
     this.assertAdminCannotManageGroups();
-    this.assertCanAccessGroup(groupId);
-    const group = this.getGroupById(groupId);
-    const currentLeader = this.members.find(
-      (member) => member.groupId === groupId && member.userId === group.ownerUserId,
-    );
-    const newLeader = this.members.find(
-      (member) => member.groupId === groupId && member.userId === dto.targetUserId,
-    );
+    await this.assertCanAccessGroup(groupId);
+    const group = await this.getGroupById(groupId);
 
+    const newLeader = await this.teamMemberRepository.findOneBy({ teamId: groupId, userId: dto.targetUserId });
     if (!newLeader) {
       throw new NotFoundException('目标成员不存在');
     }
 
     const previousLeaderId = group.ownerUserId;
-    if (currentLeader) {
-      currentLeader.role = 'member';
-    }
-    newLeader.role = 'leader';
-    group.ownerUserId = dto.targetUserId;
-    this.persistState();
+    await this.teamMemberRepository.update({ teamId: groupId, userId: group.ownerUserId }, { role: 'member' });
+    await this.teamMemberRepository.update({ teamId: groupId, userId: dto.targetUserId }, { role: 'leader' });
+    await this.teamRepository.update({ id: groupId }, { ownerUserId: dto.targetUserId });
 
     return {
       groupId,
       groupName: group.name,
       previousLeaderId,
       newLeaderId: dto.targetUserId,
-      transferredAt: '2026-04-25 18:00',
+      transferredAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
     };
   }
 
   async removeMember(groupId: string, memberId: string) {
     this.assertAdminCannotManageGroups();
-    const group = this.getGroupById(groupId);
-    this.assertCanAccessGroup(groupId);
-    const memberIndex = this.members.findIndex(
-      (member) => member.groupId === groupId && member.id === memberId,
-    );
+    const group = await this.getGroupById(groupId);
+    await this.assertCanAccessGroup(groupId);
 
-    if (memberIndex < 0) {
+    const member = await this.teamMemberRepository.findOneBy({ id: Number(memberId), teamId: groupId });
+    if (!member) {
       throw new NotFoundException('成员不存在');
     }
 
-    const member = this.members[memberIndex];
     if (member.role === 'leader') {
       throw new BadRequestException('请先移交组长后再清退当前组长');
     }
 
-    this.members.splice(memberIndex, 1);
-    group.memberCount = this.members.filter((item) => item.groupId === groupId).length;
+    await this.teamMemberRepository.delete({ id: Number(memberId) });
     await this.chatService.removeUserFromGroupConversations(groupId, member.userId);
-    this.persistState();
+    const memberCount = await this.teamMemberRepository.countBy({ teamId: groupId });
 
     return {
       groupId,
       groupName: group.name,
-      removedMemberId: member.id,
+      removedMemberId: memberId,
       removedUserId: member.userId,
-      removedAt: '2026-04-25 18:20',
-      memberCount: group.memberCount,
+      removedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      memberCount,
     };
   }
 
   async deleteGroup(groupId: string) {
     this.assertAdminCannotManageGroups();
-    this.assertCanAccessGroup(groupId);
-    const groupIndex = this.groups.findIndex((group) => group.id === groupId);
-    if (groupIndex < 0) {
-      throw new NotFoundException('项目组不存在');
-    }
+    await this.assertCanAccessGroup(groupId);
+    const group = await this.getGroupById(groupId);
 
-    const group = this.groups[groupIndex];
-    this.groups.splice(groupIndex, 1);
-    this.members.splice(
-      0,
-      this.members.length,
-      ...this.members.filter((member) => member.groupId !== groupId),
-    );
+    await this.teamMemberRepository.delete({ teamId: groupId });
     this.documentsService.removeGroupDocuments(groupId);
     await this.chatService.removeGroupConversations(groupId);
     await this.teamAgentsService.deleteByGroupId(groupId);
-    this.persistState();
-    this.subscriptionsService.syncUsage({ groups: this.groups.length });
+    await this.teamRepository.delete({ id: groupId });
+
+    const remainingGroups = await this.listGroups();
+    this.subscriptionsService.syncUsage({ groups: remainingGroups.length });
 
     return {
       deletedGroupId: group.id,
       deletedGroupName: group.name,
-      deletedAt: '2026-04-26 13:10',
-      remainingGroups: this.groups.length,
+      deletedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      remainingGroups: remainingGroups.length,
     };
   }
 }

@@ -367,7 +367,7 @@ let DocumentsService = class DocumentsService {
     async listDocuments(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
         if (!this.authService.isAdmin() && groupId != null) {
-            this.groupsService.assertCanAccessGroup(groupId);
+            await this.groupsService.assertCanAccessGroup(groupId);
         }
         await this.ensurePersistedDocumentSeedData();
         const entities = await this.persistedDocumentRepository.find({
@@ -384,7 +384,7 @@ let DocumentsService = class DocumentsService {
     async listExtractionJobs(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
         if (!this.authService.isAdmin() && groupId != null) {
-            this.groupsService.assertCanAccessGroup(groupId);
+            await this.groupsService.assertCanAccessGroup(groupId);
         }
         await this.ensurePersistedDocumentSeedData();
         const entities = await this.persistedExtractionJobRepository.find({
@@ -400,7 +400,7 @@ let DocumentsService = class DocumentsService {
     async getReadyChunks(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
         if (!this.authService.isAdmin() && groupId != null) {
-            this.groupsService.assertCanAccessGroup(groupId);
+            await this.groupsService.assertCanAccessGroup(groupId);
         }
         await this.ensurePersistedDocumentSeedData();
         const entities = await this.persistedChunkRepository.find({
@@ -711,9 +711,6 @@ let DocumentsService = class DocumentsService {
             }));
         }
         if (document.libraryType === 'private') {
-            const group = this.groupsService.getGroupById(dto.groupId);
-            group.privateDocumentCount += 1;
-            this.groupsService.persistState();
             const privateDocumentCount = await this.persistedDocumentRepository.count({
                 where: { libraryType: 'private', deletedAt: (0, typeorm_2.IsNull)() },
             });

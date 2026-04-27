@@ -315,7 +315,7 @@ export class ChatService {
     };
   }
 
-  private assertCanAccessConversation(conversation: ConversationRecord, groupId?: string) {
+  private async assertCanAccessConversation(conversation: ConversationRecord, groupId?: string) {
     if (conversation.type === 'direct') {
       return;
     }
@@ -324,7 +324,7 @@ export class ChatService {
       throw new ForbiddenException('当前群聊未绑定项目组，暂不可访问');
     }
 
-    this.groupsService.assertCanAccessGroup(conversation.groupId);
+    await this.groupsService.assertCanAccessGroup(conversation.groupId);
     if (groupId != null && conversation.groupId !== groupId) {
       throw new ForbiddenException('当前会话不属于所选项目组');
     }
@@ -398,7 +398,7 @@ export class ChatService {
     await this.ensureSeedData();
 
     if (groupId != null) {
-      this.groupsService.assertCanAccessGroup(groupId);
+      await this.groupsService.assertCanAccessGroup(groupId);
     }
 
     const currentUser = this.authService.me();
@@ -441,7 +441,7 @@ export class ChatService {
   async listMessages(conversationId: string) {
     this.assertAdminCannotUseChat();
     const conversation = await this.getConversationById(conversationId);
-    this.assertCanAccessConversation(conversation);
+    await this.assertCanAccessConversation(conversation);
     const currentUser = this.authService.me();
     await this.ensureConversationParticipants(conversationId, [currentUser.id]);
     await this.conversationParticipantRepository.update(
@@ -463,7 +463,7 @@ export class ChatService {
       throw new ForbiddenException('当前会话类型与发送目标不一致');
     }
 
-    this.assertCanAccessConversation(conversation, dto.groupId);
+    await this.assertCanAccessConversation(conversation, dto.groupId);
 
     const currentUser = this.authService.me();
     const receiverUserId =

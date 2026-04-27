@@ -42,14 +42,14 @@ export declare class OverviewController {
             privateDocumentCount: number;
             lastQueryAt: string | null;
         }[];
-        members: {
+        members: never[] | Promise<{
             id: string;
             groupId: string;
             userId: string;
             name: string;
             phone: string;
             role: "leader" | "member";
-        }[];
+        }[]>;
         documents: {
             id: string;
             title: string;
