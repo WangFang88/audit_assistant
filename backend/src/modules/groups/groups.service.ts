@@ -338,6 +338,13 @@ export class GroupsService {
   async deleteGroup(groupId: string) {
     this.assertAdminCannotManageGroups();
     await this.assertCanAccessGroup(groupId);
+
+    const currentUser = this.getCurrentUser();
+    const currentMember = await this.teamMemberRepository.findOneBy({ teamId: groupId, userId: currentUser.id });
+    if (currentMember?.role !== 'leader') {
+      throw new ForbiddenException('只有组长才能删除项目组');
+    }
+
     const group = await this.getGroupById(groupId);
 
     await this.teamMemberRepository.delete({ teamId: groupId });

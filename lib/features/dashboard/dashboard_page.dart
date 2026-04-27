@@ -1718,10 +1718,11 @@ class _DashboardPageState extends State<DashboardPage> {
                 spacing: 8,
                 children: [
                   Text(group.lastQueryAt),
-                  TextButton(
-                    onPressed: _switchingGroup ? null : () => _deleteGroup(group),
-                    child: const Text('删除'),
-                  ),
+                  if (_isCurrentUserLeader)
+                    TextButton(
+                      onPressed: _switchingGroup ? null : () => _deleteGroup(group),
+                      child: const Text('删除'),
+                    ),
                 ],
               ),
             ),
