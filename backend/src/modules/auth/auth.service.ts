@@ -293,6 +293,10 @@ export class AuthService {
     return this.currentUser;
   }
 
+  getUserByPhone(phone: string) {
+    return this.findUserByPhone(phone);
+  }
+
   isAdmin() {
     return this.currentUser.role === 'admin';
   }

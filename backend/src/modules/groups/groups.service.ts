@@ -224,14 +224,31 @@ export class GroupsService {
     return members.map((m) => this.toMemberRecord(m));
   }
 
-  invite(groupId: string, dto: InviteMemberDto) {
+  async invite(groupId: string, dto: InviteMemberDto) {
     this.assertAdminCannotManageGroups();
+    await this.assertCanAccessGroup(groupId);
+
+    const targetUser = this.authService.getUserByPhone(dto.phone);
+    if (!targetUser) {
+      throw new NotFoundException('该手机号未注册');
+    }
+
+    const existing = await this.teamMemberRepository.findOneBy({ teamId: groupId, userId: targetUser.id });
+    if (existing) {
+      throw new BadRequestException('该用户已是项目组成员');
+    }
+
+    await this.teamMemberRepository.save(
+      this.teamMemberRepository.create({ teamId: groupId, userId: targetUser.id, role: dto.role }),
+    );
+    await this.chatService.syncGroupConversationParticipants(groupId, [targetUser.id]);
+
+    const members = await this.teamMemberRepository.findBy({ teamId: groupId });
     return {
       groupId,
-      inviteCode: 'INVITE-2026',
       phone: dto.phone,
       role: dto.role,
-      expiresAt: '2026-04-30 23:59',
+      memberCount: members.length,
     };
   }
 
