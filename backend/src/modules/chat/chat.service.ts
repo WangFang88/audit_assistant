@@ -1,14 +1,12 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { TeamAgentRecord } from '../team-agents/team-agents.service';
+import { InjectRepository } from '@nestjs/typeorm';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
-import {
-  GroupMessageSnapshot,
-  MessageRepository,
-  PrivateMessageSnapshot,
-} from '../../database/repositories/message.repository';
+import { Repository } from 'typeorm';
+import { ConversationEntity } from '../../database/entities/conversation.entity';
+import { MessageEntity } from '../../database/entities/message.entity';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
-import { LocalStateService } from '../subscriptions/local-state.service';
+import { TeamAgentRecord } from '../team-agents/team-agents.service';
 
 class SendMessageDto {
   @IsIn(['group', 'direct', 'agent'])
@@ -32,13 +30,14 @@ type ConversationRecord = {
   type: 'group' | 'direct' | 'agent';
   title: string;
   groupId: string | null;
+  agentId: string | null;
 };
 
 type MessageRecord = {
   id: string;
   conversationId: string;
-  senderUserId: string;
-  receiverUserId: string | null;
+  senderUserId: string | null;
+  senderAgentId: string | null;
   senderName: string;
   content: string;
   sentAt: string;
@@ -48,119 +47,16 @@ type MessageRecord = {
 @Injectable()
 export class ChatService {
   constructor(
+    @InjectRepository(ConversationEntity)
+    private readonly conversationRepository: Repository<ConversationEntity>,
+    @InjectRepository(MessageEntity)
+    private readonly messageRepository: Repository<MessageEntity>,
     private readonly authService: AuthService,
     private readonly groupsService: GroupsService,
-    private readonly localStateService: LocalStateService,
-    private readonly messageRepository: MessageRepository,
-  ) {
-    const persistedState = this.localStateService.readState();
-    if (persistedState.conversations) {
-      this.conversations.splice(
-        0,
-        this.conversations.length,
-        ...persistedState.conversations.map((conversation) => ({
-          id: conversation.id,
-          type: conversation.type,
-          title: conversation.title,
-          groupId: conversation.groupId,
-        })),
-      );
-    }
-    if (persistedState.messages) {
-      this.messages.splice(
-        0,
-        this.messages.length,
-        ...persistedState.messages.map((message) => ({
-          id: message.id,
-          conversationId: message.conversationId,
-          senderUserId: message.senderUserId ?? this.resolveLegacySenderUserId(message.senderName),
-          receiverUserId: message.receiverUserId ?? this.resolveLegacyReceiverUserId(message.conversationId, message.senderName),
-          senderName: message.senderName,
-          content: message.content,
-          sentAt: message.sentAt,
-          readStatus: message.readStatus ?? false,
-        })),
-      );
-    }
-  }
+  ) {}
 
-  private readonly conversations: ConversationRecord[] = [
-    {
-      id: 'conv-group-1',
-      type: 'group',
-      title: '某区财政局审计组群聊',
-      groupId: 'group-1',
-    },
-    {
-      id: 'conv-agent-1',
-      type: 'agent',
-      title: '某区财政局审计组 Agent',
-      groupId: 'group-1',
-    },
-    {
-      id: 'conv-direct-1',
-      type: 'direct',
-      title: '与法规顾问的私信',
-      groupId: null,
-    },
-  ];
-
-  private readonly messages: MessageRecord[] = [
-    {
-      id: 'msg-1',
-      conversationId: 'conv-group-1',
-      senderUserId: 'user-2',
-      receiverUserId: null,
-      senderName: '审计组长',
-      content: '请同步采购抽查结果。',
-      sentAt: '2026-04-25 16:40',
-      readStatus: true,
-    },
-    {
-      id: 'msg-2',
-      conversationId: 'conv-direct-1',
-      senderUserId: 'user-4',
-      receiverUserId: 'user-2',
-      senderName: '法规顾问',
-      content: '我已整理出相关条款。',
-      sentAt: '2026-04-25 15:20',
-      readStatus: false,
-    },
-    {
-      id: 'msg-3',
-      conversationId: 'conv-agent-1',
-      senderUserId: 'user-2',
-      receiverUserId: null,
-      senderName: '审计组长',
-      content: '请结合当前项目私有制度，解释采购审批与专项资金使用的核查重点。',
-      sentAt: '2026-04-25 16:55',
-      readStatus: true,
-    },
-  ];
-
-  private resolveLegacySenderUserId(senderName: string) {
-    const directConversation = this.conversations.find((conversation) => conversation.type === 'direct' && conversation.title.includes(senderName));
-    if (directConversation?.title.includes('法规顾问')) {
-      return 'user-4';
-    }
-    if (directConversation?.title.includes('审计助理')) {
-      return 'user-3';
-    }
-    if (directConversation?.title.includes('审计组长')) {
-      return 'user-2';
-    }
-    return senderName === '法规顾问' ? 'user-4' : senderName === '审计助理' ? 'user-3' : 'user-2';
-  }
-
-  private resolveLegacyReceiverUserId(conversationId: string, senderName: string) {
-    const conversation = this.conversations.find((item) => item.id === conversationId);
-    if (conversation?.type !== 'direct') {
-      return null;
-    }
-
-    const senderUserId = this.resolveLegacySenderUserId(senderName);
-    const currentUserId = this.authService.me().id;
-    return senderUserId === currentUserId ? null : currentUserId;
+  private formatDateTime(date: Date) {
+    return date.toISOString().slice(0, 16).replace('T', ' ');
   }
 
   private assertAdminCannotUseChat() {
@@ -171,56 +67,128 @@ export class ChatService {
     throw new ForbiddenException('管理员不参与项目组协作，无法使用对话功能');
   }
 
-  private toGroupMessageSnapshot(message: MessageRecord, groupId: string): GroupMessageSnapshot {
+  private async ensureSeedData() {
+    const conversationCount = await this.conversationRepository.count();
+    if (conversationCount > 0) {
+      return;
+    }
+
+    await this.conversationRepository.save([
+      this.conversationRepository.create({
+        id: 'conv-group-1',
+        conversationType: 'group',
+        title: '某区财政局审计组群聊',
+        teamId: 'group-1',
+        agentId: null,
+        createdBy: 'user-2',
+        lastMessage: '请同步采购抽查结果。',
+        lastMessageAt: new Date('2026-04-25T16:40:00'),
+        status: 'active',
+        deletedAt: null,
+      }),
+      this.conversationRepository.create({
+        id: 'conv-agent-1',
+        conversationType: 'agent',
+        title: '某区财政局审计组 Agent',
+        teamId: 'group-1',
+        agentId: 'team-agent-group-1',
+        createdBy: 'user-2',
+        lastMessage: '请结合当前项目私有制度，解释采购审批与专项资金使用的核查重点。',
+        lastMessageAt: new Date('2026-04-25T16:55:00'),
+        status: 'active',
+        deletedAt: null,
+      }),
+      this.conversationRepository.create({
+        id: 'conv-direct-1',
+        conversationType: 'direct',
+        title: '与法规顾问的私信',
+        teamId: null,
+        agentId: null,
+        createdBy: 'user-2',
+        lastMessage: '我已整理出相关条款。',
+        lastMessageAt: new Date('2026-04-25T15:20:00'),
+        status: 'active',
+        deletedAt: null,
+      }),
+    ]);
+
+    await this.messageRepository.save([
+      this.messageRepository.create({
+        id: 'msg-1',
+        conversationId: 'conv-group-1',
+        senderUserId: 'user-2',
+        senderAgentId: null,
+        senderType: 'user',
+        content: '请同步采购抽查结果。',
+        messageType: 'text',
+        metadata: { senderName: '审计组长', readStatus: true },
+        sentAt: new Date('2026-04-25T16:40:00'),
+      }),
+      this.messageRepository.create({
+        id: 'msg-2',
+        conversationId: 'conv-direct-1',
+        senderUserId: 'user-4',
+        senderAgentId: null,
+        senderType: 'user',
+        content: '我已整理出相关条款。',
+        messageType: 'text',
+        metadata: { senderName: '法规顾问', readStatus: false },
+        sentAt: new Date('2026-04-25T15:20:00'),
+      }),
+      this.messageRepository.create({
+        id: 'msg-3',
+        conversationId: 'conv-agent-1',
+        senderUserId: 'user-2',
+        senderAgentId: null,
+        senderType: 'user',
+        content: '请结合当前项目私有制度，解释采购审批与专项资金使用的核查重点。',
+        messageType: 'text',
+        metadata: { senderName: '审计组长', readStatus: true },
+        sentAt: new Date('2026-04-25T16:55:00'),
+      }),
+    ]);
+  }
+
+  private toConversationRecord(entity: ConversationEntity): ConversationRecord {
     return {
-      id: message.id,
-      teamId: groupId,
-      senderUserId: message.senderUserId,
-      senderName: message.senderName,
-      conversationId: message.conversationId,
-      content: message.content,
-      sentAt: message.sentAt,
+      id: entity.id,
+      type: entity.conversationType,
+      title: entity.title,
+      groupId: entity.teamId,
+      agentId: entity.agentId,
     };
   }
 
-  private toPrivateMessageSnapshot(message: MessageRecord): PrivateMessageSnapshot {
+  private toMessageRecord(entity: MessageEntity, conversation: ConversationRecord): MessageRecord {
+    const metadata = entity.metadata ?? {};
+    const senderName =
+      typeof metadata.senderName === 'string'
+        ? metadata.senderName
+        : entity.senderType === 'agent'
+          ? conversation.title
+          : '未知发送者';
+
     return {
-      id: message.id,
-      senderUserId: message.senderUserId,
-      receiverUserId: message.receiverUserId ?? 'unknown-user',
-      senderName: message.senderName,
-      conversationId: message.conversationId,
-      content: message.content,
-      sentAt: message.sentAt,
-      readStatus: message.readStatus,
+      id: entity.id,
+      conversationId: entity.conversationId,
+      senderUserId: entity.senderUserId,
+      senderAgentId: entity.senderAgentId,
+      senderName,
+      content: entity.content,
+      sentAt: this.formatDateTime(entity.sentAt),
+      readStatus: metadata.readStatus !== false,
     };
   }
 
-  private getDirectConversationPeerUserId(conversationId: string, currentUserId: string) {
-    const peerMessage = this.messages.find(
-      (message) => message.conversationId === conversationId && message.senderUserId !== currentUserId,
-    );
-    return peerMessage?.senderUserId ?? null;
-  }
-
-  private getConversationUnreadCount(conversationId: string) {
-    return this.messages.filter((message) => message.conversationId === conversationId && !message.readStatus).length;
-  }
-
-  private getConversationLastMessage(conversationId: string) {
-    const conversationMessages = this.messages.filter((message) => message.conversationId === conversationId);
-    return conversationMessages[conversationMessages.length - 1]?.content ?? '';
-  }
-
-  private toPublicConversation(conversation: ConversationRecord) {
+  private toPublicConversation(conversation: ConversationRecord, messages: MessageRecord[]) {
     return {
       id: conversation.id,
       type: conversation.type,
       title: conversation.title,
       groupId: conversation.groupId,
       isTeamAgent: conversation.type === 'agent',
-      unreadCount: this.getConversationUnreadCount(conversation.id),
-      lastMessage: this.getConversationLastMessage(conversation.id),
+      unreadCount: messages.filter((message) => !message.readStatus).length,
+      lastMessage: messages[messages.length - 1]?.content ?? '',
     };
   }
 
@@ -232,57 +200,6 @@ export class ChatService {
       content: message.content,
       sentAt: message.sentAt,
     };
-  }
-
-  private persistState() {
-    const persistedMessages = this.messages.map((message) => {
-      const conversation = this.getConversationById(message.conversationId);
-      if (conversation.type === 'group' || conversation.type === 'agent') {
-        const entity = this.messageRepository.createGroupMessageEntity(
-          this.toGroupMessageSnapshot(message, conversation.groupId ?? 'unknown-group'),
-        );
-        const snapshot = this.messageRepository.mapGroupMessageEntity(entity, {
-          senderName: message.senderName,
-          conversationId: message.conversationId,
-        });
-        return {
-          id: snapshot.id,
-          conversationId: snapshot.conversationId,
-          senderUserId: snapshot.senderUserId,
-          receiverUserId: null,
-          senderName: snapshot.senderName,
-          content: snapshot.content,
-          sentAt: snapshot.sentAt,
-          readStatus: true,
-        };
-      }
-
-      const entity = this.messageRepository.createPrivateMessageEntity(this.toPrivateMessageSnapshot(message));
-      const snapshot = this.messageRepository.mapPrivateMessageEntity(entity, {
-        senderName: message.senderName,
-        conversationId: message.conversationId,
-      });
-      return {
-        id: snapshot.id,
-        conversationId: snapshot.conversationId,
-        senderUserId: snapshot.senderUserId,
-        receiverUserId: snapshot.receiverUserId,
-        senderName: snapshot.senderName,
-        content: snapshot.content,
-        sentAt: snapshot.sentAt,
-        readStatus: snapshot.readStatus,
-      };
-    });
-
-    this.localStateService.saveChatState(
-      this.conversations.map((conversation) => ({
-        id: conversation.id,
-        type: conversation.type,
-        title: conversation.title,
-        groupId: conversation.groupId,
-      })),
-      persistedMessages,
-    );
   }
 
   private assertCanAccessConversation(conversation: ConversationRecord, groupId?: string) {
@@ -300,22 +217,57 @@ export class ChatService {
     }
   }
 
-  private getConversationById(conversationId: string) {
-    const conversation = this.conversations.find((item) => item.id === conversationId);
-    if (!conversation) {
+  private async getConversationById(conversationId: string) {
+    await this.ensureSeedData();
+    const entity = await this.conversationRepository.findOneBy({ id: conversationId, status: 'active' });
+    if (!entity) {
       throw new NotFoundException('会话不存在');
     }
 
-    return conversation;
+    return this.toConversationRecord(entity);
   }
 
-  listConversations(groupId?: string) {
+  private async getConversationMessages(conversationId: string, conversation: ConversationRecord) {
+    const entities = await this.messageRepository.find({
+      where: { conversationId },
+      order: { sentAt: 'ASC' },
+    });
+    return entities.map((entity) => this.toMessageRecord(entity, conversation));
+  }
+
+  private async updateConversationLastMessage(conversationId: string, content: string, sentAt: Date) {
+    await this.conversationRepository.update(
+      { id: conversationId },
+      {
+        lastMessage: content,
+        lastMessageAt: sentAt,
+      },
+    );
+  }
+
+  private async getDirectConversationPeerUserId(conversationId: string, currentUserId: string) {
+    const messages = await this.messageRepository.find({
+      where: { conversationId, senderType: 'user' },
+      order: { sentAt: 'ASC' },
+    });
+    const peerMessage = messages.find((message) => message.senderUserId != null && message.senderUserId !== currentUserId);
+    return peerMessage?.senderUserId ?? null;
+  }
+
+  async listConversations(groupId?: string) {
     this.assertAdminCannotUseChat();
+    await this.ensureSeedData();
+
     if (groupId != null) {
       this.groupsService.assertCanAccessGroup(groupId);
     }
 
-    return this.conversations
+    const entities = await this.conversationRepository.find({
+      where: { status: 'active' },
+      order: { lastMessageAt: 'DESC', createdAt: 'ASC' },
+    });
+    const conversations = entities.map((entity) => this.toConversationRecord(entity));
+    const visibleConversations = conversations
       .filter((conversation) => {
         if (conversation.type === 'direct') {
           return true;
@@ -331,22 +283,29 @@ export class ChatService {
           return 1;
         }
         return 0;
-      })
-      .map((conversation) => this.toPublicConversation(conversation));
+      });
+
+    const items = await Promise.all(
+      visibleConversations.map(async (conversation) => {
+        const messages = await this.getConversationMessages(conversation.id, conversation);
+        return this.toPublicConversation(conversation, messages);
+      }),
+    );
+
+    return items;
   }
 
-  listMessages(conversationId: string) {
+  async listMessages(conversationId: string) {
     this.assertAdminCannotUseChat();
-    const conversation = this.getConversationById(conversationId);
+    const conversation = await this.getConversationById(conversationId);
     this.assertCanAccessConversation(conversation);
-    return this.messages
-      .filter((message) => message.conversationId === conversationId)
-      .map((message) => this.toPublicMessage(message));
+    const messages = await this.getConversationMessages(conversationId, conversation);
+    return messages.map((message) => this.toPublicMessage(message));
   }
 
-  sendMessage(dto: SendMessageDto) {
+  async sendMessage(dto: SendMessageDto) {
     this.assertAdminCannotUseChat();
-    const conversation = this.getConversationById(dto.conversationId);
+    const conversation = await this.getConversationById(dto.conversationId);
 
     if (conversation.type !== dto.conversationType) {
       throw new ForbiddenException('当前会话类型与发送目标不一致');
@@ -357,92 +316,108 @@ export class ChatService {
     const currentUser = this.authService.me();
     const receiverUserId =
       conversation.type === 'direct'
-        ? this.getDirectConversationPeerUserId(dto.conversationId, currentUser.id) ?? currentUser.id
+        ? (await this.getDirectConversationPeerUserId(dto.conversationId, currentUser.id)) ?? currentUser.id
         : null;
-
-    const message = {
-      id: `msg-${this.messages.length + 1}`,
+    const sentAt = new Date();
+    const messageEntity = this.messageRepository.create({
+      id: `msg-${Date.now()}`,
       conversationId: dto.conversationId,
       senderUserId: currentUser.id,
-      receiverUserId,
-      senderName: currentUser.name,
+      senderAgentId: null,
+      senderType: 'user',
       content: dto.content,
-      sentAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
-      readStatus: conversation.type !== 'direct',
-      conversationType: dto.conversationType,
-      groupId: conversation.groupId,
-    };
-
-    this.messages.push({
-      id: message.id,
-      conversationId: message.conversationId,
-      senderUserId: message.senderUserId,
-      receiverUserId: message.receiverUserId,
-      senderName: message.senderName,
-      content: message.content,
-      sentAt: message.sentAt,
-      readStatus: message.readStatus,
+      messageType: 'text',
+      metadata: {
+        senderName: currentUser.name,
+        readStatus: conversation.type !== 'direct',
+        receiverUserId,
+      },
+      sentAt,
     });
 
+    const savedMessage = await this.messageRepository.save(messageEntity);
+    await this.updateConversationLastMessage(dto.conversationId, dto.content, sentAt);
+
     if (conversation.type === 'agent') {
-      this.messages.push({
-        id: `msg-${this.messages.length + 1}`,
-        conversationId: message.conversationId,
-        senderUserId: 'team-agent',
-        receiverUserId: currentUser.id,
-        senderName: conversation.title,
-        content: '已收到本次提问。当前项目组 Agent 将在公共库与本组私有库范围内完成检索，并返回可溯源依据。',
-        sentAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
-        readStatus: true,
-      });
+      const replySentAt = new Date();
+      await this.messageRepository.save(
+        this.messageRepository.create({
+          id: `msg-${Date.now() + 1}`,
+          conversationId: dto.conversationId,
+          senderUserId: null,
+          senderAgentId: conversation.agentId,
+          senderType: 'agent',
+          content: '已收到本次提问。当前项目组 Agent 将在公共库与本组私有库范围内完成检索，并返回可溯源依据。',
+          messageType: 'text',
+          metadata: {
+            senderName: conversation.title,
+            readStatus: true,
+          },
+          sentAt: replySentAt,
+        }),
+      );
+      await this.updateConversationLastMessage(
+        dto.conversationId,
+        '已收到本次提问。当前项目组 Agent 将在公共库与本组私有库范围内完成检索，并返回可溯源依据。',
+        replySentAt,
+      );
     }
 
-    this.persistState();
-
-    return this.toPublicMessage(message);
+    return this.toPublicMessage(this.toMessageRecord(savedMessage, conversation));
   }
 
-  createAgentConversation(group: { id: string; name: string }) {
-    const existing = this.conversations.find((conversation) => conversation.type === 'agent' && conversation.groupId === group.id);
+  async createAgentConversation(group: { id: string; name: string }) {
+    await this.ensureSeedData();
+    const existing = await this.conversationRepository.findOneBy({
+      conversationType: 'agent',
+      teamId: group.id,
+      status: 'active',
+    });
     if (existing) {
       existing.title = `${group.name} Agent`;
-      this.persistState();
-      return existing;
+      const saved = await this.conversationRepository.save(existing);
+      return this.toConversationRecord(saved);
     }
 
-    const conversation: ConversationRecord = {
+    const conversation = this.conversationRepository.create({
       id: `conv-agent-${group.id}`,
-      type: 'agent',
+      conversationType: 'agent',
       title: `${group.name} Agent`,
-      groupId: group.id,
-    };
-    this.conversations.push(conversation);
-    this.persistState();
-    return conversation;
+      teamId: group.id,
+      agentId: null,
+      createdBy: this.authService.me().id,
+      lastMessage: null,
+      lastMessageAt: null,
+      status: 'active',
+      deletedAt: null,
+    });
+    const saved = await this.conversationRepository.save(conversation);
+    return this.toConversationRecord(saved);
   }
 
-  removeGroupConversations(groupId: string) {
-    const removedConversationIds = new Set(
-      this.conversations.filter((conversation) => conversation.groupId === groupId).map((conversation) => conversation.id),
-    );
-    this.conversations.splice(
-      0,
-      this.conversations.length,
-      ...this.conversations.filter((conversation) => !removedConversationIds.has(conversation.id)),
-    );
-    this.messages.splice(
-      0,
-      this.messages.length,
-      ...this.messages.filter((message) => !removedConversationIds.has(message.conversationId)),
-    );
-    this.persistState();
-  }
-
-  syncGroupAgent(group: { id: string; name: string }, agent: TeamAgentRecord) {
-    const conversation = this.createAgentConversation(group);
-    if (agent.defaultConversationId !== conversation.id) {
-      agent.defaultConversationId = conversation.id;
+  async removeGroupConversations(groupId: string) {
+    await this.ensureSeedData();
+    const conversations = await this.conversationRepository.find({
+      where: { teamId: groupId },
+    });
+    if (conversations.length === 0) {
+      return;
     }
+
+    const conversationIds = conversations.map((conversation) => conversation.id);
+    await this.messageRepository.delete(conversationIds.map((conversationId) => ({ conversationId })));
+    await this.conversationRepository.delete(conversationIds.map((id) => ({ id })));
+  }
+
+  async syncGroupAgent(group: { id: string; name: string }, agent: TeamAgentRecord) {
+    const conversation = await this.createAgentConversation(group);
+    await this.conversationRepository.update(
+      { id: conversation.id },
+      {
+        title: agent.name,
+        agentId: agent.id,
+      },
+    );
     return conversation.id;
   }
 }

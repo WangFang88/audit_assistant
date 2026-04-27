@@ -197,7 +197,7 @@ let GroupsService = class GroupsService {
             phone: currentUser.phone,
             role: 'leader',
         });
-        const conversation = this.chatService.createAgentConversation(group);
+        const conversation = await this.chatService.createAgentConversation(group);
         await this.teamAgentsService.createForGroup(group, conversation.id);
         this.persistState();
         this.subscriptionsService.syncUsage({ groups: this.groups.length });
@@ -278,7 +278,7 @@ let GroupsService = class GroupsService {
         this.groups.splice(groupIndex, 1);
         this.members.splice(0, this.members.length, ...this.members.filter((member) => member.groupId !== groupId));
         this.documentsService.removeGroupDocuments(groupId);
-        this.chatService.removeGroupConversations(groupId);
+        await this.chatService.removeGroupConversations(groupId);
         await this.teamAgentsService.deleteByGroupId(groupId);
         this.persistState();
         this.subscriptionsService.syncUsage({ groups: this.groups.length });

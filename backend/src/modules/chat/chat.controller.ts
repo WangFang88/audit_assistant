@@ -6,17 +6,17 @@ export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Get('conversations')
-  listConversations(@Query('groupId') groupId?: string) {
+  async listConversations(@Query('groupId') groupId?: string) {
     return this.chatService.listConversations(groupId);
   }
 
   @Get('conversations/:conversationId/messages')
-  listMessages(@Param('conversationId') conversationId: string) {
+  async listMessages(@Param('conversationId') conversationId: string) {
     return this.chatService.listMessages(conversationId);
   }
 
   @Post('messages')
-  sendMessage(@Body() dto: SendMessageDto) {
+  async sendMessage(@Body() dto: SendMessageDto) {
     return this.chatService.sendMessage(dto);
   }
 }

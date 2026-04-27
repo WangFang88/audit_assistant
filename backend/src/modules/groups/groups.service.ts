@@ -224,7 +224,7 @@ export class GroupsService {
       role: 'leader',
     });
 
-    const conversation = this.chatService.createAgentConversation(group);
+    const conversation = await this.chatService.createAgentConversation(group);
     await this.teamAgentsService.createForGroup(group, conversation.id);
     this.persistState();
     this.subscriptionsService.syncUsage({ groups: this.groups.length });
@@ -329,7 +329,7 @@ export class GroupsService {
       ...this.members.filter((member) => member.groupId !== groupId),
     );
     this.documentsService.removeGroupDocuments(groupId);
-    this.chatService.removeGroupConversations(groupId);
+    await this.chatService.removeGroupConversations(groupId);
     await this.teamAgentsService.deleteByGroupId(groupId);
     this.persistState();
     this.subscriptionsService.syncUsage({ groups: this.groups.length });

@@ -19,13 +19,13 @@ let ChatController = class ChatController {
     constructor(chatService) {
         this.chatService = chatService;
     }
-    listConversations(groupId) {
+    async listConversations(groupId) {
         return this.chatService.listConversations(groupId);
     }
-    listMessages(conversationId) {
+    async listMessages(conversationId) {
         return this.chatService.listMessages(conversationId);
     }
-    sendMessage(dto) {
+    async sendMessage(dto) {
         return this.chatService.sendMessage(dto);
     }
 };
@@ -35,21 +35,21 @@ __decorate([
     __param(0, (0, common_1.Query)('groupId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], ChatController.prototype, "listConversations", null);
 __decorate([
     (0, common_1.Get)('conversations/:conversationId/messages'),
     __param(0, (0, common_1.Param)('conversationId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], ChatController.prototype, "listMessages", null);
 __decorate([
     (0, common_1.Post)('messages'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [chat_service_1.SendMessageDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], ChatController.prototype, "sendMessage", null);
 exports.ChatController = ChatController = __decorate([
     (0, common_1.Controller)('chat'),

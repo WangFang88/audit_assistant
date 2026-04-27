@@ -146,7 +146,7 @@ export declare class OverviewController {
                 yearly: string;
             };
         };
-        conversations: {
+        conversations: never[] | Promise<{
             id: string;
             type: "group" | "direct" | "agent";
             title: string;
@@ -154,7 +154,7 @@ export declare class OverviewController {
             isTeamAgent: boolean;
             unreadCount: number;
             lastMessage: string;
-        }[];
+        }[]>;
         activeTeamAgent: {
             id: string;
             name: string;

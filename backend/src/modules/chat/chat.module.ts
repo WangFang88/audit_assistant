@@ -1,5 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
-import { DatabaseSupportModule } from '../../database/database-support.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConversationEntity } from '../../database/entities/conversation.entity';
+import { MessageEntity } from '../../database/entities/message.entity';
 import { AuthModule } from '../auth/auth.module';
 import { GroupsModule } from '../groups/groups.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
@@ -7,7 +9,7 @@ import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 
 @Module({
-  imports: [DatabaseSupportModule, AuthModule, forwardRef(() => GroupsModule), SubscriptionsModule],
+  imports: [TypeOrmModule.forFeature([ConversationEntity, MessageEntity]), AuthModule, forwardRef(() => GroupsModule), SubscriptionsModule],
   controllers: [ChatController],
   providers: [ChatService],
   exports: [ChatService],

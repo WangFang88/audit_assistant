@@ -1,8 +1,9 @@
-import { TeamAgentRecord } from '../team-agents/team-agents.service';
-import { MessageRepository } from '../../database/repositories/message.repository';
+import { Repository } from 'typeorm';
+import { ConversationEntity } from '../../database/entities/conversation.entity';
+import { MessageEntity } from '../../database/entities/message.entity';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
-import { LocalStateService } from '../subscriptions/local-state.service';
+import { TeamAgentRecord } from '../team-agents/team-agents.service';
 declare class SendMessageDto {
     conversationType: 'group' | 'direct' | 'agent';
     conversationId: string;
@@ -14,29 +15,27 @@ type ConversationRecord = {
     type: 'group' | 'direct' | 'agent';
     title: string;
     groupId: string | null;
+    agentId: string | null;
 };
 export declare class ChatService {
+    private readonly conversationRepository;
+    private readonly messageRepository;
     private readonly authService;
     private readonly groupsService;
-    private readonly localStateService;
-    private readonly messageRepository;
-    constructor(authService: AuthService, groupsService: GroupsService, localStateService: LocalStateService, messageRepository: MessageRepository);
-    private readonly conversations;
-    private readonly messages;
-    private resolveLegacySenderUserId;
-    private resolveLegacyReceiverUserId;
+    constructor(conversationRepository: Repository<ConversationEntity>, messageRepository: Repository<MessageEntity>, authService: AuthService, groupsService: GroupsService);
+    private formatDateTime;
     private assertAdminCannotUseChat;
-    private toGroupMessageSnapshot;
-    private toPrivateMessageSnapshot;
-    private getDirectConversationPeerUserId;
-    private getConversationUnreadCount;
-    private getConversationLastMessage;
+    private ensureSeedData;
+    private toConversationRecord;
+    private toMessageRecord;
     private toPublicConversation;
     private toPublicMessage;
-    private persistState;
     private assertCanAccessConversation;
     private getConversationById;
-    listConversations(groupId?: string): {
+    private getConversationMessages;
+    private updateConversationLastMessage;
+    private getDirectConversationPeerUserId;
+    listConversations(groupId?: string): Promise<{
         id: string;
         type: "group" | "direct" | "agent";
         title: string;
@@ -44,29 +43,29 @@ export declare class ChatService {
         isTeamAgent: boolean;
         unreadCount: number;
         lastMessage: string;
-    }[];
-    listMessages(conversationId: string): {
+    }[]>;
+    listMessages(conversationId: string): Promise<{
         id: string;
         conversationId: string;
         senderName: string;
         content: string;
         sentAt: string;
-    }[];
-    sendMessage(dto: SendMessageDto): {
+    }[]>;
+    sendMessage(dto: SendMessageDto): Promise<{
         id: string;
         conversationId: string;
         senderName: string;
         content: string;
         sentAt: string;
-    };
+    }>;
     createAgentConversation(group: {
         id: string;
         name: string;
-    }): ConversationRecord;
-    removeGroupConversations(groupId: string): void;
+    }): Promise<ConversationRecord>;
+    removeGroupConversations(groupId: string): Promise<void>;
     syncGroupAgent(group: {
         id: string;
         name: string;
-    }, agent: TeamAgentRecord): string;
+    }, agent: TeamAgentRecord): Promise<string>;
 }
 export { SendMessageDto };
