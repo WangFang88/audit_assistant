@@ -971,9 +971,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
-                                    child: RichText(
-                                      text: _buildHighlightedChunkText(context, chunk.content, chunk.keywords),
-                                    ),
+                                    child: Text(chunk.content),
                                   ),
                                   const SizedBox(width: 8),
                                   TextButton(
