@@ -149,12 +149,12 @@ class _DashboardPageState extends State<DashboardPage> {
       setState(() {
         _error = error.message;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) {
         return;
       }
       setState(() {
-        _error = '工作台数据加载失败，请确认后端服务正在运行。';
+        _error = '工作台数据加载失败：$e';
       });
     } finally {
       if (mounted) {
