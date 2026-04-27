@@ -1381,65 +1381,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     _StatChip(label: '查询额度', value: subscription.queryUsage),
                   ],
           ),
-          const SizedBox(height: 16),
-          SectionCard(
-            title: _isAdmin ? '公共库管理路线' : '订阅限制与路线',
-            subtitle: _isAdmin ? '管理员公共库视角、版本规划与目标架构。' : '免费版限制、版本规划与目标架构。',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: (_isAdmin
-                          ? const [
-                              '管理员不加入项目组，仅管理公共库资料',
-                              '公共库导入已开启，可直接导入制度与规范文件',
-                              '管理员查询不受演示额度限制',
-                              '私有库协作、群聊和成员管理已隐藏',
-                            ]
-                          : subscription.planHighlights)
-                      .map((item) => Chip(label: Text(item)))
-                      .toList(),
-                ),
-                if (!_isAdmin) ...[
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      SizedBox(width: 180, child: _MetricTile(label: '周订阅', value: subscription.weeklyPrice)),
-                      SizedBox(width: 180, child: _MetricTile(label: '月订阅', value: subscription.monthlyPrice)),
-                      SizedBox(width: 180, child: _MetricTile(label: '年订阅', value: subscription.yearlyPrice)),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 16),
-                Text('版本路线', style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 8),
-                ...roadmap.map(
-                  (item) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text('${item.version} · ${item.title}'),
-                    subtitle: Text('${item.deadline} · ${item.ragFocus}'),
-                  ),
-                ),
-                const Divider(height: 24),
-                // Text('目标架构', style: Theme.of(context).textTheme.titleSmall),
-                // const SizedBox(height: 8),
-                // Wrap(
-                //   spacing: 12,
-                //   runSpacing: 12,
-                //   children: [
-                //     Chip(label: Text('生成模型：${architectureTargets.generationProviderTarget}')),
-                //     Chip(label: Text('向量库：${architectureTargets.vectorStoreTarget}')),
-                //     Chip(label: Text('检索模式：${architectureTargets.retrievalMode}')),
-                //     Chip(label: Text('解析链路：${architectureTargets.parserTarget}')),
-                //   ],
-                // ),
-              ],
-            ),
-          ),
+          // const SizedBox(height: 16),
+          // SectionCard(公共库管理路线/订阅限制与路线 - 已隐藏)
           const SizedBox(height: 24),
           LayoutBuilder(
             builder: (context, constraints) {
