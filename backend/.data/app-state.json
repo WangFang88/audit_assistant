@@ -325,6 +325,40 @@
       "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
       "queriedAt": "2026-04-26 20:06:22",
       "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777262797261",
+      "userId": "user-2",
+      "teamId": "group-1",
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-26 20:06:37",
+      "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777266405911",
+      "userId": "user-2",
+      "teamId": "group-1",
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-26 21:06:45",
+      "consumedQuota": 1
+    }
+  ],
+  "subscriptions": [
+    {
+      "id": "order-free-1",
+      "userId": "user-2",
+      "planType": "free",
+      "amount": "0.00",
+      "paidAt": "2026-04-25 09:00",
+      "expiredAt": "2026-05-01 00:00"
+    },
+    {
+      "id": "order-1777266405588",
+      "userId": "user-2",
+      "planType": "yearly",
+      "amount": "2000.00",
+      "paidAt": "2026-04-26 21:06",
+      "expiredAt": "2027-04-26 21:06"
     }
   ]
 }
