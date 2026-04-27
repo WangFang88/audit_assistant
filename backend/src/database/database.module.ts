@@ -4,6 +4,7 @@ import { ConversationParticipantEntity } from './entities/conversation-participa
 import { ConversationEntity } from './entities/conversation.entity';
 import { DocumentChunkEntity } from './entities/document-chunk.entity';
 import { DocumentEntity } from './entities/document.entity';
+import { DocumentExtractionJobEntity } from './entities/document-extraction-job.entity';
 import { GroupMessageEntity } from './entities/group-message.entity';
 import { MessageEntity } from './entities/message.entity';
 import { PrivateDocEntity } from './entities/private-doc.entity';
@@ -25,6 +26,7 @@ const entities = [
   PrivateDocEntity,
   DocumentEntity,
   DocumentChunkEntity,
+  DocumentExtractionJobEntity,
   GroupMessageEntity,
   PrivateMessageEntity,
   ConversationEntity,

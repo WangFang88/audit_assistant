@@ -81,7 +81,7 @@ export declare class OverviewService {
             vectorStoreTarget: "pgvector";
             pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
         }[];
-        extractJobs: {
+        extractJobs: Promise<{
             id: string;
             documentId: string;
             groupId: string | null;
@@ -89,7 +89,7 @@ export declare class OverviewService {
             stage: "extract" | "ocr" | "chunk" | "index";
             progress: number;
             startedAt: string;
-        }[];
+        }[]>;
         libraryScope: {
             scopeMode: string;
             includesPublicLibrary: boolean;

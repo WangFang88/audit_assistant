@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { DocumentChunkEntity } from '../../database/entities/document-chunk.entity';
 import { DocumentEntity } from '../../database/entities/document.entity';
+import { DocumentExtractionJobEntity } from '../../database/entities/document-extraction-job.entity';
 import { DocumentMetadataSnapshot, DocumentRepository } from '../../database/repositories/document.repository';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { AuthService } from '../auth/auth.service';
@@ -80,6 +81,8 @@ export class DocumentsService {
     private readonly persistedDocumentRepository: Repository<DocumentEntity>,
     @InjectRepository(DocumentChunkEntity)
     private readonly persistedChunkRepository: Repository<DocumentChunkEntity>,
+    @InjectRepository(DocumentExtractionJobEntity)
+    private readonly persistedExtractionJobRepository: Repository<DocumentExtractionJobEntity>,
     private readonly authService: AuthService,
     @Inject(forwardRef(() => GroupsService))
     private readonly groupsService: GroupsService,
@@ -340,6 +343,18 @@ export class DocumentsService {
     };
   }
 
+  private toExtractionJobRecord(entity: DocumentExtractionJobEntity): ExtractJobRecord {
+    return {
+      id: entity.id,
+      documentId: entity.documentId,
+      groupId: entity.teamId,
+      status: entity.status === 'failed' ? 'processing' : entity.status,
+      stage: entity.stage,
+      progress: entity.progress,
+      startedAt: entity.startedAt.toISOString().slice(0, 16).replace('T', ' '),
+    };
+  }
+
   private async ensurePersistedDocumentSeedData() {
     const documentCount = await this.persistedDocumentRepository.count();
     if (documentCount === 0) {
@@ -392,6 +407,25 @@ export class DocumentsService {
         ),
       );
     }
+
+    const extractionJobCount = await this.persistedExtractionJobRepository.count();
+    if (extractionJobCount === 0) {
+      await this.persistedExtractionJobRepository.save(
+        this.extractJobs.map((job) =>
+          this.persistedExtractionJobRepository.create({
+            id: job.id,
+            documentId: job.documentId,
+            teamId: job.groupId,
+            status: job.status,
+            stage: job.stage,
+            progress: job.progress,
+            errorMessage: null,
+            startedAt: new Date(job.startedAt.replace(' ', 'T')),
+            finishedAt: job.status === 'completed' ? new Date(job.startedAt.replace(' ', 'T')) : null,
+          }),
+        ),
+      );
+    }
   }
 
   async listDocuments(groupId?: string) {
@@ -415,12 +449,18 @@ export class DocumentsService {
     });
   }
 
-  listExtractionJobs(groupId?: string) {
+  async listExtractionJobs(groupId?: string) {
     this.assertAdminPublicLibraryOnly(groupId);
     if (!this.authService.isAdmin() && groupId != null) {
       this.groupsService.assertCanAccessGroup(groupId);
     }
-    return this.extractJobs.filter((job) => {
+
+    await this.ensurePersistedDocumentSeedData();
+    const entities = await this.persistedExtractionJobRepository.find({
+      order: { startedAt: 'ASC' },
+    });
+
+    return entities.map((entity) => this.toExtractionJobRecord(entity)).filter((job) => {
       if (job.groupId == null) {
         return true;
       }
@@ -783,6 +823,21 @@ export class DocumentsService {
     if (generatedChunks.length > 0) {
       await this.persistedChunkRepository.save(generatedChunks.map((chunk, index) => this.toChunkEntity(chunk, index)));
     }
+    if (!hasRawText || classification.pipelineStage !== 'indexed') {
+      await this.persistedExtractionJobRepository.save(
+        this.persistedExtractionJobRepository.create({
+          id: `job-${document.id}`,
+          documentId: document.id,
+          teamId: document.groupId,
+          status: 'processing',
+          stage: classification.pipelineStage === 'ocr' ? 'ocr' : 'index',
+          progress: classification.pipelineStage === 'ocr' ? 45 : 80,
+          errorMessage: null,
+          startedAt: new Date(document.uploadedAt.replace(' ', 'T')),
+          finishedAt: hasRawText ? new Date(document.uploadedAt.replace(' ', 'T')) : null,
+        }),
+      );
+    }
 
     const metadataSnapshot = this.toMetadataSnapshot(document);
     if (document.libraryType === 'private') {
@@ -813,6 +868,7 @@ export class DocumentsService {
 
     const documentIds = documents.map((document) => document.id);
     await this.persistedChunkRepository.delete(documentIds.map((documentId) => ({ documentId })));
+    await this.persistedExtractionJobRepository.delete(documentIds.map((documentId) => ({ documentId })));
     await this.persistedDocumentRepository.delete(documentIds.map((id) => ({ id })));
 
     const privateDocumentCount = await this.persistedDocumentRepository.count({

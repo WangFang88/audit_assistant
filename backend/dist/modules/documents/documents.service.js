@@ -18,6 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const document_chunk_entity_1 = require("../../database/entities/document-chunk.entity");
 const document_entity_1 = require("../../database/entities/document.entity");
+const document_extraction_job_entity_1 = require("../../database/entities/document-extraction-job.entity");
 const document_repository_1 = require("../../database/repositories/document.repository");
 const class_validator_1 = require("class-validator");
 const auth_service_1 = require("../auth/auth.service");
@@ -49,9 +50,10 @@ __decorate([
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "groupId", void 0);
 let DocumentsService = class DocumentsService {
-    constructor(persistedDocumentRepository, persistedChunkRepository, authService, groupsService, localStateService, subscriptionsService, documentRepository, fileStorageService) {
+    constructor(persistedDocumentRepository, persistedChunkRepository, persistedExtractionJobRepository, authService, groupsService, localStateService, subscriptionsService, documentRepository, fileStorageService) {
         this.persistedDocumentRepository = persistedDocumentRepository;
         this.persistedChunkRepository = persistedChunkRepository;
+        this.persistedExtractionJobRepository = persistedExtractionJobRepository;
         this.authService = authService;
         this.groupsService = groupsService;
         this.localStateService = localStateService;
@@ -296,6 +298,17 @@ let DocumentsService = class DocumentsService {
             indexStatus: entity.indexStatus === 'failed' ? 'processing' : entity.indexStatus,
         };
     }
+    toExtractionJobRecord(entity) {
+        return {
+            id: entity.id,
+            documentId: entity.documentId,
+            groupId: entity.teamId,
+            status: entity.status === 'failed' ? 'processing' : entity.status,
+            stage: entity.stage,
+            progress: entity.progress,
+            startedAt: entity.startedAt.toISOString().slice(0, 16).replace('T', ' '),
+        };
+    }
     async ensurePersistedDocumentSeedData() {
         const documentCount = await this.persistedDocumentRepository.count();
         if (documentCount === 0) {
@@ -339,6 +352,20 @@ let DocumentsService = class DocumentsService {
                 tokenCount: chunk.content.length,
             })));
         }
+        const extractionJobCount = await this.persistedExtractionJobRepository.count();
+        if (extractionJobCount === 0) {
+            await this.persistedExtractionJobRepository.save(this.extractJobs.map((job) => this.persistedExtractionJobRepository.create({
+                id: job.id,
+                documentId: job.documentId,
+                teamId: job.groupId,
+                status: job.status,
+                stage: job.stage,
+                progress: job.progress,
+                errorMessage: null,
+                startedAt: new Date(job.startedAt.replace(' ', 'T')),
+                finishedAt: job.status === 'completed' ? new Date(job.startedAt.replace(' ', 'T')) : null,
+            })));
+        }
     }
     async listDocuments(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
@@ -357,12 +384,16 @@ let DocumentsService = class DocumentsService {
             return groupId != null && document.groupId === groupId;
         });
     }
-    listExtractionJobs(groupId) {
+    async listExtractionJobs(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
         if (!this.authService.isAdmin() && groupId != null) {
             this.groupsService.assertCanAccessGroup(groupId);
         }
-        return this.extractJobs.filter((job) => {
+        await this.ensurePersistedDocumentSeedData();
+        const entities = await this.persistedExtractionJobRepository.find({
+            order: { startedAt: 'ASC' },
+        });
+        return entities.map((entity) => this.toExtractionJobRecord(entity)).filter((job) => {
             if (job.groupId == null) {
                 return true;
             }
@@ -686,6 +717,19 @@ let DocumentsService = class DocumentsService {
         if (generatedChunks.length > 0) {
             await this.persistedChunkRepository.save(generatedChunks.map((chunk, index) => this.toChunkEntity(chunk, index)));
         }
+        if (!hasRawText || classification.pipelineStage !== 'indexed') {
+            await this.persistedExtractionJobRepository.save(this.persistedExtractionJobRepository.create({
+                id: `job-${document.id}`,
+                documentId: document.id,
+                teamId: document.groupId,
+                status: 'processing',
+                stage: classification.pipelineStage === 'ocr' ? 'ocr' : 'index',
+                progress: classification.pipelineStage === 'ocr' ? 45 : 80,
+                errorMessage: null,
+                startedAt: new Date(document.uploadedAt.replace(' ', 'T')),
+                finishedAt: hasRawText ? new Date(document.uploadedAt.replace(' ', 'T')) : null,
+            }));
+        }
         const metadataSnapshot = this.toMetadataSnapshot(document);
         if (document.libraryType === 'private') {
             this.documentRepository.createPrivateDocEntity(metadataSnapshot);
@@ -713,6 +757,7 @@ let DocumentsService = class DocumentsService {
         }
         const documentIds = documents.map((document) => document.id);
         await this.persistedChunkRepository.delete(documentIds.map((documentId) => ({ documentId })));
+        await this.persistedExtractionJobRepository.delete(documentIds.map((documentId) => ({ documentId })));
         await this.persistedDocumentRepository.delete(documentIds.map((id) => ({ id })));
         const privateDocumentCount = await this.persistedDocumentRepository.count({
             where: { libraryType: 'private', deletedAt: (0, typeorm_2.IsNull)() },
@@ -739,8 +784,10 @@ exports.DocumentsService = DocumentsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(document_entity_1.DocumentEntity)),
     __param(1, (0, typeorm_1.InjectRepository)(document_chunk_entity_1.DocumentChunkEntity)),
-    __param(3, (0, common_1.Inject)((0, common_1.forwardRef)(() => groups_service_1.GroupsService))),
+    __param(2, (0, typeorm_1.InjectRepository)(document_extraction_job_entity_1.DocumentExtractionJobEntity)),
+    __param(4, (0, common_1.Inject)((0, common_1.forwardRef)(() => groups_service_1.GroupsService))),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         auth_service_1.AuthService,
         groups_service_1.GroupsService,

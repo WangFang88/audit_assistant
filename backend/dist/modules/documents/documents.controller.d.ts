@@ -21,7 +21,7 @@ export declare class DocumentsController {
         vectorStoreTarget: "pgvector";
         pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
     }[]>;
-    listExtractionJobs(groupId?: string): {
+    listExtractionJobs(groupId?: string): Promise<{
         id: string;
         documentId: string;
         groupId: string | null;
@@ -29,7 +29,7 @@ export declare class DocumentsController {
         stage: "extract" | "ocr" | "chunk" | "index";
         progress: number;
         startedAt: string;
-    }[];
+    }[]>;
     listDocumentChunks(documentId: string): Promise<{
         id: string;
         documentId: string;

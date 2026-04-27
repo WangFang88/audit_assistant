@@ -13,6 +13,7 @@ const conversation_participant_entity_1 = require("./entities/conversation-parti
 const conversation_entity_1 = require("./entities/conversation.entity");
 const document_chunk_entity_1 = require("./entities/document-chunk.entity");
 const document_entity_1 = require("./entities/document.entity");
+const document_extraction_job_entity_1 = require("./entities/document-extraction-job.entity");
 const group_message_entity_1 = require("./entities/group-message.entity");
 const message_entity_1 = require("./entities/message.entity");
 const private_doc_entity_1 = require("./entities/private-doc.entity");
@@ -33,6 +34,7 @@ const entities = [
     private_doc_entity_1.PrivateDocEntity,
     document_entity_1.DocumentEntity,
     document_chunk_entity_1.DocumentChunkEntity,
+    document_extraction_job_entity_1.DocumentExtractionJobEntity,
     group_message_entity_1.GroupMessageEntity,
     private_message_entity_1.PrivateMessageEntity,
     conversation_entity_1.ConversationEntity,

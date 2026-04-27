@@ -12,7 +12,7 @@ export class DocumentsController {
   }
 
   @Get('extract-jobs')
-  listExtractionJobs(@Query('groupId') groupId?: string) {
+  async listExtractionJobs(@Query('groupId') groupId?: string) {
     return this.documentsService.listExtractionJobs(groupId);
   }
 

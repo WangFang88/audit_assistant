@@ -23,7 +23,7 @@ let DocumentsController = class DocumentsController {
     async listDocuments(groupId) {
         return this.documentsService.listDocuments(groupId);
     }
-    listExtractionJobs(groupId) {
+    async listExtractionJobs(groupId) {
         return this.documentsService.listExtractionJobs(groupId);
     }
     async listDocumentChunks(documentId) {
@@ -46,7 +46,7 @@ __decorate([
     __param(0, (0, common_1.Query)('groupId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], DocumentsController.prototype, "listExtractionJobs", null);
 __decorate([
     (0, common_1.Get)(':documentId/chunks'),
