@@ -25,6 +25,8 @@ export declare class ChatService {
     constructor(conversationRepository: Repository<ConversationEntity>, messageRepository: Repository<MessageEntity>, authService: AuthService, groupsService: GroupsService);
     private formatDateTime;
     private assertAdminCannotUseChat;
+    private buildSeedConversations;
+    private buildSeedMessages;
     private ensureSeedData;
     private toConversationRecord;
     private toMessageRecord;

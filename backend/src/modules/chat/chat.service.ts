@@ -67,13 +67,8 @@ export class ChatService {
     throw new ForbiddenException('管理员不参与项目组协作，无法使用对话功能');
   }
 
-  private async ensureSeedData() {
-    const conversationCount = await this.conversationRepository.count();
-    if (conversationCount > 0) {
-      return;
-    }
-
-    await this.conversationRepository.save([
+  private buildSeedConversations() {
+    return [
       this.conversationRepository.create({
         id: 'conv-group-1',
         conversationType: 'group',
@@ -110,9 +105,11 @@ export class ChatService {
         status: 'active',
         deletedAt: null,
       }),
-    ]);
+    ];
+  }
 
-    await this.messageRepository.save([
+  private buildSeedMessages() {
+    return [
       this.messageRepository.create({
         id: 'msg-1',
         conversationId: 'conv-group-1',
@@ -146,7 +143,17 @@ export class ChatService {
         metadata: { senderName: '审计组长', readStatus: true },
         sentAt: new Date('2026-04-25T16:55:00'),
       }),
-    ]);
+    ];
+  }
+
+  private async ensureSeedData() {
+    const conversationCount = await this.conversationRepository.count();
+    if (conversationCount > 0) {
+      return;
+    }
+
+    await this.conversationRepository.save(this.buildSeedConversations());
+    await this.messageRepository.save(this.buildSeedMessages());
   }
 
   private toConversationRecord(entity: ConversationEntity): ConversationRecord {
