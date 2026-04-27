@@ -66,8 +66,8 @@ export class SubscriptionsService {
   ];
   private usage: UsageSnapshot = {
     groups: 1,
-    privateDocuments: 2,
-    dailyQueries: 6,
+    privateDocuments: 0,
+    dailyQueries: 0,
     dailyQueryDate: this.getCurrentDateKey(),
   };
 
