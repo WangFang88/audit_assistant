@@ -1748,7 +1748,7 @@ class _DashboardPageState extends State<DashboardPage> {
             (document) => ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 4),
               title: Text(document.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text('${document.uploadedAt} · ${document.libraryType == 'private' ? '私有库' : '公共库'} · ${document.chunkCount == 0 ? '待处理' : '${document.chunkCount}块'}'),
+              subtitle: Text('${document.uploadedAt} · ${document.libraryType == 'private' ? '私有库' : '公共库'}'),
               trailing: TextButton(
                 onPressed: () => _showDocumentChunksDialog(document),
                 child: const Text('查看文本块'),
