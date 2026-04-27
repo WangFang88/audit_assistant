@@ -1,8 +1,8 @@
 {
   "usage": {
     "groups": 1,
-    "privateDocuments": 2,
-    "dailyQueries": 2,
+    "privateDocuments": 3,
+    "dailyQueries": 4,
     "dailyQueryDate": "2026-04-27"
   },
   "groups": [],
@@ -765,6 +765,22 @@
       "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
       "queriedAt": "2026-04-27 04:46:24",
       "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777294143365",
+      "userId": "user-3",
+      "teamId": "group-1",
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-27 04:49:03",
+      "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777294313443",
+      "userId": "user-3",
+      "teamId": "group-1",
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-27 04:51:53",
+      "consumedQuota": 1
     }
   ],
   "subscriptions": [
@@ -773,16 +789,24 @@
       "userId": "user-2",
       "planType": "free",
       "amount": "0.00",
-      "paidAt": "2026-04-25 09:00",
-      "expiredAt": "2026-05-01 00:00"
+      "paidAt": "2026-04-25 01:00",
+      "expiredAt": "2026-04-30 16:00"
     },
     {
       "id": "order-1777266405588",
       "userId": "user-2",
       "planType": "yearly",
       "amount": "2000.00",
-      "paidAt": "2026-04-26 21:06",
-      "expiredAt": "2027-04-26 21:06"
+      "paidAt": "2026-04-26 13:06",
+      "expiredAt": "2027-04-26 13:06"
+    },
+    {
+      "id": "order-1777294312811",
+      "userId": "user-3",
+      "planType": "weekly",
+      "amount": "70.00",
+      "paidAt": "2026-04-27 04:51",
+      "expiredAt": "2026-05-04 04:51"
     }
   ],
   "users": [
