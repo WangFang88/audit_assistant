@@ -21,17 +21,17 @@ export class GroupsController {
   }
 
   @Get(':groupId/members')
-  listMembers(@Param('groupId') groupId: string) {
+  async listMembers(@Param('groupId') groupId: string) {
     return this.groupsService.listMembers(groupId);
   }
 
   @Post(':groupId/invites')
-  invite(@Param('groupId') groupId: string, @Body() dto: InviteMemberDto) {
+  async invite(@Param('groupId') groupId: string, @Body() dto: InviteMemberDto) {
     return this.groupsService.invite(groupId, dto);
   }
 
   @Post(':groupId/transfer-leader')
-  transferLeader(
+  async transferLeader(
     @Param('groupId') groupId: string,
     @Body() dto: TransferLeaderDto,
   ) {
