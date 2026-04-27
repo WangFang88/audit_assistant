@@ -67,6 +67,10 @@ class _DashboardPageState extends State<DashboardPage> {
     return widget.currentUser.role == '管理员' || widget.currentUser.role == 'admin';
   }
 
+  bool get _isCurrentUserLeader {
+    return _members.any((m) => m.userId == widget.currentUser.id && m.role == 'leader');
+  }
+
   bool get _canImportPublicDocuments {
     return _isAdmin;
   }
@@ -1728,7 +1732,8 @@ class _DashboardPageState extends State<DashboardPage> {
               Text('成员列表', style: Theme.of(context).textTheme.titleSmall),
               const Spacer(),
               TextButton(onPressed: _activeGroupId == null || _membersLoading ? null : _refreshMembers, child: const Text('刷新成员')),
-              TextButton(onPressed: _activeGroupId == null ? null : _showTransferLeaderDialog, child: const Text('移交组长')),
+              if (_isCurrentUserLeader)
+                TextButton(onPressed: _activeGroupId == null ? null : _showTransferLeaderDialog, child: const Text('移交组长')),
             ],
           ),
           if (_membersLoading)

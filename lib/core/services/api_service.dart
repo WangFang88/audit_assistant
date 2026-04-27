@@ -455,7 +455,7 @@ class ApiService {
   }
 
   void _handleUnauthorized(int statusCode) {
-    if (statusCode == 401 || statusCode == 403) {
+    if (statusCode == 401) {
       clearSession();
       onUnauthorized?.call();
     }
