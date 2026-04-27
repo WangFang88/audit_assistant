@@ -1,6 +1,7 @@
 import { Repository } from 'typeorm';
 import { TeamMemberEntity } from '../../database/entities/team-member.entity';
 import { TeamEntity } from '../../database/entities/team.entity';
+import { UserEntity } from '../../database/entities/user.entity';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
 import { DocumentsService } from '../documents/documents.service';
@@ -29,23 +30,16 @@ type GroupRecord = {
     privateDocumentCount: number;
     lastQueryAt: string | null;
 };
-type MemberRecord = {
-    id: string;
-    groupId: string;
-    userId: string;
-    name: string;
-    phone: string;
-    role: 'leader' | 'member';
-};
 export declare class GroupsService {
     private readonly authService;
     private readonly subscriptionsService;
     private readonly teamRepository;
     private readonly teamMemberRepository;
+    private readonly userRepository;
     private readonly documentsService;
     private readonly chatService;
     private readonly teamAgentsService;
-    constructor(authService: AuthService, subscriptionsService: SubscriptionsService, teamRepository: Repository<TeamEntity>, teamMemberRepository: Repository<TeamMemberEntity>, documentsService: DocumentsService, chatService: ChatService, teamAgentsService: TeamAgentsService);
+    constructor(authService: AuthService, subscriptionsService: SubscriptionsService, teamRepository: Repository<TeamEntity>, teamMemberRepository: Repository<TeamMemberEntity>, userRepository: Repository<UserEntity>, documentsService: DocumentsService, chatService: ChatService, teamAgentsService: TeamAgentsService);
     private toGroupRecord;
     private toMemberRecord;
     private ensureSeedData;
@@ -58,7 +52,14 @@ export declare class GroupsService {
     listGroups(): Promise<GroupRecord[]>;
     getGroupById(groupId: string): Promise<GroupRecord>;
     createGroup(dto: CreateGroupDto): Promise<GroupRecord>;
-    listMembers(groupId: string): Promise<MemberRecord[]>;
+    listMembers(groupId: string): Promise<{
+        id: string;
+        groupId: string;
+        userId: string;
+        name: string;
+        phone: string;
+        role: "member" | "leader";
+    }[]>;
     updateMemberRole(groupId: string, memberId: string, dto: UpdateMemberRoleDto): Promise<{
         groupId: string;
         memberId: string;

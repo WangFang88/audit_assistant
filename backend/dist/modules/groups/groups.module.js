@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const team_member_entity_1 = require("../../database/entities/team-member.entity");
 const team_entity_1 = require("../../database/entities/team.entity");
+const user_entity_1 = require("../../database/entities/user.entity");
 const database_support_module_1 = require("../../database/database-support.module");
 const auth_module_1 = require("../auth/auth.module");
 const chat_module_1 = require("../chat/chat.module");
@@ -25,7 +26,7 @@ exports.GroupsModule = GroupsModule;
 exports.GroupsModule = GroupsModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([team_entity_1.TeamEntity, team_member_entity_1.TeamMemberEntity]),
+            typeorm_1.TypeOrmModule.forFeature([team_entity_1.TeamEntity, team_member_entity_1.TeamMemberEntity, user_entity_1.UserEntity]),
             database_support_module_1.DatabaseSupportModule,
             auth_module_1.AuthModule,
             subscriptions_module_1.SubscriptionsModule,

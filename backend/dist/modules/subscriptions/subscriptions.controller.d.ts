@@ -1,8 +1,13 @@
+import { Repository } from 'typeorm';
+import { TeamMemberEntity } from '../../database/entities/team-member.entity';
+import { AuthService } from '../auth/auth.service';
 import { CreateSubscriptionOrderDto, SubscriptionsService } from './subscriptions.service';
 export declare class SubscriptionsController {
     private readonly subscriptionsService;
-    constructor(subscriptionsService: SubscriptionsService);
-    getOverview(): {
+    private readonly authService;
+    private readonly teamMemberRepository;
+    constructor(subscriptionsService: SubscriptionsService, authService: AuthService, teamMemberRepository: Repository<TeamMemberEntity>);
+    getOverview(): Promise<{
         currentPlanId: "free" | "weekly" | "monthly" | "yearly";
         trialEndsAt: string;
         trialDays: number;
@@ -62,6 +67,6 @@ export declare class SubscriptionsController {
             monthly: string;
             yearly: string;
         };
-    };
+    }>;
     createOrder(dto: CreateSubscriptionOrderDto): import("../../database/repositories/subscription.repository").SubscriptionOrderSnapshot;
 }

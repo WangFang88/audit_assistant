@@ -26,7 +26,7 @@ export declare class GroupsController {
         userId: string;
         name: string;
         phone: string;
-        role: "leader" | "member";
+        role: "member" | "leader";
     }[]>;
     invite(groupId: string, dto: InviteMemberDto): Promise<{
         groupId: string;
