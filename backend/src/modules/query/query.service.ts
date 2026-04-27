@@ -6,6 +6,7 @@ import { EmbeddingService } from '../documents/embedding.service';
 import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { TeamAgentsService } from '../team-agents/team-agents.service';
+import { QwenService } from './qwen.service';
 
 class QueryRequestDto {
   @IsString()
@@ -42,6 +43,7 @@ export class QueryService {
     private readonly groupsService: GroupsService,
     private readonly subscriptionsService: SubscriptionsService,
     private readonly teamAgentsService: TeamAgentsService,
+    private readonly qwenService: QwenService,
   ) {}
 
   async search(dto: QueryRequestDto) {
@@ -132,6 +134,17 @@ export class QueryService {
       consumedQuota: 1,
     });
 
+    const fallbackAnswer =
+      candidates.length === 0
+        ? '\u5f53\u524d\u8303\u56f4\u5185\u5c1a\u672a\u547d\u4e2d\u53ef\u7528\u6761\u6b3e\uff0c\u8bf7\u5c1d\u8bd5\u8865\u5145\u66f4\u660e\u786e\u7684\u5173\u952e\u8bcd\u3001\u6761\u6b3e\u53f7\u6216\u5207\u6362\u9879\u76ee\u7ec4\u540e\u91cd\u8bd5\u3002'
+        : null;
+
+    const qwenAnswer = fallbackAnswer == null
+      ? await this.qwenService.generate(dto.question, candidates.map((c) => c.matchedChunk))
+      : null;
+
+    const answer = fallbackAnswer ?? qwenAnswer ?? '\u68c0\u7d22\u5b8c\u6210\uff0c\u8bf7\u67e5\u770b\u4e0b\u65b9\u5f15\u7528\u6761\u6b3e\u3002';
+
     return {
       question: dto.question,
       agentMode: dto.agentId != null,
@@ -179,12 +192,7 @@ export class QueryService {
         prototypeMode: 'chunk-indexed-prototype',
         answerTraceable: true,
       },
-      answer:
-        candidates.length === 0
-          ? '\u5f53\u524d\u8303\u56f4\u5185\u5c1a\u672a\u547d\u4e2d\u53ef\u7528\u6761\u6b3e\uff0c\u8bf7\u5c1d\u8bd5\u8865\u5145\u66f4\u660e\u786e\u7684\u5173\u952e\u8bcd\u3001\u6761\u6b3e\u53f7\u6216\u5207\u6362\u9879\u76ee\u7ec4\u540e\u91cd\u8bd5\u3002'
-          : resolvedGroupId == null
-          ? '\u7cfb\u7edf\u5df2\u5728\u516c\u5171\u57fa\u7840\u5e93\u4e2d\u57fa\u4e8e\u6301\u4e45\u5316\u6587\u672c\u5757\u5b8c\u6210\u8303\u56f4\u8fc7\u6ee4\u4e0e\u6df7\u5408\u68c0\u7d22\uff0c\u5e76\u8fd4\u56de\u53ef\u8ffd\u6eaf\u7684\u5236\u5ea6\u4f9d\u636e\u3002'
-          : '\u7cfb\u7edf\u5df2\u5728\u516c\u5171\u57fa\u7840\u5e93\u4e0e\u5f53\u524d\u9879\u76ee\u7ec4\u79c1\u6709\u5e93\u4e2d\u57fa\u4e8e\u6301\u4e45\u5316\u6587\u672c\u5757\u5b8c\u6210\u8303\u56f4\u8fc7\u6ee4\u4e0e\u6df7\u5408\u68c0\u7d22\uff0c\u5e76\u8fd4\u56de\u53ef\u8ffd\u6eaf\u7684\u5236\u5ea6\u4f9d\u636e\u3002',
+      answer,
       citations: candidates,
       explanation:
         '\u8be5\u67e5\u8be2\u94fe\u8def\u5df2\u4ece\u56fa\u5b9a\u793a\u4f8b\u547d\u4e2d\u8fc7\u6e21\u5230\u57fa\u4e8e\u6301\u4e45\u5316 chunk \u7684\u68c0\u7d22\u9aa8\u67b6\uff1a\u5148\u8fc7\u6ee4\u8303\u56f4\uff0c\u518d\u5bf9\u6587\u672c\u5757\u6267\u884c\u5173\u952e\u8bcd\u4e0e\u8bed\u4e49\u7ebf\u7d22\u5339\u914d\uff0c\u6700\u540e\u8fd4\u56de\u53ef\u6eaf\u6e90\u7684\u5019\u9009\u6761\u6b3e\u3002',

@@ -4,6 +4,7 @@ import { EmbeddingService } from '../documents/embedding.service';
 import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { TeamAgentsService } from '../team-agents/team-agents.service';
+import { QwenService } from './qwen.service';
 declare class QueryRequestDto {
     question: string;
     groupId?: string;
@@ -27,7 +28,8 @@ export declare class QueryService {
     private readonly groupsService;
     private readonly subscriptionsService;
     private readonly teamAgentsService;
-    constructor(authService: AuthService, documentsService: DocumentsService, embeddingService: EmbeddingService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, teamAgentsService: TeamAgentsService);
+    private readonly qwenService;
+    constructor(authService: AuthService, documentsService: DocumentsService, embeddingService: EmbeddingService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, teamAgentsService: TeamAgentsService, qwenService: QwenService);
     search(dto: QueryRequestDto): Promise<{
         question: string;
         agentMode: boolean;

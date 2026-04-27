@@ -2,7 +2,7 @@
   "usage": {
     "groups": 1,
     "privateDocuments": 2,
-    "dailyQueries": 5,
+    "dailyQueries": 7,
     "dailyQueryDate": "2026-04-27"
   },
   "groups": [],
@@ -724,6 +724,22 @@
       "teamId": "group-1",
       "queryText": "会计机构负责人应该具备哪些条件",
       "queriedAt": "2026-04-27 01:17:17",
+      "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777283174069",
+      "userId": "user-3",
+      "teamId": "group-1",
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-27 01:46:14",
+      "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777283231527",
+      "userId": "user-3",
+      "teamId": "group-1",
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-27 01:47:11",
       "consumedQuota": 1
     }
   ],
