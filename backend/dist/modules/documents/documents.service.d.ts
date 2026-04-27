@@ -69,9 +69,12 @@ export declare class DocumentsService {
     private readonly chunks;
     private assertAdminPublicLibraryOnly;
     private assertAdminCanAccessDocument;
-    listDocuments(groupId?: string): DocumentRecord[];
+    private toDocumentRecord;
+    private toChunkRecord;
+    private ensurePersistedDocumentSeedData;
+    listDocuments(groupId?: string): Promise<DocumentRecord[]>;
     listExtractionJobs(groupId?: string): ExtractJobRecord[];
-    getReadyChunks(groupId?: string): DocumentChunkRecord[];
+    getReadyChunks(groupId?: string): Promise<DocumentChunkRecord[]>;
     listDocumentChunks(documentId: string): DocumentChunkRecord[];
     getDocumentById(documentId: string): DocumentRecord;
     private buildChunksFromRawText;
@@ -100,12 +103,12 @@ export declare class DocumentsService {
         pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
     };
     removeGroupDocuments(groupId: string): void;
-    getLibraryScopeSummary(groupId?: string): {
+    getLibraryScopeSummary(groupId?: string): Promise<{
         scopeMode: string;
         includesPublicLibrary: boolean;
         includesPrivateLibrary: boolean;
         publicDocumentCount: number;
         privateDocumentCount: number;
-    };
+    }>;
 }
 export { ImportDocumentDto };

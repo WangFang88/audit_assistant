@@ -57,8 +57,8 @@ export class QueryService {
 
     const group = resolvedGroupId ? this.groupsService.getGroupById(resolvedGroupId) : null;
     const teamAgent = resolvedGroupId ? await this.teamAgentsService.getVisibleAgentByGroupId(resolvedGroupId) : null;
-    const readyChunks = this.documentsService.getReadyChunks(resolvedGroupId);
-    const scopeSummary = this.documentsService.getLibraryScopeSummary(resolvedGroupId);
+    const readyChunks = await this.documentsService.getReadyChunks(resolvedGroupId);
+    const scopeSummary = await this.documentsService.getLibraryScopeSummary(resolvedGroupId);
     const lowerQuestion = dto.question.toLowerCase();
     const tokens = Array.from(
       new Set(

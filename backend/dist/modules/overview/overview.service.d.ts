@@ -158,7 +158,7 @@ export declare class OverviewService {
                 yearly: string;
             };
         };
-        conversations: never[] | Promise<{
+        conversations: {
             id: string;
             type: "group" | "direct" | "agent";
             title: string;
@@ -166,7 +166,7 @@ export declare class OverviewService {
             isTeamAgent: boolean;
             unreadCount: number;
             lastMessage: string;
-        }[]>;
+        }[];
         activeTeamAgent: {
             id: string;
             name: string;

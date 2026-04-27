@@ -7,7 +7,7 @@ export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Get()
-  listDocuments(@Query('groupId') groupId?: string) {
+  async listDocuments(@Query('groupId') groupId?: string) {
     return this.documentsService.listDocuments(groupId);
   }
 

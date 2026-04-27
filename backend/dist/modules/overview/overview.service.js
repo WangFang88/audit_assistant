@@ -138,11 +138,11 @@ let OverviewService = class OverviewService {
             },
             groups: visibleGroups,
             members: effectiveGroupId ? this.groupsService.listMembers(effectiveGroupId) : [],
-            documents: this.documentsService.listDocuments(effectiveGroupId),
+            documents: await this.documentsService.listDocuments(effectiveGroupId),
             extractJobs: this.documentsService.listExtractionJobs(effectiveGroupId),
-            libraryScope: this.documentsService.getLibraryScopeSummary(effectiveGroupId),
+            libraryScope: await this.documentsService.getLibraryScopeSummary(effectiveGroupId),
             subscription: this.subscriptionsService.getOverview(),
-            conversations: isAdmin ? [] : this.chatService.listConversations(effectiveGroupId),
+            conversations: isAdmin ? [] : await this.chatService.listConversations(effectiveGroupId),
             activeTeamAgent: activeTeamAgent == null
                 ? null
                 : {

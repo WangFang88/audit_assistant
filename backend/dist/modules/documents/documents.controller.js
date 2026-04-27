@@ -20,7 +20,7 @@ let DocumentsController = class DocumentsController {
     constructor(documentsService) {
         this.documentsService = documentsService;
     }
-    listDocuments(groupId) {
+    async listDocuments(groupId) {
         return this.documentsService.listDocuments(groupId);
     }
     listExtractionJobs(groupId) {
@@ -39,7 +39,7 @@ __decorate([
     __param(0, (0, common_1.Query)('groupId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], DocumentsController.prototype, "listDocuments", null);
 __decorate([
     (0, common_1.Get)('extract-jobs'),

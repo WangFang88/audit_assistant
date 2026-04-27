@@ -260,12 +260,97 @@ let DocumentsService = class DocumentsService {
         }
         throw new common_1.ForbiddenException('管理员仅可访问公共库文档，不能查看项目组私有资料');
     }
-    listDocuments(groupId) {
+    toDocumentRecord(entity) {
+        return {
+            id: entity.id,
+            title: entity.title,
+            libraryType: entity.libraryType,
+            sourcePath: entity.filePath,
+            fileName: entity.fileName,
+            uploadedBy: entity.uploadedBy,
+            chunkCount: entity.chunkCount,
+            indexStatus: entity.indexStatus,
+            extractionMode: (entity.extractionMode ?? 'text'),
+            uploadedAt: entity.uploadedAt.toISOString().slice(0, 16).replace('T', ' '),
+            groupId: entity.teamId,
+            fileType: entity.fileType,
+            chunkStrategy: 'structure-first',
+            parserTarget: entity.parserTarget,
+            embeddingTarget: entity.embeddingTarget,
+            vectorStoreTarget: entity.vectorStoreTarget,
+            pipelineStage: entity.indexStatus === 'ready' ? 'indexed' : entity.extractionMode === 'ocr' ? 'ocr' : 'queued',
+        };
+    }
+    toChunkRecord(entity) {
+        return {
+            id: entity.id,
+            documentId: entity.documentId,
+            groupId: entity.teamId,
+            libraryType: entity.libraryType,
+            title: entity.title,
+            chapterTitle: entity.chapterTitle ?? '',
+            articleRef: entity.articleRef ?? '',
+            pageLabel: entity.pageLabel ?? '',
+            content: entity.content,
+            keywords: entity.keywords,
+            indexStatus: entity.indexStatus === 'failed' ? 'processing' : entity.indexStatus,
+        };
+    }
+    async ensurePersistedDocumentSeedData() {
+        const documentCount = await this.persistedDocumentRepository.count();
+        if (documentCount === 0) {
+            await this.persistedDocumentRepository.save(this.documents.map((document) => this.persistedDocumentRepository.create({
+                id: document.id,
+                title: document.title,
+                fileName: document.fileName,
+                filePath: document.sourcePath,
+                fileType: document.fileType,
+                libraryType: document.libraryType,
+                teamId: document.groupId,
+                uploadedBy: document.uploadedBy,
+                uploadSource: 'seed',
+                indexStatus: document.indexStatus,
+                extractionMode: document.extractionMode,
+                parserTarget: document.parserTarget,
+                embeddingTarget: document.embeddingTarget,
+                vectorStoreTarget: document.vectorStoreTarget,
+                chunkCount: document.chunkCount,
+                rawTextLength: 0,
+                uploadedAt: new Date(document.uploadedAt.replace(' ', 'T')),
+                indexedAt: document.indexStatus === 'ready' ? new Date(document.uploadedAt.replace(' ', 'T')) : null,
+                deletedAt: null,
+            })));
+        }
+        const chunkCount = await this.persistedChunkRepository.count();
+        if (chunkCount === 0) {
+            await this.persistedChunkRepository.save(this.chunks.map((chunk, index) => this.persistedChunkRepository.create({
+                id: chunk.id,
+                documentId: chunk.documentId,
+                teamId: chunk.groupId,
+                libraryType: chunk.libraryType,
+                title: chunk.title,
+                chapterTitle: chunk.chapterTitle,
+                articleRef: chunk.articleRef,
+                pageLabel: chunk.pageLabel,
+                content: chunk.content,
+                keywords: chunk.keywords,
+                chunkIndex: index,
+                indexStatus: chunk.indexStatus,
+                tokenCount: chunk.content.length,
+            })));
+        }
+    }
+    async listDocuments(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
         if (!this.authService.isAdmin() && groupId != null) {
             this.groupsService.assertCanAccessGroup(groupId);
         }
-        return this.documents.filter((document) => {
+        await this.ensurePersistedDocumentSeedData();
+        const entities = await this.persistedDocumentRepository.find({
+            where: { deletedAt: (0, typeorm_2.IsNull)() },
+            order: { uploadedAt: 'ASC' },
+        });
+        return entities.map((entity) => this.toDocumentRecord(entity)).filter((document) => {
             if (document.libraryType === 'public') {
                 return true;
             }
@@ -284,12 +369,16 @@ let DocumentsService = class DocumentsService {
             return groupId != null && job.groupId === groupId;
         });
     }
-    getReadyChunks(groupId) {
+    async getReadyChunks(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
         if (!this.authService.isAdmin() && groupId != null) {
             this.groupsService.assertCanAccessGroup(groupId);
         }
-        return this.chunks.filter((chunk) => {
+        await this.ensurePersistedDocumentSeedData();
+        const entities = await this.persistedChunkRepository.find({
+            order: { chunkIndex: 'ASC', createdAt: 'ASC' },
+        });
+        return entities.map((entity) => this.toChunkRecord(entity)).filter((chunk) => {
             if (chunk.indexStatus !== 'ready') {
                 return false;
             }
@@ -575,9 +664,9 @@ let DocumentsService = class DocumentsService {
         const privateDocumentCount = this.documents.filter((document) => document.libraryType === 'private').length;
         this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
     }
-    getLibraryScopeSummary(groupId) {
+    async getLibraryScopeSummary(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
-        const documents = this.listDocuments(groupId);
+        const documents = await this.listDocuments(groupId);
         const publicDocuments = documents.filter((document) => document.libraryType === 'public').length;
         const privateDocuments = documents.filter((document) => document.libraryType === 'private').length;
         const scopeMode = groupId == null ? 'public_only' : 'public_plus_current_group_private';

@@ -2,7 +2,7 @@ import { DocumentsService, ImportDocumentDto } from './documents.service';
 export declare class DocumentsController {
     private readonly documentsService;
     constructor(documentsService: DocumentsService);
-    listDocuments(groupId?: string): {
+    listDocuments(groupId?: string): Promise<{
         id: string;
         title: string;
         libraryType: "public" | "private";
@@ -20,7 +20,7 @@ export declare class DocumentsController {
         embeddingTarget: "bge-large-zh";
         vectorStoreTarget: "pgvector";
         pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
-    }[];
+    }[]>;
     listExtractionJobs(groupId?: string): {
         id: string;
         documentId: string;
