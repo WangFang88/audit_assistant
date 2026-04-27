@@ -88,184 +88,6 @@ export class DocumentsService {
     private readonly fileStorageService: FileStorageService,
   ) {}
 
-  private readonly documents: DocumentRecord[] = [
-    {
-      id: 'doc-1',
-      title: '某区财政专项资金管理办法',
-      libraryType: 'public',
-      sourcePath: '/policies/public/fiscal-rules.pdf',
-      fileName: 'fiscal-rules.pdf',
-      uploadedBy: 'user-1',
-      chunkCount: 4,
-      indexStatus: 'ready',
-      extractionMode: 'text',
-      uploadedAt: '2026-04-25 10:00',
-      groupId: null,
-      fileType: 'pdf',
-      chunkStrategy: 'structure-first',
-      parserTarget: 'multimodal-parser',
-      embeddingTarget: 'bge-large-zh',
-      vectorStoreTarget: 'pgvector',
-      pipelineStage: 'indexed',
-    },
-    {
-      id: 'doc-2',
-      title: '某区财政局内部采购管理制度',
-      libraryType: 'private',
-      sourcePath: '/groups/group-1/purchase-guideline.docx',
-      fileName: 'purchase-guideline.docx',
-      uploadedBy: 'user-2',
-      chunkCount: 4,
-      indexStatus: 'ready',
-      extractionMode: 'text',
-      uploadedAt: '2026-04-25 14:00',
-      groupId: 'group-1',
-      fileType: 'docx',
-      chunkStrategy: 'structure-first',
-      parserTarget: 'multimodal-parser',
-      embeddingTarget: 'bge-large-zh',
-      vectorStoreTarget: 'pgvector',
-      pipelineStage: 'indexed',
-    },
-    {
-      id: 'doc-3',
-      title: '某医院设备管理台账扫描件',
-      libraryType: 'private',
-      sourcePath: '/groups/group-1/equipment-scan.pdf',
-      fileName: 'equipment-scan.pdf',
-      uploadedBy: 'user-2',
-      chunkCount: 0,
-      indexStatus: 'processing',
-      extractionMode: 'ocr',
-      uploadedAt: '2026-04-25 15:30',
-      groupId: 'group-1',
-      fileType: 'pdf',
-      chunkStrategy: 'length-fallback',
-      parserTarget: 'multimodal-parser',
-      embeddingTarget: 'bge-large-zh',
-      vectorStoreTarget: 'pgvector',
-      pipelineStage: 'ocr',
-    },
-  ];
-
-  private readonly extractJobs: ExtractJobRecord[] = [
-    {
-      id: 'job-1',
-      documentId: 'doc-3',
-      groupId: 'group-1',
-      status: 'processing',
-      stage: 'ocr',
-      progress: 45,
-      startedAt: '2026-04-25 15:31',
-    },
-  ];
-
-  private readonly chunks: DocumentChunkRecord[] = [
-    {
-      id: 'chunk-1',
-      documentId: 'doc-1',
-      groupId: null,
-      libraryType: 'public',
-      title: '某区财政专项资金管理办法',
-      chapterTitle: '第一章 适用范围',
-      articleRef: '第三条',
-      pageLabel: '第 1 页',
-      content: '某区财政专项资金管理办法适用于预算安排、专项资金使用和绩效跟踪，相关支出须符合既定用途。',
-      keywords: ['某区财政专项资金管理办法', 'fiscal', 'rules', '预算', '专项资金', '绩效', '用途', '范围', '职责'],
-      indexStatus: 'ready',
-    },
-    {
-      id: 'chunk-2',
-      documentId: 'doc-1',
-      groupId: null,
-      libraryType: 'public',
-      title: '某区财政专项资金管理办法',
-      chapterTitle: '第二章 审批与执行',
-      articleRef: '第七条',
-      pageLabel: '第 2 页',
-      content: '某区财政专项资金管理办法要求对申请、审批、拨付、执行和调整全过程留痕，重要事项应附依据材料。',
-      keywords: ['某区财政专项资金管理办法', 'fiscal', 'rules', '申请', '审批', '执行', '留痕', '拨付', '调整', '依据'],
-      indexStatus: 'ready',
-    },
-    {
-      id: 'chunk-3',
-      documentId: 'doc-1',
-      groupId: null,
-      libraryType: 'public',
-      title: '某区财政专项资金管理办法',
-      chapterTitle: '第三章 证据与归档',
-      articleRef: '第十二条',
-      pageLabel: '第 3 页',
-      content: '某区财政专项资金管理办法要求对合同、发票、验收单、付款凭证及相关附件统一归档，保证后续查询可追溯。',
-      keywords: ['某区财政专项资金管理办法', 'fiscal', 'rules', '合同', '发票', '验收单', '付款凭证', '归档', '可追溯'],
-      indexStatus: 'ready',
-    },
-    {
-      id: 'chunk-4',
-      documentId: 'doc-1',
-      groupId: null,
-      libraryType: 'public',
-      title: '某区财政专项资金管理办法',
-      chapterTitle: '第四章 监督与整改',
-      articleRef: '第十六条',
-      pageLabel: '第 4 页',
-      content: '某区财政专项资金管理办法明确对超范围支出、改变资金用途和资料缺失等问题应及时整改，并纳入审计关注事项。',
-      keywords: ['某区财政专项资金管理办法', 'fiscal', 'rules', '整改', '监督', '审计', '超范围支出', '资金用途'],
-      indexStatus: 'ready',
-    },
-    {
-      id: 'chunk-5',
-      documentId: 'doc-2',
-      groupId: 'group-1',
-      libraryType: 'private',
-      title: '某区财政局内部采购管理制度',
-      chapterTitle: '第一章 适用范围',
-      articleRef: '第三条',
-      pageLabel: '第 1 页',
-      content: '某区财政局内部采购管理制度适用于项目组采购申请、审批分工和供应商比价管理，未经审批不得先采后补。',
-      keywords: ['某区财政局内部采购管理制度', 'groups', 'group', 'purchase', 'guideline', '采购', '审批', '比价', '供应商', '范围', '职责'],
-      indexStatus: 'ready',
-    },
-    {
-      id: 'chunk-6',
-      documentId: 'doc-2',
-      groupId: 'group-1',
-      libraryType: 'private',
-      title: '某区财政局内部采购管理制度',
-      chapterTitle: '第二章 审批与执行',
-      articleRef: '第七条',
-      pageLabel: '第 2 页',
-      content: '某区财政局内部采购管理制度要求对立项、审批、采购执行、验收和付款实行分环节留痕，关键节点应形成书面记录。',
-      keywords: ['某区财政局内部采购管理制度', 'groups', 'group', 'purchase', 'guideline', '申请', '审批', '执行', '留痕', '验收', '付款', '立项'],
-      indexStatus: 'ready',
-    },
-    {
-      id: 'chunk-7',
-      documentId: 'doc-2',
-      groupId: 'group-1',
-      libraryType: 'private',
-      title: '某区财政局内部采购管理制度',
-      chapterTitle: '第三章 证据与归档',
-      articleRef: '第十二条',
-      pageLabel: '第 3 页',
-      content: '某区财政局内部采购管理制度要求对合同、发票、验收单、付款凭证及相关附件统一归档，保证后续查询可追溯。',
-      keywords: ['某区财政局内部采购管理制度', 'groups', 'group', 'purchase', 'guideline', '合同', '发票', '验收单', '付款凭证', '归档', '可追溯'],
-      indexStatus: 'ready',
-    },
-    {
-      id: 'chunk-8',
-      documentId: 'doc-2',
-      groupId: 'group-1',
-      libraryType: 'private',
-      title: '某区财政局内部采购管理制度',
-      chapterTitle: '第四章 监督与整改',
-      articleRef: '第十六条',
-      pageLabel: '第 4 页',
-      content: '某区财政局内部采购管理制度明确对未审批采购、凭证不完整和验收缺失等问题应限期整改并复核。',
-      keywords: ['某区财政局内部采购管理制度', 'groups', 'group', 'purchase', 'guideline', '整改', '监督', '审计', '未审批采购', '凭证不完整', '验收缺失'],
-      indexStatus: 'ready',
-    },
-  ];
 
   private assertAdminPublicLibraryOnly(groupId?: string) {
     if (!this.authService.isAdmin()) {
@@ -335,11 +157,204 @@ export class DocumentsService {
     };
   }
 
+  private buildSeedDocuments(): DocumentRecord[] {
+    return [
+      {
+        id: 'doc-1',
+        title: '某区财政专项资金管理办法',
+        libraryType: 'public',
+        sourcePath: '/policies/public/fiscal-rules.pdf',
+        fileName: 'fiscal-rules.pdf',
+        uploadedBy: 'user-1',
+        chunkCount: 4,
+        indexStatus: 'ready',
+        extractionMode: 'text',
+        uploadedAt: '2026-04-25 10:00',
+        groupId: null,
+        fileType: 'pdf',
+        chunkStrategy: 'structure-first',
+        parserTarget: 'multimodal-parser',
+        embeddingTarget: 'bge-large-zh',
+        vectorStoreTarget: 'pgvector',
+        pipelineStage: 'indexed',
+      },
+      {
+        id: 'doc-2',
+        title: '某区财政局内部采购管理制度',
+        libraryType: 'private',
+        sourcePath: '/groups/group-1/purchase-guideline.docx',
+        fileName: 'purchase-guideline.docx',
+        uploadedBy: 'user-2',
+        chunkCount: 4,
+        indexStatus: 'ready',
+        extractionMode: 'text',
+        uploadedAt: '2026-04-25 14:00',
+        groupId: 'group-1',
+        fileType: 'docx',
+        chunkStrategy: 'structure-first',
+        parserTarget: 'multimodal-parser',
+        embeddingTarget: 'bge-large-zh',
+        vectorStoreTarget: 'pgvector',
+        pipelineStage: 'indexed',
+      },
+      {
+        id: 'doc-3',
+        title: '某医院设备管理台账扫描件',
+        libraryType: 'private',
+        sourcePath: '/groups/group-1/equipment-scan.pdf',
+        fileName: 'equipment-scan.pdf',
+        uploadedBy: 'user-2',
+        chunkCount: 0,
+        indexStatus: 'processing',
+        extractionMode: 'ocr',
+        uploadedAt: '2026-04-25 15:30',
+        groupId: 'group-1',
+        fileType: 'pdf',
+        chunkStrategy: 'length-fallback',
+        parserTarget: 'multimodal-parser',
+        embeddingTarget: 'bge-large-zh',
+        vectorStoreTarget: 'pgvector',
+        pipelineStage: 'ocr',
+      },
+    ];
+  }
+
+  private buildSeedExtractionJobs(): ExtractJobRecord[] {
+    return [
+      {
+        id: 'job-1',
+        documentId: 'doc-3',
+        groupId: 'group-1',
+        status: 'processing',
+        stage: 'ocr',
+        progress: 45,
+        startedAt: '2026-04-25 15:31',
+      },
+    ];
+  }
+
+  private buildSeedChunks(): DocumentChunkRecord[] {
+    return [
+      {
+        id: 'chunk-1',
+        documentId: 'doc-1',
+        groupId: null,
+        libraryType: 'public',
+        title: '某区财政专项资金管理办法',
+        chapterTitle: '第一章 适用范围',
+        articleRef: '第三条',
+        pageLabel: '第 1 页',
+        content: '某区财政专项资金管理办法适用于预算安排、专项资金使用和绩效跟踪，相关支出须符合既定用途。',
+        keywords: ['某区财政专项资金管理办法', 'fiscal', 'rules', '预算', '专项资金', '绩效', '用途', '范围', '职责'],
+        indexStatus: 'ready',
+      },
+      {
+        id: 'chunk-2',
+        documentId: 'doc-1',
+        groupId: null,
+        libraryType: 'public',
+        title: '某区财政专项资金管理办法',
+        chapterTitle: '第二章 审批与执行',
+        articleRef: '第七条',
+        pageLabel: '第 2 页',
+        content: '某区财政专项资金管理办法要求对申请、审批、拨付、执行和调整全过程留痕，重要事项应附依据材料。',
+        keywords: ['某区财政专项资金管理办法', 'fiscal', 'rules', '申请', '审批', '执行', '留痕', '拨付', '调整', '依据'],
+        indexStatus: 'ready',
+      },
+      {
+        id: 'chunk-3',
+        documentId: 'doc-1',
+        groupId: null,
+        libraryType: 'public',
+        title: '某区财政专项资金管理办法',
+        chapterTitle: '第三章 证据与归档',
+        articleRef: '第十二条',
+        pageLabel: '第 3 页',
+        content: '某区财政专项资金管理办法要求对合同、发票、验收单、付款凭证及相关附件统一归档，保证后续查询可追溯。',
+        keywords: ['某区财政专项资金管理办法', 'fiscal', 'rules', '合同', '发票', '验收单', '付款凭证', '归档', '可追溯'],
+        indexStatus: 'ready',
+      },
+      {
+        id: 'chunk-4',
+        documentId: 'doc-1',
+        groupId: null,
+        libraryType: 'public',
+        title: '某区财政专项资金管理办法',
+        chapterTitle: '第四章 监督与整改',
+        articleRef: '第十六条',
+        pageLabel: '第 4 页',
+        content: '某区财政专项资金管理办法明确对超范围支出、改变资金用途和资料缺失等问题应及时整改，并纳入审计关注事项。',
+        keywords: ['某区财政专项资金管理办法', 'fiscal', 'rules', '整改', '监督', '审计', '超范围支出', '资金用途'],
+        indexStatus: 'ready',
+      },
+      {
+        id: 'chunk-5',
+        documentId: 'doc-2',
+        groupId: 'group-1',
+        libraryType: 'private',
+        title: '某区财政局内部采购管理制度',
+        chapterTitle: '第一章 适用范围',
+        articleRef: '第三条',
+        pageLabel: '第 1 页',
+        content: '某区财政局内部采购管理制度适用于项目组采购申请、审批分工和供应商比价管理，未经审批不得先采后补。',
+        keywords: ['某区财政局内部采购管理制度', 'groups', 'group', 'purchase', 'guideline', '采购', '审批', '比价', '供应商', '范围', '职责'],
+        indexStatus: 'ready',
+      },
+      {
+        id: 'chunk-6',
+        documentId: 'doc-2',
+        groupId: 'group-1',
+        libraryType: 'private',
+        title: '某区财政局内部采购管理制度',
+        chapterTitle: '第二章 审批与执行',
+        articleRef: '第七条',
+        pageLabel: '第 2 页',
+        content: '某区财政局内部采购管理制度要求对立项、审批、采购执行、验收和付款实行分环节留痕，关键节点应形成书面记录。',
+        keywords: ['某区财政局内部采购管理制度', 'groups', 'group', 'purchase', 'guideline', '申请', '审批', '执行', '留痕', '验收', '付款', '立项'],
+        indexStatus: 'ready',
+      },
+      {
+        id: 'chunk-7',
+        documentId: 'doc-2',
+        groupId: 'group-1',
+        libraryType: 'private',
+        title: '某区财政局内部采购管理制度',
+        chapterTitle: '第三章 证据与归档',
+        articleRef: '第十二条',
+        pageLabel: '第 3 页',
+        content: '某区财政局内部采购管理制度要求对合同、发票、验收单、付款凭证及相关附件统一归档，保证后续查询可追溯。',
+        keywords: ['某区财政局内部采购管理制度', 'groups', 'group', 'purchase', 'guideline', '合同', '发票', '验收单', '付款凭证', '归档', '可追溯'],
+        indexStatus: 'ready',
+      },
+      {
+        id: 'chunk-8',
+        documentId: 'doc-2',
+        groupId: 'group-1',
+        libraryType: 'private',
+        title: '某区财政局内部采购管理制度',
+        chapterTitle: '第四章 监督与整改',
+        articleRef: '第十六条',
+        pageLabel: '第 4 页',
+        content: '某区财政局内部采购管理制度明确对未审批采购、凭证不完整和验收缺失等问题应限期整改并复核。',
+        keywords: ['某区财政局内部采购管理制度', 'groups', 'group', 'purchase', 'guideline', '整改', '监督', '审计', '未审批采购', '凭证不完整', '验收缺失'],
+        indexStatus: 'ready',
+      },
+    ];
+  }
+
+  private buildImportedChunkId(documentId: string, index: number) {
+    return `chunk-${documentId}-${index + 1}`;
+  }
+
   private async ensurePersistedDocumentSeedData() {
+    const seedDocuments = this.buildSeedDocuments();
+    const seedChunks = this.buildSeedChunks();
+    const seedExtractionJobs = this.buildSeedExtractionJobs();
+
     const documentCount = await this.persistedDocumentRepository.count();
     if (documentCount === 0) {
       await this.persistedDocumentRepository.save(
-        this.documents.map((document) =>
+        seedDocuments.map((document) =>
           this.persistedDocumentRepository.create({
             id: document.id,
             title: document.title,
@@ -368,7 +383,7 @@ export class DocumentsService {
     const chunkCount = await this.persistedChunkRepository.count();
     if (chunkCount === 0) {
       await this.persistedChunkRepository.save(
-        this.chunks.map((chunk, index) =>
+        seedChunks.map((chunk, index) =>
           this.persistedChunkRepository.create({
             id: chunk.id,
             documentId: chunk.documentId,
@@ -391,7 +406,7 @@ export class DocumentsService {
     const extractionJobCount = await this.persistedExtractionJobRepository.count();
     if (extractionJobCount === 0) {
       await this.persistedExtractionJobRepository.save(
-        this.extractJobs.map((job) =>
+        seedExtractionJobs.map((job) =>
           this.persistedExtractionJobRepository.create({
             id: job.id,
             documentId: job.documentId,
@@ -534,7 +549,7 @@ export class DocumentsService {
       );
 
       return {
-        id: `chunk-${this.chunks.length + index + 1}`,
+        id: this.buildImportedChunkId(document.id, index),
         documentId: document.id,
         groupId: document.groupId,
         libraryType: document.libraryType,
@@ -643,7 +658,7 @@ export class DocumentsService {
     ];
 
     return chunkBlueprints.map((blueprint, index) => ({
-      id: `chunk-${this.chunks.length + index + 1}`,
+      id: this.buildImportedChunkId(document.id, index),
       documentId: document.id,
       groupId: document.groupId,
       libraryType: document.libraryType,

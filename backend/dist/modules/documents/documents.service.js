@@ -56,7 +56,70 @@ let DocumentsService = class DocumentsService {
         this.groupsService = groupsService;
         this.subscriptionsService = subscriptionsService;
         this.fileStorageService = fileStorageService;
-        this.documents = [
+    }
+    assertAdminPublicLibraryOnly(groupId) {
+        if (!this.authService.isAdmin()) {
+            return;
+        }
+        if (groupId != null) {
+            throw new common_1.ForbiddenException('管理员仅可访问公共库，不能进入项目组私有库');
+        }
+    }
+    assertAdminCanAccessDocument(document) {
+        if (!this.authService.isAdmin() || document.libraryType === 'public') {
+            return;
+        }
+        throw new common_1.ForbiddenException('管理员仅可访问公共库文档，不能查看项目组私有资料');
+    }
+    toDocumentRecord(entity) {
+        return {
+            id: entity.id,
+            title: entity.title,
+            libraryType: entity.libraryType,
+            sourcePath: entity.filePath,
+            fileName: entity.fileName,
+            uploadedBy: entity.uploadedBy,
+            chunkCount: entity.chunkCount,
+            indexStatus: entity.indexStatus,
+            extractionMode: (entity.extractionMode ?? 'text'),
+            uploadedAt: entity.uploadedAt.toISOString().slice(0, 16).replace('T', ' '),
+            groupId: entity.teamId,
+            fileType: entity.fileType,
+            chunkStrategy: 'structure-first',
+            parserTarget: entity.parserTarget,
+            embeddingTarget: entity.embeddingTarget,
+            vectorStoreTarget: entity.vectorStoreTarget,
+            pipelineStage: entity.indexStatus === 'ready' ? 'indexed' : entity.extractionMode === 'ocr' ? 'ocr' : 'queued',
+        };
+    }
+    toChunkRecord(entity) {
+        return {
+            id: entity.id,
+            documentId: entity.documentId,
+            groupId: entity.teamId,
+            libraryType: entity.libraryType,
+            title: entity.title,
+            chapterTitle: entity.chapterTitle ?? '',
+            articleRef: entity.articleRef ?? '',
+            pageLabel: entity.pageLabel ?? '',
+            content: entity.content,
+            keywords: entity.keywords,
+            indexStatus: entity.indexStatus === 'failed' ? 'processing' : entity.indexStatus,
+        };
+    }
+    toExtractionJobRecord(entity) {
+        return {
+            id: entity.id,
+            documentId: entity.documentId,
+            groupId: entity.teamId,
+            status: entity.status === 'failed' ? 'processing' : entity.status,
+            stage: entity.stage,
+            progress: entity.progress,
+            startedAt: entity.startedAt.toISOString().slice(0, 16).replace('T', ' '),
+        };
+    }
+    buildSeedDocuments() {
+        return [
             {
                 id: 'doc-1',
                 title: '某区财政专项资金管理办法',
@@ -115,7 +178,9 @@ let DocumentsService = class DocumentsService {
                 pipelineStage: 'ocr',
             },
         ];
-        this.extractJobs = [
+    }
+    buildSeedExtractionJobs() {
+        return [
             {
                 id: 'job-1',
                 documentId: 'doc-3',
@@ -126,7 +191,9 @@ let DocumentsService = class DocumentsService {
                 startedAt: '2026-04-25 15:31',
             },
         ];
-        this.chunks = [
+    }
+    buildSeedChunks() {
+        return [
             {
                 id: 'chunk-1',
                 documentId: 'doc-1',
@@ -233,71 +300,16 @@ let DocumentsService = class DocumentsService {
             },
         ];
     }
-    assertAdminPublicLibraryOnly(groupId) {
-        if (!this.authService.isAdmin()) {
-            return;
-        }
-        if (groupId != null) {
-            throw new common_1.ForbiddenException('管理员仅可访问公共库，不能进入项目组私有库');
-        }
-    }
-    assertAdminCanAccessDocument(document) {
-        if (!this.authService.isAdmin() || document.libraryType === 'public') {
-            return;
-        }
-        throw new common_1.ForbiddenException('管理员仅可访问公共库文档，不能查看项目组私有资料');
-    }
-    toDocumentRecord(entity) {
-        return {
-            id: entity.id,
-            title: entity.title,
-            libraryType: entity.libraryType,
-            sourcePath: entity.filePath,
-            fileName: entity.fileName,
-            uploadedBy: entity.uploadedBy,
-            chunkCount: entity.chunkCount,
-            indexStatus: entity.indexStatus,
-            extractionMode: (entity.extractionMode ?? 'text'),
-            uploadedAt: entity.uploadedAt.toISOString().slice(0, 16).replace('T', ' '),
-            groupId: entity.teamId,
-            fileType: entity.fileType,
-            chunkStrategy: 'structure-first',
-            parserTarget: entity.parserTarget,
-            embeddingTarget: entity.embeddingTarget,
-            vectorStoreTarget: entity.vectorStoreTarget,
-            pipelineStage: entity.indexStatus === 'ready' ? 'indexed' : entity.extractionMode === 'ocr' ? 'ocr' : 'queued',
-        };
-    }
-    toChunkRecord(entity) {
-        return {
-            id: entity.id,
-            documentId: entity.documentId,
-            groupId: entity.teamId,
-            libraryType: entity.libraryType,
-            title: entity.title,
-            chapterTitle: entity.chapterTitle ?? '',
-            articleRef: entity.articleRef ?? '',
-            pageLabel: entity.pageLabel ?? '',
-            content: entity.content,
-            keywords: entity.keywords,
-            indexStatus: entity.indexStatus === 'failed' ? 'processing' : entity.indexStatus,
-        };
-    }
-    toExtractionJobRecord(entity) {
-        return {
-            id: entity.id,
-            documentId: entity.documentId,
-            groupId: entity.teamId,
-            status: entity.status === 'failed' ? 'processing' : entity.status,
-            stage: entity.stage,
-            progress: entity.progress,
-            startedAt: entity.startedAt.toISOString().slice(0, 16).replace('T', ' '),
-        };
+    buildImportedChunkId(documentId, index) {
+        return `chunk-${documentId}-${index + 1}`;
     }
     async ensurePersistedDocumentSeedData() {
+        const seedDocuments = this.buildSeedDocuments();
+        const seedChunks = this.buildSeedChunks();
+        const seedExtractionJobs = this.buildSeedExtractionJobs();
         const documentCount = await this.persistedDocumentRepository.count();
         if (documentCount === 0) {
-            await this.persistedDocumentRepository.save(this.documents.map((document) => this.persistedDocumentRepository.create({
+            await this.persistedDocumentRepository.save(seedDocuments.map((document) => this.persistedDocumentRepository.create({
                 id: document.id,
                 title: document.title,
                 fileName: document.fileName,
@@ -321,7 +333,7 @@ let DocumentsService = class DocumentsService {
         }
         const chunkCount = await this.persistedChunkRepository.count();
         if (chunkCount === 0) {
-            await this.persistedChunkRepository.save(this.chunks.map((chunk, index) => this.persistedChunkRepository.create({
+            await this.persistedChunkRepository.save(seedChunks.map((chunk, index) => this.persistedChunkRepository.create({
                 id: chunk.id,
                 documentId: chunk.documentId,
                 teamId: chunk.groupId,
@@ -339,7 +351,7 @@ let DocumentsService = class DocumentsService {
         }
         const extractionJobCount = await this.persistedExtractionJobRepository.count();
         if (extractionJobCount === 0) {
-            await this.persistedExtractionJobRepository.save(this.extractJobs.map((job) => this.persistedExtractionJobRepository.create({
+            await this.persistedExtractionJobRepository.save(seedExtractionJobs.map((job) => this.persistedExtractionJobRepository.create({
                 id: job.id,
                 documentId: job.documentId,
                 teamId: job.groupId,
@@ -452,7 +464,7 @@ let DocumentsService = class DocumentsService {
                 .filter((item) => item.length >= 2)
                 .slice(0, 10)));
             return {
-                id: `chunk-${this.chunks.length + index + 1}`,
+                id: this.buildImportedChunkId(document.id, index),
                 documentId: document.id,
                 groupId: document.groupId,
                 libraryType: document.libraryType,
@@ -555,7 +567,7 @@ let DocumentsService = class DocumentsService {
             },
         ];
         return chunkBlueprints.map((blueprint, index) => ({
-            id: `chunk-${this.chunks.length + index + 1}`,
+            id: this.buildImportedChunkId(document.id, index),
             documentId: document.id,
             groupId: document.groupId,
             libraryType: document.libraryType,

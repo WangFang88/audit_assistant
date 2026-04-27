@@ -62,14 +62,15 @@ export declare class DocumentsService {
     private readonly subscriptionsService;
     private readonly fileStorageService;
     constructor(persistedDocumentRepository: Repository<DocumentEntity>, persistedChunkRepository: Repository<DocumentChunkEntity>, persistedExtractionJobRepository: Repository<DocumentExtractionJobEntity>, authService: AuthService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, fileStorageService: FileStorageService);
-    private readonly documents;
-    private readonly extractJobs;
-    private readonly chunks;
     private assertAdminPublicLibraryOnly;
     private assertAdminCanAccessDocument;
     private toDocumentRecord;
     private toChunkRecord;
     private toExtractionJobRecord;
+    private buildSeedDocuments;
+    private buildSeedExtractionJobs;
+    private buildSeedChunks;
+    private buildImportedChunkId;
     private ensurePersistedDocumentSeedData;
     listDocuments(groupId?: string): Promise<DocumentRecord[]>;
     listExtractionJobs(groupId?: string): Promise<ExtractJobRecord[]>;
