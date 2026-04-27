@@ -1475,21 +1475,21 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              Chip(label: Text('结果范围：${result.scope.label}')),
-              if (result.agent != null) Chip(label: Text('命中Agent：${result.agent!.name}')),
-              Chip(label: Text('目标模型：${result.ragMeta.generationProviderTarget}')),
-              Chip(label: Text('检索模式：${result.ragMeta.retrievalMode}')),
-              Chip(label: Text('原型状态：${result.ragMeta.prototypeMode}')),
-              Chip(label: Text(result.ragMeta.answerTraceable ? '回答可溯源' : '回答未溯源')),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(result.scope.isolationNotice, style: theme.textTheme.bodySmall),
-          const SizedBox(height: 16),
+          // Wrap(
+          //   spacing: 12,
+          //   runSpacing: 12,
+          //   children: [
+          //     Chip(label: Text('结果范围：${result.scope.label}')),
+          //     if (result.agent != null) Chip(label: Text('命中Agent：${result.agent!.name}')),
+          //     Chip(label: Text('目标模型：${result.ragMeta.generationProviderTarget}')),
+          //     Chip(label: Text('检索模式：${result.ragMeta.retrievalMode}')),
+          //     Chip(label: Text('原型状态：${result.ragMeta.prototypeMode}')),
+          //     Chip(label: Text(result.ragMeta.answerTraceable ? '回答可溯源' : '回答未溯源')),
+          //   ],
+          // ),
+          // const SizedBox(height: 12),
+          // Text(result.scope.isolationNotice, style: theme.textTheme.bodySmall),
+          // const SizedBox(height: 16),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -1507,42 +1507,27 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: result.pipeline.map((step) => Chip(label: Text(step))).toList(),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              SizedBox(width: 180, child: _MetricTile(label: '检索模式', value: result.retrievalStats.queryMode)),
-              SizedBox(
-                width: 160,
-                child: _MetricTile(label: '候选文本块', value: '${result.retrievalStats.candidateChunks}'),
-              ),
-              SizedBox(
-                width: 160,
-                child: _MetricTile(label: '返回条款', value: '${result.retrievalStats.returnedCitations}'),
-              ),
-              SizedBox(
-                width: 160,
-                child: _MetricTile(label: '公共库命中', value: '${result.retrievalStats.publicLibraryHits}'),
-              ),
-              if (_isAdmin)
-                const SizedBox(
-                  width: 180,
-                  child: _MetricTile(label: '当前结果范围', value: '仅公共库命中'),
-                )
-              else
-                SizedBox(
-                  width: 160,
-                  child: _MetricTile(label: '私有库命中', value: '${result.retrievalStats.privateLibraryHits}'),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
+          // Wrap(
+          //   spacing: 8,
+          //   runSpacing: 8,
+          //   children: result.pipeline.map((step) => Chip(label: Text(step))).toList(),
+          // ),
+          // const SizedBox(height: 16),
+          // Wrap(
+          //   spacing: 12,
+          //   runSpacing: 12,
+          //   children: [
+          //     SizedBox(width: 180, child: _MetricTile(label: '检索模式', value: result.retrievalStats.queryMode)),
+          //     SizedBox(width: 160, child: _MetricTile(label: '候选文本块', value: '${result.retrievalStats.candidateChunks}')),
+          //     SizedBox(width: 160, child: _MetricTile(label: '返回条款', value: '${result.retrievalStats.returnedCitations}')),
+          //     SizedBox(width: 160, child: _MetricTile(label: '公共库命中', value: '${result.retrievalStats.publicLibraryHits}')),
+          //     if (_isAdmin)
+          //       const SizedBox(width: 180, child: _MetricTile(label: '当前结果范围', value: '仅公共库命中'))
+          //     else
+          //       SizedBox(width: 160, child: _MetricTile(label: '私有库命中', value: '${result.retrievalStats.privateLibraryHits}')),
+          //   ],
+          // ),
+          // const SizedBox(height: 16),
           Text('引用条款', style: theme.textTheme.titleSmall),
           const SizedBox(height: 12),
           ...result.citations.map(
