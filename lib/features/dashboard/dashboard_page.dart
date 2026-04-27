@@ -1745,53 +1745,13 @@ class _DashboardPageState extends State<DashboardPage> {
               child: LinearProgressIndicator(),
             ),
           ...documents.map(
-            (document) => Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE3E8F2)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(document.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      ),
-                      Chip(label: Text(document.libraryType)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text('${document.fileType} · ${document.extractionMode} · ${document.indexStatus}'),
-                  const SizedBox(height: 6),
-                  Text('上传路径：${document.sourcePath}', style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(height: 4),
-                  Text('入库时间：${document.uploadedAt}', style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      Chip(label: Text('切分：${document.chunkStrategy}')),
-                      Chip(label: Text('阶段：${document.pipelineStage}')),
-                      Chip(label: Text('解析：${document.parserTarget}')),
-                      Chip(label: Text('向量模型：${document.embeddingTarget}')),
-                      Chip(label: Text('向量库：${document.vectorStoreTarget}')),
-                      Chip(label: Text(document.chunkCount == 0 ? '文本块：待生成' : '文本块：${document.chunkCount}')),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      onPressed: () => _showDocumentChunksDialog(document),
-                      child: const Text('查看文本块'),
-                    ),
-                  ),
-                ],
+            (document) => ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+              title: Text(document.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('${document.uploadedAt} · ${document.libraryType == 'private' ? '私有库' : '公共库'} · ${document.chunkCount == 0 ? '待处理' : '${document.chunkCount}块'}'),
+              trailing: TextButton(
+                onPressed: () => _showDocumentChunksDialog(document),
+                child: const Text('查看文本块'),
               ),
             ),
           ),
