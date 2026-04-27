@@ -24,6 +24,7 @@ const auth_service_1 = require("../auth/auth.service");
 const groups_service_1 = require("../groups/groups.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 const file_storage_service_1 = require("./file-storage.service");
+const text_extraction_service_1 = require("./text-extraction.service");
 class ImportDocumentDto {
 }
 exports.ImportDocumentDto = ImportDocumentDto;
@@ -48,7 +49,7 @@ __decorate([
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "groupId", void 0);
 let DocumentsService = class DocumentsService {
-    constructor(persistedDocumentRepository, persistedChunkRepository, persistedExtractionJobRepository, authService, groupsService, subscriptionsService, fileStorageService) {
+    constructor(persistedDocumentRepository, persistedChunkRepository, persistedExtractionJobRepository, authService, groupsService, subscriptionsService, fileStorageService, textExtractionService) {
         this.persistedDocumentRepository = persistedDocumentRepository;
         this.persistedChunkRepository = persistedChunkRepository;
         this.persistedExtractionJobRepository = persistedExtractionJobRepository;
@@ -56,6 +57,7 @@ let DocumentsService = class DocumentsService {
         this.groupsService = groupsService;
         this.subscriptionsService = subscriptionsService;
         this.fileStorageService = fileStorageService;
+        this.textExtractionService = textExtractionService;
     }
     assertAdminPublicLibraryOnly(groupId) {
         if (!this.authService.isAdmin()) {
@@ -478,6 +480,19 @@ let DocumentsService = class DocumentsService {
             };
         });
     }
+    async buildChunksFromFile(document) {
+        let text = '';
+        try {
+            text = await this.textExtractionService.extractText(document.sourcePath, document.fileType);
+        }
+        catch {
+            return [];
+        }
+        if (!text || text.trim().length < 20) {
+            return [];
+        }
+        return this.buildChunksFromRawText(document, text);
+    }
     buildChunksForDocument(document) {
         const normalizedTitle = document.title.toLowerCase();
         const normalizedSource = document.sourcePath.toLowerCase();
@@ -661,7 +676,7 @@ let DocumentsService = class DocumentsService {
             if (!dto.groupId) {
                 throw new common_1.BadRequestException('私有库导入必须指定项目组');
             }
-            this.groupsService.assertCanAccessGroup(dto.groupId);
+            await this.groupsService.assertIsLeader(dto.groupId);
             const currentPrivateDocuments = await this.persistedDocumentRepository.count({
                 where: { libraryType: 'private', deletedAt: (0, typeorm_2.IsNull)() },
             });
@@ -691,7 +706,9 @@ let DocumentsService = class DocumentsService {
             vectorStoreTarget: 'pgvector',
             pipelineStage: hasRawText ? 'indexed' : classification.pipelineStage,
         };
-        const generatedChunks = hasRawText ? this.buildChunksFromRawText(document, dto.rawText) : this.buildChunksForDocument(document);
+        const generatedChunks = hasRawText
+            ? this.buildChunksFromRawText(document, dto.rawText)
+            : await this.buildChunksFromFile(document);
         document.chunkCount = generatedChunks.length;
         await this.persistedDocumentRepository.save(this.toDocumentEntity(document));
         if (generatedChunks.length > 0) {
@@ -764,6 +781,7 @@ exports.DocumentsService = DocumentsService = __decorate([
         auth_service_1.AuthService,
         groups_service_1.GroupsService,
         subscriptions_service_1.SubscriptionsService,
-        file_storage_service_1.FileStorageService])
+        file_storage_service_1.FileStorageService,
+        text_extraction_service_1.TextExtractionService])
 ], DocumentsService);
 //# sourceMappingURL=documents.service.js.map

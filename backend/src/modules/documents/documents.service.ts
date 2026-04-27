@@ -9,6 +9,7 @@ import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { FileStorageService } from './file-storage.service';
+import { TextExtractionService } from './text-extraction.service';
 
 class ImportDocumentDto {
   @IsString()
@@ -86,6 +87,7 @@ export class DocumentsService {
     private readonly groupsService: GroupsService,
     private readonly subscriptionsService: SubscriptionsService,
     private readonly fileStorageService: FileStorageService,
+    private readonly textExtractionService: TextExtractionService,
   ) {}
 
 
@@ -564,6 +566,22 @@ export class DocumentsService {
     });
   }
 
+  private async buildChunksFromFile(document: DocumentRecord): Promise<DocumentChunkRecord[]> {
+    let text = '';
+    try {
+      text = await this.textExtractionService.extractText(document.sourcePath, document.fileType);
+    } catch {
+      // extraction failed, return empty chunks (job will stay in processing state)
+      return [];
+    }
+
+    if (!text || text.trim().length < 20) {
+      return [];
+    }
+
+    return this.buildChunksFromRawText(document, text);
+  }
+
   private buildChunksForDocument(document: DocumentRecord): DocumentChunkRecord[] {
     const normalizedTitle = document.title.toLowerCase();
     const normalizedSource = document.sourcePath.toLowerCase();
@@ -793,7 +811,9 @@ export class DocumentsService {
       pipelineStage: hasRawText ? 'indexed' as const : classification.pipelineStage,
     };
 
-    const generatedChunks = hasRawText ? this.buildChunksFromRawText(document, dto.rawText!) : this.buildChunksForDocument(document);
+    const generatedChunks = hasRawText
+      ? this.buildChunksFromRawText(document, dto.rawText!)
+      : await this.buildChunksFromFile(document);
     document.chunkCount = generatedChunks.length;
 
     await this.persistedDocumentRepository.save(this.toDocumentEntity(document));

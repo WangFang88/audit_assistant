@@ -141,6 +141,14 @@ let GroupsService = class GroupsService {
         }
         throw new common_1.ForbiddenException('当前账号不属于该项目组，无法访问相关数据');
     }
+    async assertIsLeader(groupId) {
+        await this.assertCanAccessGroup(groupId);
+        const currentUser = this.getCurrentUser();
+        const member = await this.teamMemberRepository.findOneBy({ teamId: groupId, userId: currentUser.id });
+        if (member?.role !== 'leader') {
+            throw new common_1.ForbiddenException('只有组长才能执行此操作');
+        }
+    }
     async listGroups() {
         if (this.authService.isAdmin()) {
             return [];

@@ -9,11 +9,12 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
 import { FileStorageService } from './file-storage.service';
+import { TextExtractionService } from './text-extraction.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([DocumentEntity, DocumentChunkEntity, DocumentExtractionJobEntity]), AuthModule, forwardRef(() => GroupsModule), SubscriptionsModule],
   controllers: [DocumentsController],
-  providers: [DocumentsService, FileStorageService],
+  providers: [DocumentsService, FileStorageService, TextExtractionService],
   exports: [DocumentsService],
 })
 export class DocumentsModule {}

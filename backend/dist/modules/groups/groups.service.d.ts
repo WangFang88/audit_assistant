@@ -54,6 +54,7 @@ export declare class GroupsService {
     private getCurrentUser;
     private isCurrentUserMemberOfGroup;
     assertCanAccessGroup(groupId: string): Promise<void>;
+    assertIsLeader(groupId: string): Promise<void>;
     listGroups(): Promise<GroupRecord[]>;
     getGroupById(groupId: string): Promise<GroupRecord>;
     createGroup(dto: CreateGroupDto): Promise<GroupRecord>;

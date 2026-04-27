@@ -6,6 +6,7 @@ import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { FileStorageService } from './file-storage.service';
+import { TextExtractionService } from './text-extraction.service';
 declare class ImportDocumentDto {
     title: string;
     libraryType: 'public' | 'private';
@@ -61,7 +62,8 @@ export declare class DocumentsService {
     private readonly groupsService;
     private readonly subscriptionsService;
     private readonly fileStorageService;
-    constructor(persistedDocumentRepository: Repository<DocumentEntity>, persistedChunkRepository: Repository<DocumentChunkEntity>, persistedExtractionJobRepository: Repository<DocumentExtractionJobEntity>, authService: AuthService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, fileStorageService: FileStorageService);
+    private readonly textExtractionService;
+    constructor(persistedDocumentRepository: Repository<DocumentEntity>, persistedChunkRepository: Repository<DocumentChunkEntity>, persistedExtractionJobRepository: Repository<DocumentExtractionJobEntity>, authService: AuthService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, fileStorageService: FileStorageService, textExtractionService: TextExtractionService);
     private assertAdminPublicLibraryOnly;
     private assertAdminCanAccessDocument;
     private toDocumentRecord;
@@ -78,6 +80,7 @@ export declare class DocumentsService {
     listDocumentChunks(documentId: string): Promise<DocumentChunkRecord[]>;
     getDocumentById(documentId: string): Promise<DocumentRecord>;
     private buildChunksFromRawText;
+    private buildChunksFromFile;
     private buildChunksForDocument;
     private classifyUploadedFile;
     private saveUploadedFile;
