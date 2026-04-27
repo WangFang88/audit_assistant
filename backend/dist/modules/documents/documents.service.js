@@ -25,6 +25,7 @@ const groups_service_1 = require("../groups/groups.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 const file_storage_service_1 = require("./file-storage.service");
 const text_extraction_service_1 = require("./text-extraction.service");
+const embedding_service_1 = require("./embedding.service");
 class ImportDocumentDto {
 }
 exports.ImportDocumentDto = ImportDocumentDto;
@@ -49,7 +50,7 @@ __decorate([
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "groupId", void 0);
 let DocumentsService = class DocumentsService {
-    constructor(persistedDocumentRepository, persistedChunkRepository, persistedExtractionJobRepository, authService, groupsService, subscriptionsService, fileStorageService, textExtractionService) {
+    constructor(persistedDocumentRepository, persistedChunkRepository, persistedExtractionJobRepository, authService, groupsService, subscriptionsService, fileStorageService, textExtractionService, embeddingService) {
         this.persistedDocumentRepository = persistedDocumentRepository;
         this.persistedChunkRepository = persistedChunkRepository;
         this.persistedExtractionJobRepository = persistedExtractionJobRepository;
@@ -58,6 +59,7 @@ let DocumentsService = class DocumentsService {
         this.subscriptionsService = subscriptionsService;
         this.fileStorageService = fileStorageService;
         this.textExtractionService = textExtractionService;
+        this.embeddingService = embeddingService;
     }
     assertAdminPublicLibraryOnly(groupId) {
         if (!this.authService.isAdmin()) {
@@ -107,6 +109,7 @@ let DocumentsService = class DocumentsService {
             content: entity.content,
             keywords: entity.keywords,
             indexStatus: entity.indexStatus === 'failed' ? 'processing' : entity.indexStatus,
+            embedding: entity.embedding ?? null,
         };
     }
     toExtractionJobRecord(entity) {
@@ -734,6 +737,9 @@ let DocumentsService = class DocumentsService {
         await this.persistedDocumentRepository.save(this.toDocumentEntity(document));
         if (generatedChunks.length > 0) {
             await this.persistedChunkRepository.save(generatedChunks.map((chunk, index) => this.toChunkEntity(chunk, index)));
+            setImmediate(() => {
+                this.embedChunksAsync(generatedChunks.map((c) => c.id)).catch(() => { });
+            });
         }
         if (!hasRawText || classification.pipelineStage !== 'indexed') {
             await this.persistedExtractionJobRepository.save(this.persistedExtractionJobRepository.create({
@@ -758,6 +764,17 @@ let DocumentsService = class DocumentsService {
             ...document,
             notes: '导入后会执行文字抽取、多模态拆解、结构化切分与向量化入库，查询阶段不直接扫描原文件。',
         };
+    }
+    async embedChunksAsync(chunkIds) {
+        for (const chunkId of chunkIds) {
+            const entity = await this.persistedChunkRepository.findOne({ where: { id: chunkId } });
+            if (!entity)
+                continue;
+            const vector = await this.embeddingService.embed(entity.content);
+            if (vector) {
+                await this.persistedChunkRepository.update({ id: chunkId }, { embedding: vector });
+            }
+        }
     }
     async removeGroupDocuments(groupId) {
         await this.ensurePersistedDocumentSeedData();
@@ -803,6 +820,7 @@ exports.DocumentsService = DocumentsService = __decorate([
         groups_service_1.GroupsService,
         subscriptions_service_1.SubscriptionsService,
         file_storage_service_1.FileStorageService,
-        text_extraction_service_1.TextExtractionService])
+        text_extraction_service_1.TextExtractionService,
+        embedding_service_1.EmbeddingService])
 ], DocumentsService);
 //# sourceMappingURL=documents.service.js.map

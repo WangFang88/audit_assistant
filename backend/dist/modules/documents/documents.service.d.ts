@@ -7,6 +7,7 @@ import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { FileStorageService } from './file-storage.service';
 import { TextExtractionService } from './text-extraction.service';
+import { EmbeddingService } from './embedding.service';
 declare class ImportDocumentDto {
     title: string;
     libraryType: 'public' | 'private';
@@ -53,6 +54,7 @@ type DocumentChunkRecord = {
     content: string;
     keywords: string[];
     indexStatus: 'ready' | 'processing';
+    embedding?: number[] | null;
 };
 export declare class DocumentsService {
     private readonly persistedDocumentRepository;
@@ -63,7 +65,8 @@ export declare class DocumentsService {
     private readonly subscriptionsService;
     private readonly fileStorageService;
     private readonly textExtractionService;
-    constructor(persistedDocumentRepository: Repository<DocumentEntity>, persistedChunkRepository: Repository<DocumentChunkEntity>, persistedExtractionJobRepository: Repository<DocumentExtractionJobEntity>, authService: AuthService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, fileStorageService: FileStorageService, textExtractionService: TextExtractionService);
+    private readonly embeddingService;
+    constructor(persistedDocumentRepository: Repository<DocumentEntity>, persistedChunkRepository: Repository<DocumentChunkEntity>, persistedExtractionJobRepository: Repository<DocumentExtractionJobEntity>, authService: AuthService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, fileStorageService: FileStorageService, textExtractionService: TextExtractionService, embeddingService: EmbeddingService);
     private assertAdminPublicLibraryOnly;
     private assertAdminCanAccessDocument;
     private toDocumentRecord;
@@ -106,6 +109,7 @@ export declare class DocumentsService {
         vectorStoreTarget: "pgvector";
         pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
     }>;
+    private embedChunksAsync;
     removeGroupDocuments(groupId: string): Promise<void>;
     getLibraryScopeSummary(groupId?: string): Promise<{
         scopeMode: string;

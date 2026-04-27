@@ -15,7 +15,7 @@ export class EmbeddingService {
       const res = await fetch(this.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
-        body: JSON.stringify({ model: this.model, input: text, encoding_format: 'float' }),
+        body: JSON.stringify({ model: this.model, input: [text] }),
       });
       if (!res.ok) {
         this.logger.warn(`Embedding API error: ${res.status}`);

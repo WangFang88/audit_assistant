@@ -12,5 +12,6 @@ export declare class DocumentChunkEntity {
     chunkIndex: number;
     indexStatus: 'ready' | 'processing' | 'failed';
     tokenCount: number;
+    embedding: number[] | null;
     createdAt: Date;
 }

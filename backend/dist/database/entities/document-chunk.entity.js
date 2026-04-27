@@ -67,6 +67,10 @@ __decorate([
     __metadata("design:type", Number)
 ], DocumentChunkEntity.prototype, "tokenCount", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'embedding', type: 'jsonb', nullable: true }),
+    __metadata("design:type", Object)
+], DocumentChunkEntity.prototype, "embedding", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at', type: 'timestamp' }),
     __metadata("design:type", Date)
 ], DocumentChunkEntity.prototype, "createdAt", void 0);

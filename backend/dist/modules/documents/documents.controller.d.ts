@@ -42,6 +42,7 @@ export declare class DocumentsController {
         content: string;
         keywords: string[];
         indexStatus: "ready" | "processing";
+        embedding?: number[] | null;
     }[]>;
     importDocument(file: Express.Multer.File | undefined, dto: ImportDocumentDto): Promise<{
         notes: string;
