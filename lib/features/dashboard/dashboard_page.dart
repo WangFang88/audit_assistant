@@ -1429,7 +1429,7 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           TextField(
             controller: _questionController,
-            maxLines: 4,
+            maxLines: 8,
             decoration: const InputDecoration(
               labelText: '输入审计问题或检索需求',
               alignLabelWithHint: true,
