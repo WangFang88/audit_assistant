@@ -10,11 +10,12 @@ import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
 import { FileStorageService } from './file-storage.service';
 import { TextExtractionService } from './text-extraction.service';
+import { EmbeddingService } from './embedding.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([DocumentEntity, DocumentChunkEntity, DocumentExtractionJobEntity]), AuthModule, forwardRef(() => GroupsModule), SubscriptionsModule],
   controllers: [DocumentsController],
-  providers: [DocumentsService, FileStorageService, TextExtractionService],
-  exports: [DocumentsService],
+  providers: [DocumentsService, FileStorageService, TextExtractionService, EmbeddingService],
+  exports: [DocumentsService, EmbeddingService],
 })
 export class DocumentsModule {}

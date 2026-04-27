@@ -41,6 +41,9 @@ export class DocumentChunkEntity {
   @Column({ name: 'token_count', type: 'int', default: 0 })
   tokenCount!: number;
 
+  @Column({ name: 'embedding', type: 'jsonb', nullable: true })
+  embedding!: number[] | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt!: Date;
 }

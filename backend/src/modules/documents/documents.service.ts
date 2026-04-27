@@ -10,6 +10,7 @@ import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { FileStorageService } from './file-storage.service';
 import { TextExtractionService } from './text-extraction.service';
+import { EmbeddingService } from './embedding.service';
 
 class ImportDocumentDto {
   @IsString()
@@ -71,6 +72,7 @@ type DocumentChunkRecord = {
   content: string;
   keywords: string[];
   indexStatus: 'ready' | 'processing';
+  embedding?: number[] | null;
 };
 
 @Injectable()
@@ -88,6 +90,7 @@ export class DocumentsService {
     private readonly subscriptionsService: SubscriptionsService,
     private readonly fileStorageService: FileStorageService,
     private readonly textExtractionService: TextExtractionService,
+    private readonly embeddingService: EmbeddingService,
   ) {}
 
 
@@ -144,6 +147,7 @@ export class DocumentsService {
       content: entity.content,
       keywords: entity.keywords,
       indexStatus: entity.indexStatus === 'failed' ? 'processing' : entity.indexStatus,
+      embedding: entity.embedding ?? null,
     };
   }
 
@@ -842,6 +846,10 @@ export class DocumentsService {
     await this.persistedDocumentRepository.save(this.toDocumentEntity(document));
     if (generatedChunks.length > 0) {
       await this.persistedChunkRepository.save(generatedChunks.map((chunk, index) => this.toChunkEntity(chunk, index)));
+      // 异步写入 embedding，不阻塞响应
+      setImmediate(() => {
+        this.embedChunksAsync(generatedChunks.map((c) => c.id)).catch(() => {});
+      });
     }
     if (!hasRawText || classification.pipelineStage !== 'indexed') {
       await this.persistedExtractionJobRepository.save(
@@ -870,6 +878,17 @@ export class DocumentsService {
       ...document,
       notes: '导入后会执行文字抽取、多模态拆解、结构化切分与向量化入库，查询阶段不直接扫描原文件。',
     };
+  }
+
+  private async embedChunksAsync(chunkIds: string[]): Promise<void> {
+    for (const chunkId of chunkIds) {
+      const entity = await this.persistedChunkRepository.findOne({ where: { id: chunkId } });
+      if (!entity) continue;
+      const vector = await this.embeddingService.embed(entity.content);
+      if (vector) {
+        await this.persistedChunkRepository.update({ id: chunkId }, { embedding: vector });
+      }
+    }
   }
 
   async removeGroupDocuments(groupId: string) {
