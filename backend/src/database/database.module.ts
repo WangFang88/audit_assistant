@@ -5,11 +5,7 @@ import { ConversationEntity } from './entities/conversation.entity';
 import { DocumentChunkEntity } from './entities/document-chunk.entity';
 import { DocumentEntity } from './entities/document.entity';
 import { DocumentExtractionJobEntity } from './entities/document-extraction-job.entity';
-import { GroupMessageEntity } from './entities/group-message.entity';
 import { MessageEntity } from './entities/message.entity';
-import { PrivateDocEntity } from './entities/private-doc.entity';
-import { PrivateMessageEntity } from './entities/private-message.entity';
-import { PublicDocEntity } from './entities/public-doc.entity';
 import { QueryLogEntity } from './entities/query-log.entity';
 import { SubscriptionEntity } from './entities/subscription.entity';
 import { TeamAgentEntity } from './entities/team-agent.entity';
@@ -22,13 +18,9 @@ const entities = [
   TeamEntity,
   TeamMemberEntity,
   TeamAgentEntity,
-  PublicDocEntity,
-  PrivateDocEntity,
   DocumentEntity,
   DocumentChunkEntity,
   DocumentExtractionJobEntity,
-  GroupMessageEntity,
-  PrivateMessageEntity,
   ConversationEntity,
   ConversationParticipantEntity,
   MessageEntity,

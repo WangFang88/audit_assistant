@@ -14,11 +14,7 @@ const conversation_entity_1 = require("./entities/conversation.entity");
 const document_chunk_entity_1 = require("./entities/document-chunk.entity");
 const document_entity_1 = require("./entities/document.entity");
 const document_extraction_job_entity_1 = require("./entities/document-extraction-job.entity");
-const group_message_entity_1 = require("./entities/group-message.entity");
 const message_entity_1 = require("./entities/message.entity");
-const private_doc_entity_1 = require("./entities/private-doc.entity");
-const private_message_entity_1 = require("./entities/private-message.entity");
-const public_doc_entity_1 = require("./entities/public-doc.entity");
 const query_log_entity_1 = require("./entities/query-log.entity");
 const subscription_entity_1 = require("./entities/subscription.entity");
 const team_agent_entity_1 = require("./entities/team-agent.entity");
@@ -30,13 +26,9 @@ const entities = [
     team_entity_1.TeamEntity,
     team_member_entity_1.TeamMemberEntity,
     team_agent_entity_1.TeamAgentEntity,
-    public_doc_entity_1.PublicDocEntity,
-    private_doc_entity_1.PrivateDocEntity,
     document_entity_1.DocumentEntity,
     document_chunk_entity_1.DocumentChunkEntity,
     document_extraction_job_entity_1.DocumentExtractionJobEntity,
-    group_message_entity_1.GroupMessageEntity,
-    private_message_entity_1.PrivateMessageEntity,
     conversation_entity_1.ConversationEntity,
     conversation_participant_entity_1.ConversationParticipantEntity,
     message_entity_1.MessageEntity,
