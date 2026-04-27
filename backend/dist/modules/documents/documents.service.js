@@ -447,16 +447,16 @@ let DocumentsService = class DocumentsService {
     buildChunksFromRawText(document, rawText) {
         const normalizedText = rawText.replace(/\r/g, '').trim();
         const rawSegments = normalizedText
-            .split(/\n{2,}|(?=第[一二三四五六七八九十百零]+[章节条款])/)
-            .map((s) => s.replace(/\s+/g, ' ').trim())
-            .filter((s) => s.length >= 20);
+            .split(/(?=第[一二三四五六七八九十百零千\d]+[章节条款])/)
+            .map((s) => s.replace(/[ \t]+/g, ' ').trim())
+            .filter((s) => s.length >= 10);
         const segments = [];
         for (const seg of rawSegments) {
             if (seg.length <= 500) {
                 segments.push(seg);
             }
             else {
-                const subSegs = seg.split(/(?<=[。；！？])\s*/).filter((s) => s.length >= 20);
+                const subSegs = seg.split(/(?<=[\u3002\uff1b\uff01\uff1f])\s*/).filter((s) => s.length >= 10);
                 let current = '';
                 for (const sub of subSegs) {
                     if ((current + sub).length > 500 && current.length > 0) {
@@ -467,24 +467,25 @@ let DocumentsService = class DocumentsService {
                         current += sub;
                     }
                 }
-                if (current.trim().length >= 20) {
+                if (current.trim().length >= 10)
                     segments.push(current.trim());
-                }
             }
         }
-        if (segments.length === 0) {
+        if (segments.length === 0)
             return [];
-        }
         const titleKeywords = document.title
-            .replace(/[()（）_./-]+/g, ' ')
+            .replace(/[()\uff08\uff09_.\/-]+/g, ' ')
             .split(/[\s]+/)
             .map((item) => item.trim())
             .filter((item) => item.length >= 2);
+        let currentChapter = '';
         return segments.map((segment, index) => {
-            const chapterMatch = segment.match(/第[一二三四五六七八九十百]+章[^。；，\n]*/);
-            const articleMatch = segment.match(/第[一二三四五六七八九十百]+条/);
+            const chapterMatch = segment.match(/^第[一二三四五六七八九十百零千\d]+章[^\n\uff0c\u3002\uff1b]*/);
+            if (chapterMatch)
+                currentChapter = chapterMatch[0];
+            const articleMatch = segment.match(/^第[一二三四五六七八九十百零千\d]+条/);
             const sentenceKeywords = Array.from(new Set(segment
-                .replace(/[，。；：、“”‘’（）()【】\[\]\-]/g, ' ')
+                .replace(/[\uff0c\u3002\uff1b\uff1a\u3001\u201c\u201d\u2018\u2019\uff08\uff09()\u3010\u3011\[\]\-]/g, ' ')
                 .split(/[\s]+/)
                 .map((item) => item.trim())
                 .filter((item) => item.length >= 2)
@@ -495,9 +496,9 @@ let DocumentsService = class DocumentsService {
                 groupId: document.groupId,
                 libraryType: document.libraryType,
                 title: document.title,
-                chapterTitle: chapterMatch?.[0] ?? `第${index + 1}段`,
-                articleRef: articleMatch?.[0] ?? `第${index + 1}条`,
-                pageLabel: `第 ${index + 1} 页`,
+                chapterTitle: currentChapter || ('第' + (index + 1) + '段'),
+                articleRef: articleMatch?.[0] ?? ('第' + (index + 1) + '条'),
+                pageLabel: '第 ' + (index + 1) + ' 段',
                 content: segment,
                 keywords: Array.from(new Set([...titleKeywords, ...sentenceKeywords])),
                 indexStatus: 'ready',
