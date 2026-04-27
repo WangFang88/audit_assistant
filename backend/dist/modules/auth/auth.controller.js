@@ -32,6 +32,9 @@ let AuthController = class AuthController {
     me() {
         return this.authService.me();
     }
+    updateProfile(dto) {
+        return this.authService.updateProfile(dto);
+    }
 };
 exports.AuthController = AuthController;
 __decorate([
@@ -64,6 +67,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "me", null);
+__decorate([
+    (0, common_1.Patch)('me'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_service_1.UpdateProfileDto]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "updateProfile", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

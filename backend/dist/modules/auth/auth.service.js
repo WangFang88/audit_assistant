@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RegisterDto = exports.RefreshTokenDto = exports.LoginDto = exports.AuthService = void 0;
+exports.UpdateProfileDto = exports.RegisterDto = exports.RefreshTokenDto = exports.LoginDto = exports.AuthService = void 0;
 const crypto_1 = require("crypto");
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
@@ -49,6 +49,15 @@ __decorate([
     (0, class_validator_1.MinLength)(6),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);
+class UpdateProfileDto {
+}
+exports.UpdateProfileDto = UpdateProfileDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(2),
+    (0, class_validator_1.MaxLength)(20),
+    __metadata("design:type", String)
+], UpdateProfileDto.prototype, "name", void 0);
 let AuthService = class AuthService {
     constructor(localStateService, authUserRepository) {
         this.localStateService = localStateService;
@@ -262,6 +271,15 @@ let AuthService = class AuthService {
     }
     getUserByPhone(phone) {
         return this.findUserByPhone(phone);
+    }
+    updateProfile(dto) {
+        const user = this.users.find((u) => u.id === this.currentUser.id);
+        if (!user) {
+            throw new common_1.UnauthorizedException('用户不存在');
+        }
+        user.name = dto.name;
+        this.currentUser = { ...this.currentUser, name: dto.name };
+        return this.currentUser;
     }
     isAdmin() {
         return this.currentUser.role === 'admin';

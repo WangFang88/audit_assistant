@@ -11,6 +11,9 @@ declare class RegisterDto {
     phone: string;
     password: string;
 }
+declare class UpdateProfileDto {
+    name: string;
+}
 type DemoUser = {
     id: string;
     name: string;
@@ -64,6 +67,7 @@ export declare class AuthService {
     validateAccessToken(token: string): DemoUser | null;
     me(): DemoUser;
     getUserByPhone(phone: string): AuthUserRecord | null;
+    updateProfile(dto: UpdateProfileDto): DemoUser;
     isAdmin(): boolean;
 }
-export { LoginDto, RefreshTokenDto, RegisterDto };
+export { LoginDto, RefreshTokenDto, RegisterDto, UpdateProfileDto };

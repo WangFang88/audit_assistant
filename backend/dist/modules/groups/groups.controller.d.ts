@@ -1,4 +1,4 @@
-import { CreateGroupDto, GroupsService, InviteMemberDto, TransferLeaderDto } from './groups.service';
+import { CreateGroupDto, GroupsService, InviteMemberDto, TransferLeaderDto, UpdateMemberRoleDto } from './groups.service';
 export declare class GroupsController {
     private readonly groupsService;
     constructor(groupsService: GroupsService);
@@ -48,6 +48,11 @@ export declare class GroupsController {
         removedUserId: string;
         removedAt: string;
         memberCount: number;
+    }>;
+    updateMemberRole(groupId: string, memberId: string, dto: UpdateMemberRoleDto): Promise<{
+        groupId: string;
+        memberId: string;
+        role: "member" | "leader";
     }>;
     deleteGroup(groupId: string): Promise<{
         deletedGroupId: string;

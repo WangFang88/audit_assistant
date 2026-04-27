@@ -12,7 +12,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TransferLeaderDto = exports.InviteMemberDto = exports.CreateGroupDto = exports.GroupsService = void 0;
+exports.UpdateMemberRoleDto = exports.TransferLeaderDto = exports.InviteMemberDto = exports.CreateGroupDto = exports.GroupsService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const class_validator_1 = require("class-validator");
@@ -55,6 +55,13 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], TransferLeaderDto.prototype, "targetUserId", void 0);
+class UpdateMemberRoleDto {
+}
+exports.UpdateMemberRoleDto = UpdateMemberRoleDto;
+__decorate([
+    (0, class_validator_1.IsIn)(['member', 'leader']),
+    __metadata("design:type", String)
+], UpdateMemberRoleDto.prototype, "role", void 0);
 let GroupsService = class GroupsService {
     constructor(authService, subscriptionsService, teamRepository, teamMemberRepository, documentsService, chatService, teamAgentsService) {
         this.authService = authService;
@@ -187,6 +194,21 @@ let GroupsService = class GroupsService {
         const members = await this.teamMemberRepository.findBy({ teamId: groupId });
         return members.map((m) => this.toMemberRecord(m));
     }
+    async updateMemberRole(groupId, memberId, dto) {
+        this.assertAdminCannotManageGroups();
+        await this.assertCanAccessGroup(groupId);
+        const currentUser = this.getCurrentUser();
+        const currentMember = await this.teamMemberRepository.findOneBy({ teamId: groupId, userId: currentUser.id });
+        if (currentMember?.role !== 'leader') {
+            throw new common_1.ForbiddenException('只有组长才能修改成员角色');
+        }
+        const target = await this.teamMemberRepository.findOneBy({ teamId: groupId, id: Number(memberId) });
+        if (!target) {
+            throw new common_1.NotFoundException('成员不存在');
+        }
+        await this.teamMemberRepository.update({ id: Number(memberId) }, { role: dto.role });
+        return { groupId, memberId, role: dto.role };
+    }
     async invite(groupId, dto) {
         this.assertAdminCannotManageGroups();
         await this.assertCanAccessGroup(groupId);
@@ -211,6 +233,11 @@ let GroupsService = class GroupsService {
     async transferLeader(groupId, dto) {
         this.assertAdminCannotManageGroups();
         await this.assertCanAccessGroup(groupId);
+        const currentUser = this.getCurrentUser();
+        const currentMember = await this.teamMemberRepository.findOneBy({ teamId: groupId, userId: currentUser.id });
+        if (currentMember?.role !== 'leader') {
+            throw new common_1.ForbiddenException('只有组长才能移交组长权限');
+        }
         const group = await this.getGroupById(groupId);
         const newLeader = await this.teamMemberRepository.findOneBy({ teamId: groupId, userId: dto.targetUserId });
         if (!newLeader) {

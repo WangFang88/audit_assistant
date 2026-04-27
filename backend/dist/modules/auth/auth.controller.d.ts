@@ -1,4 +1,4 @@
-import { AuthService, LoginDto, RefreshTokenDto, RegisterDto } from './auth.service';
+import { AuthService, LoginDto, RefreshTokenDto, RegisterDto, UpdateProfileDto } from './auth.service';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
@@ -36,6 +36,13 @@ export declare class AuthController {
         };
     };
     me(): {
+        id: string;
+        name: string;
+        phone: string;
+        role: "admin" | "member";
+        trialEndsAt: string;
+    };
+    updateProfile(dto: UpdateProfileDto): {
         id: string;
         name: string;
         phone: string;

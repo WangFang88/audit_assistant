@@ -17,6 +17,9 @@ declare class InviteMemberDto {
 declare class TransferLeaderDto {
     targetUserId: string;
 }
+declare class UpdateMemberRoleDto {
+    role: 'member' | 'leader';
+}
 type GroupRecord = {
     id: string;
     name: string;
@@ -55,6 +58,11 @@ export declare class GroupsService {
     getGroupById(groupId: string): Promise<GroupRecord>;
     createGroup(dto: CreateGroupDto): Promise<GroupRecord>;
     listMembers(groupId: string): Promise<MemberRecord[]>;
+    updateMemberRole(groupId: string, memberId: string, dto: UpdateMemberRoleDto): Promise<{
+        groupId: string;
+        memberId: string;
+        role: "member" | "leader";
+    }>;
     invite(groupId: string, dto: InviteMemberDto): Promise<{
         groupId: string;
         phone: string;
@@ -83,4 +91,4 @@ export declare class GroupsService {
         remainingGroups: number;
     }>;
 }
-export { CreateGroupDto, InviteMemberDto, TransferLeaderDto };
+export { CreateGroupDto, InviteMemberDto, TransferLeaderDto, UpdateMemberRoleDto };

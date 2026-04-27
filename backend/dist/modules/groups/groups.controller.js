@@ -37,6 +37,9 @@ let GroupsController = class GroupsController {
     async removeMember(groupId, memberId) {
         return this.groupsService.removeMember(groupId, memberId);
     }
+    async updateMemberRole(groupId, memberId, dto) {
+        return this.groupsService.updateMemberRole(groupId, memberId, dto);
+    }
     async deleteGroup(groupId) {
         return this.groupsService.deleteGroup(groupId);
     }
@@ -86,6 +89,15 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], GroupsController.prototype, "removeMember", null);
+__decorate([
+    (0, common_1.Patch)(':groupId/members/:memberId'),
+    __param(0, (0, common_1.Param)('groupId')),
+    __param(1, (0, common_1.Param)('memberId')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, groups_service_1.UpdateMemberRoleDto]),
+    __metadata("design:returntype", Promise)
+], GroupsController.prototype, "updateMemberRole", null);
 __decorate([
     (0, common_1.Delete)(':groupId'),
     __param(0, (0, common_1.Param)('groupId')),
