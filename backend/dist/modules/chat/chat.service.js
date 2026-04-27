@@ -500,6 +500,7 @@ exports.ChatService = ChatService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(conversation_entity_1.ConversationEntity)),
     __param(1, (0, typeorm_1.InjectRepository)(conversation_participant_entity_1.ConversationParticipantEntity)),
     __param(2, (0, typeorm_1.InjectRepository)(message_entity_1.MessageEntity)),
+    __param(4, (0, common_1.Inject)((0, common_1.forwardRef)(() => groups_service_1.GroupsService))),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { Repository } from 'typeorm';
@@ -55,6 +55,7 @@ export class ChatService {
     @InjectRepository(MessageEntity)
     private readonly messageRepository: Repository<MessageEntity>,
     private readonly authService: AuthService,
+    @Inject(forwardRef(() => GroupsService))
     private readonly groupsService: GroupsService,
   ) {}
 
