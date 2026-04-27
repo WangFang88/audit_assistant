@@ -103,6 +103,10 @@ let GroupsService = class GroupsService {
             this.teamMemberRepository.create({ teamId: 'group-1', userId: 'user-3', role: 'member' }),
             this.teamMemberRepository.create({ teamId: 'group-1', userId: 'user-4', role: 'member' }),
         ]);
+        const seedGroup = { id: 'group-1', name: '某区财政局审计组' };
+        const conversation = await this.chatService.createAgentConversation(seedGroup);
+        await this.chatService.syncGroupConversationParticipants('group-1', ['user-2', 'user-3', 'user-4']);
+        await this.teamAgentsService.createForGroup(seedGroup, conversation.id);
     }
     persistState() {
     }
