@@ -443,11 +443,32 @@ let DocumentsService = class DocumentsService {
     }
     buildChunksFromRawText(document, rawText) {
         const normalizedText = rawText.replace(/\r/g, '').trim();
-        const segments = normalizedText
-            .split(/\n{2,}|(?=第[一二三四五六七八九十百]+[章节条])/)
-            .map((segment) => segment.replace(/\s+/g, ' ').trim())
-            .filter((segment) => segment.length >= 24)
-            .slice(0, 8);
+        const rawSegments = normalizedText
+            .split(/\n{2,}|(?=第[一二三四五六七八九十百零]+[章节条款])/)
+            .map((s) => s.replace(/\s+/g, ' ').trim())
+            .filter((s) => s.length >= 20);
+        const segments = [];
+        for (const seg of rawSegments) {
+            if (seg.length <= 500) {
+                segments.push(seg);
+            }
+            else {
+                const subSegs = seg.split(/(?<=[。；！？])\s*/).filter((s) => s.length >= 20);
+                let current = '';
+                for (const sub of subSegs) {
+                    if ((current + sub).length > 500 && current.length > 0) {
+                        segments.push(current.trim());
+                        current = sub;
+                    }
+                    else {
+                        current += sub;
+                    }
+                }
+                if (current.trim().length >= 20) {
+                    segments.push(current.trim());
+                }
+            }
+        }
         if (segments.length === 0) {
             return [];
         }
