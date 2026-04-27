@@ -1589,7 +1589,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
           ),
-          Text(result.explanation, style: theme.textTheme.bodySmall),
+          // Text(result.explanation, style: theme.textTheme.bodySmall),
         ],
       ),
     );

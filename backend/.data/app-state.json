@@ -2,7 +2,7 @@
   "usage": {
     "groups": 1,
     "privateDocuments": 2,
-    "dailyQueries": 1,
+    "dailyQueries": 2,
     "dailyQueryDate": "2026-04-27"
   },
   "groups": [],
@@ -756,6 +756,14 @@
       "teamId": "group-1",
       "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
       "queriedAt": "2026-04-27 04:44:39",
+      "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777293984241",
+      "userId": "user-3",
+      "teamId": "group-1",
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-27 04:46:24",
       "consumedQuota": 1
     }
   ],
