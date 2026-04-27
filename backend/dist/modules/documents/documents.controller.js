@@ -29,7 +29,7 @@ let DocumentsController = class DocumentsController {
     listDocumentChunks(documentId) {
         return this.documentsService.listDocumentChunks(documentId);
     }
-    importDocument(file, dto) {
+    async importDocument(file, dto) {
         return this.documentsService.importDocument(dto, file);
     }
 };
@@ -62,7 +62,7 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, documents_service_1.ImportDocumentDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], DocumentsController.prototype, "importDocument", null);
 exports.DocumentsController = DocumentsController = __decorate([
     (0, common_1.Controller)('documents'),

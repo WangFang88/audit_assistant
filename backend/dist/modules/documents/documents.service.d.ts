@@ -82,7 +82,9 @@ export declare class DocumentsService {
     private toMetadataSnapshot;
     private classifyUploadedFile;
     private saveUploadedFile;
-    importDocument(dto: ImportDocumentDto, file?: Express.Multer.File): {
+    private toDocumentEntity;
+    private toChunkEntity;
+    importDocument(dto: ImportDocumentDto, file?: Express.Multer.File): Promise<{
         notes: string;
         id: string;
         title: string;
@@ -101,8 +103,8 @@ export declare class DocumentsService {
         embeddingTarget: "bge-large-zh";
         vectorStoreTarget: "pgvector";
         pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
-    };
-    removeGroupDocuments(groupId: string): void;
+    }>;
+    removeGroupDocuments(groupId: string): Promise<void>;
     getLibraryScopeSummary(groupId?: string): Promise<{
         scopeMode: string;
         includesPublicLibrary: boolean;

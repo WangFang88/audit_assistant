@@ -674,10 +674,54 @@ export class DocumentsService {
     });
   }
 
-  importDocument(dto: ImportDocumentDto, file?: Express.Multer.File) {
+  private toDocumentEntity(document: DocumentRecord) {
+    return this.persistedDocumentRepository.create({
+      id: document.id,
+      title: document.title,
+      fileName: document.fileName,
+      filePath: document.sourcePath,
+      fileType: document.fileType,
+      libraryType: document.libraryType,
+      teamId: document.groupId,
+      uploadedBy: document.uploadedBy,
+      uploadSource: 'manual-upload',
+      indexStatus: document.indexStatus,
+      extractionMode: document.extractionMode,
+      parserTarget: document.parserTarget,
+      embeddingTarget: document.embeddingTarget,
+      vectorStoreTarget: document.vectorStoreTarget,
+      chunkCount: document.chunkCount,
+      rawTextLength: 0,
+      uploadedAt: new Date(document.uploadedAt.replace(' ', 'T')),
+      indexedAt: document.indexStatus === 'ready' ? new Date(document.uploadedAt.replace(' ', 'T')) : null,
+      deletedAt: null,
+    });
+  }
+
+  private toChunkEntity(chunk: DocumentChunkRecord, index: number) {
+    return this.persistedChunkRepository.create({
+      id: chunk.id,
+      documentId: chunk.documentId,
+      teamId: chunk.groupId,
+      libraryType: chunk.libraryType,
+      title: chunk.title,
+      chapterTitle: chunk.chapterTitle,
+      articleRef: chunk.articleRef,
+      pageLabel: chunk.pageLabel,
+      content: chunk.content,
+      keywords: chunk.keywords,
+      chunkIndex: index,
+      indexStatus: chunk.indexStatus,
+      tokenCount: chunk.content.length,
+    });
+  }
+
+  async importDocument(dto: ImportDocumentDto, file?: Express.Multer.File) {
     if (!file || !file.buffer || file.size <= 0) {
       throw new BadRequestException('请选择要上传的文件');
     }
+
+    await this.ensurePersistedDocumentSeedData();
 
     if (this.authService.isAdmin()) {
       if (dto.libraryType !== 'public' || dto.groupId != null) {
@@ -690,11 +734,13 @@ export class DocumentsService {
         throw new BadRequestException('私有库导入必须指定项目组');
       }
       this.groupsService.assertCanAccessGroup(dto.groupId);
-      const currentPrivateDocuments = this.documents.filter((document) => document.libraryType === 'private').length;
+      const currentPrivateDocuments = await this.persistedDocumentRepository.count({
+        where: { libraryType: 'private', deletedAt: IsNull() },
+      });
       this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
     }
 
-    const documentId = `doc-${this.documents.length + 1}`;
+    const documentId = `doc-${Date.now()}`;
     const storedFile = this.saveUploadedFile(file, dto.libraryType, documentId, dto.groupId);
     const classification = this.classifyUploadedFile(storedFile.originalName);
     const hasRawText = dto.rawText != null && dto.rawText.trim().length > 0;
@@ -711,7 +757,7 @@ export class DocumentsService {
       groupId: dto.groupId ?? null,
       fileType: classification.fileType,
       extractionMode: hasRawText ? 'text' : classification.extractionMode,
-      uploadedAt: '2026-04-26 12:30',
+      uploadedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
       indexStatus: 'ready' as const,
       chunkStrategy: 'structure-first' as const,
       parserTarget: 'multimodal-parser' as const,
@@ -723,22 +769,23 @@ export class DocumentsService {
     const generatedChunks = hasRawText ? this.buildChunksFromRawText(document, dto.rawText!) : this.buildChunksForDocument(document);
     document.chunkCount = generatedChunks.length;
 
-    this.documents.push(document);
-    this.chunks.push(...generatedChunks);
+    await this.persistedDocumentRepository.save(this.toDocumentEntity(document));
+    if (generatedChunks.length > 0) {
+      await this.persistedChunkRepository.save(generatedChunks.map((chunk, index) => this.toChunkEntity(chunk, index)));
+    }
+
     const metadataSnapshot = this.toMetadataSnapshot(document);
     if (document.libraryType === 'private') {
       this.documentRepository.createPrivateDocEntity(metadataSnapshot);
-    } else {
-      this.documentRepository.createPublicDocEntity(metadataSnapshot);
-    }
-    this.localStateService.saveDocuments(this.documents);
-    this.localStateService.saveChunks(this.chunks);
-    if (dto.libraryType === 'private') {
       const group = this.groupsService.getGroupById(dto.groupId!);
       group.privateDocumentCount += 1;
       this.groupsService.persistState();
-      const privateDocumentCount = this.documents.filter((item) => item.libraryType === 'private').length;
+      const privateDocumentCount = await this.persistedDocumentRepository.count({
+        where: { libraryType: 'private', deletedAt: IsNull() },
+      });
       this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
+    } else {
+      this.documentRepository.createPublicDocEntity(metadataSnapshot);
     }
 
     return {
@@ -747,15 +794,20 @@ export class DocumentsService {
     };
   }
 
-  removeGroupDocuments(groupId: string) {
-    const remainingDocuments = this.documents.filter((document) => document.groupId !== groupId);
-    const remainingChunks = this.chunks.filter((chunk) => chunk.groupId !== groupId);
-    this.documents.splice(0, this.documents.length, ...remainingDocuments);
-    this.chunks.splice(0, this.chunks.length, ...remainingChunks);
-    this.localStateService.saveDocuments(this.documents);
-    this.localStateService.saveChunks(this.chunks);
+  async removeGroupDocuments(groupId: string) {
+    await this.ensurePersistedDocumentSeedData();
+    const documents = await this.persistedDocumentRepository.find({ where: { teamId: groupId, deletedAt: IsNull() } });
+    if (documents.length === 0) {
+      return;
+    }
 
-    const privateDocumentCount = this.documents.filter((document) => document.libraryType === 'private').length;
+    const documentIds = documents.map((document) => document.id);
+    await this.persistedChunkRepository.delete(documentIds.map((documentId) => ({ documentId })));
+    await this.persistedDocumentRepository.delete(documentIds.map((id) => ({ id })));
+
+    const privateDocumentCount = await this.persistedDocumentRepository.count({
+      where: { libraryType: 'private', deletedAt: IsNull() },
+    });
     this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
   }
 

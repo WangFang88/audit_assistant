@@ -43,7 +43,7 @@ export declare class DocumentsController {
         keywords: string[];
         indexStatus: "ready" | "processing";
     }[];
-    importDocument(file: Express.Multer.File | undefined, dto: ImportDocumentDto): {
+    importDocument(file: Express.Multer.File | undefined, dto: ImportDocumentDto): Promise<{
         notes: string;
         id: string;
         title: string;
@@ -62,5 +62,5 @@ export declare class DocumentsController {
         embeddingTarget: "bge-large-zh";
         vectorStoreTarget: "pgvector";
         pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
-    };
+    }>;
 }

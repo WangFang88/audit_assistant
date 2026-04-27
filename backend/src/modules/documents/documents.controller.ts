@@ -23,7 +23,7 @@ export class DocumentsController {
 
   @Post('import')
   @UseInterceptors(FileInterceptor('file'))
-  importDocument(@UploadedFile() file: Express.Multer.File | undefined, @Body() dto: ImportDocumentDto) {
+  async importDocument(@UploadedFile() file: Express.Multer.File | undefined, @Body() dto: ImportDocumentDto) {
     return this.documentsService.importDocument(dto, file);
   }
 }
