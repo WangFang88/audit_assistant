@@ -68,6 +68,8 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   bool get _isCurrentUserLeader {
+    // ignore: avoid_print
+    print('DEBUG isLeader: currentUser=${widget.currentUser.id}, members=${_members.map((m) => "${m.userId}:${m.role}").toList()}');
     return _members.any((m) => m.userId == widget.currentUser.id && m.role == 'leader');
   }
 
