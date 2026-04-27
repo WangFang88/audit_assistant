@@ -275,7 +275,23 @@
       "userId": "user-2",
       "teamId": "group-1",
       "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
-      "queriedAt": "2026-04-26 19:57:09",
+      "queriedAt": "2026-04-26 11:57:09",
+      "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777262282309",
+      "userId": "user-2",
+      "teamId": "group-1",
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-26 19:58:02",
+      "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777262293607",
+      "userId": "user-2",
+      "teamId": "group-1",
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-26 19:58:13",
       "consumedQuota": 1
     }
   ]
