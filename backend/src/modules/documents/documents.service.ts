@@ -453,22 +453,32 @@ export class DocumentsService {
     });
   }
 
-  listDocumentChunks(documentId: string) {
-    const document = this.getDocumentById(documentId);
+  async listDocumentChunks(documentId: string) {
+    const document = await this.getDocumentById(documentId);
     this.assertAdminCanAccessDocument(document);
     if (!this.authService.isAdmin() && document.libraryType === 'private' && document.groupId != null) {
       this.groupsService.assertCanAccessGroup(document.groupId);
     }
-    return this.chunks.filter((chunk) => chunk.documentId === documentId);
+
+    await this.ensurePersistedDocumentSeedData();
+    const entities = await this.persistedChunkRepository.find({
+      where: { documentId },
+      order: { chunkIndex: 'ASC', createdAt: 'ASC' },
+    });
+
+    return entities.map((entity) => this.toChunkRecord(entity));
   }
 
-  getDocumentById(documentId: string) {
-    const document = this.documents.find((item) => item.id === documentId);
-    if (!document) {
+  async getDocumentById(documentId: string) {
+    await this.ensurePersistedDocumentSeedData();
+    const entity = await this.persistedDocumentRepository.findOne({
+      where: { id: documentId, deletedAt: IsNull() },
+    });
+    if (!entity) {
       throw new NotFoundException('文档不存在');
     }
 
-    return document;
+    return this.toDocumentRecord(entity);
   }
 
   private buildChunksFromRawText(document: DocumentRecord, rawText: string): DocumentChunkRecord[] {

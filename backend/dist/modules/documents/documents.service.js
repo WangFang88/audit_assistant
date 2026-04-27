@@ -388,20 +388,28 @@ let DocumentsService = class DocumentsService {
             return groupId != null && chunk.groupId === groupId;
         });
     }
-    listDocumentChunks(documentId) {
-        const document = this.getDocumentById(documentId);
+    async listDocumentChunks(documentId) {
+        const document = await this.getDocumentById(documentId);
         this.assertAdminCanAccessDocument(document);
         if (!this.authService.isAdmin() && document.libraryType === 'private' && document.groupId != null) {
             this.groupsService.assertCanAccessGroup(document.groupId);
         }
-        return this.chunks.filter((chunk) => chunk.documentId === documentId);
+        await this.ensurePersistedDocumentSeedData();
+        const entities = await this.persistedChunkRepository.find({
+            where: { documentId },
+            order: { chunkIndex: 'ASC', createdAt: 'ASC' },
+        });
+        return entities.map((entity) => this.toChunkRecord(entity));
     }
-    getDocumentById(documentId) {
-        const document = this.documents.find((item) => item.id === documentId);
-        if (!document) {
+    async getDocumentById(documentId) {
+        await this.ensurePersistedDocumentSeedData();
+        const entity = await this.persistedDocumentRepository.findOne({
+            where: { id: documentId, deletedAt: (0, typeorm_2.IsNull)() },
+        });
+        if (!entity) {
             throw new common_1.NotFoundException('文档不存在');
         }
-        return document;
+        return this.toDocumentRecord(entity);
     }
     buildChunksFromRawText(document, rawText) {
         const normalizedText = rawText.replace(/\r/g, '').trim();

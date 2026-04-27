@@ -75,8 +75,8 @@ export declare class DocumentsService {
     listDocuments(groupId?: string): Promise<DocumentRecord[]>;
     listExtractionJobs(groupId?: string): ExtractJobRecord[];
     getReadyChunks(groupId?: string): Promise<DocumentChunkRecord[]>;
-    listDocumentChunks(documentId: string): DocumentChunkRecord[];
-    getDocumentById(documentId: string): DocumentRecord;
+    listDocumentChunks(documentId: string): Promise<DocumentChunkRecord[]>;
+    getDocumentById(documentId: string): Promise<DocumentRecord>;
     private buildChunksFromRawText;
     private buildChunksForDocument;
     private toMetadataSnapshot;

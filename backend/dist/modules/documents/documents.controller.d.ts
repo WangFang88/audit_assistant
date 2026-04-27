@@ -30,7 +30,7 @@ export declare class DocumentsController {
         progress: number;
         startedAt: string;
     }[];
-    listDocumentChunks(documentId: string): {
+    listDocumentChunks(documentId: string): Promise<{
         id: string;
         documentId: string;
         groupId: string | null;
@@ -42,7 +42,7 @@ export declare class DocumentsController {
         content: string;
         keywords: string[];
         indexStatus: "ready" | "processing";
-    }[];
+    }[]>;
     importDocument(file: Express.Multer.File | undefined, dto: ImportDocumentDto): Promise<{
         notes: string;
         id: string;

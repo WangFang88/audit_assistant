@@ -17,7 +17,7 @@ export class DocumentsController {
   }
 
   @Get(':documentId/chunks')
-  listDocumentChunks(@Param('documentId') documentId: string) {
+  async listDocumentChunks(@Param('documentId') documentId: string) {
     return this.documentsService.listDocumentChunks(documentId);
   }
 
