@@ -52,15 +52,15 @@ let FileStorageService = class FileStorageService {
         return fileName.replace(/[^a-zA-Z0-9._-\u4e00-\u9fa5]+/g, '-');
     }
     writeStoredFile(folder, file, logicalPath) {
-        const sanitizedFileName = this.sanitizeFileName(this.normalizeOriginalFileName(file.originalname || 'upload.bin'));
-        const extension = (0, node_path_1.extname)(sanitizedFileName) || '.bin';
+        const normalizedFileName = this.normalizeOriginalFileName(file.originalname || 'upload.bin');
+        const extension = (0, node_path_1.extname)(this.sanitizeFileName(normalizedFileName)) || '.bin';
         (0, node_fs_1.mkdirSync)(folder, { recursive: true });
         const storedFileName = `original${extension}`;
         const storedFilePath = (0, node_path_1.join)(folder, storedFileName);
         (0, node_fs_1.writeFileSync)(storedFilePath, file.buffer);
         return {
             sourcePath: logicalPath.replace(/\\/g, '/'),
-            originalName: sanitizedFileName,
+            originalName: normalizedFileName,
             extension,
         };
     }

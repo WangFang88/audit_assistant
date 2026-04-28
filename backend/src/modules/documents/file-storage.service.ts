@@ -53,8 +53,8 @@ export class FileStorageService {
   }
 
   private writeStoredFile(folder: string, file: Express.Multer.File, logicalPath: string): SavedFileRecord {
-    const sanitizedFileName = this.sanitizeFileName(this.normalizeOriginalFileName(file.originalname || 'upload.bin'));
-    const extension = extname(sanitizedFileName) || '.bin';
+    const normalizedFileName = this.normalizeOriginalFileName(file.originalname || 'upload.bin');
+    const extension = extname(this.sanitizeFileName(normalizedFileName)) || '.bin';
     mkdirSync(folder, { recursive: true });
 
     const storedFileName = `original${extension}`;
@@ -63,7 +63,7 @@ export class FileStorageService {
 
     return {
       sourcePath: logicalPath.replace(/\\/g, '/'),
-      originalName: sanitizedFileName,
+      originalName: normalizedFileName,
       extension,
     };
   }
