@@ -2271,11 +2271,38 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (groups.isEmpty)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFD9E3F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('你当前还没有可用项目组。', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  Text(
+                    '可以先创建一个新项目组，或等待组长邀请你加入其他项目组。',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.tonal(
+                    onPressed: _hasReachedGroupLimit ? null : _showCreateGroupDialog,
+                    child: const Text('立即创建项目组'),
+                  ),
+                ],
+              ),
+            ),
           if (_activeGroupId == null)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
-                '当前未选择项目组，成员邀请、组长移交与群聊协作将保持禁用。',
+                groups.isEmpty ? '当前没有已选项目组，成员邀请、组长移交与群聊协作将保持禁用。' : '当前未选择项目组，成员邀请、组长移交与群聊协作将保持禁用。',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
@@ -2308,42 +2335,44 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
           ),
-          const Divider(height: 24),
-          Row(
-            children: [
-              Text('成员列表', style: Theme.of(context).textTheme.titleSmall),
-              const Spacer(),
-              TextButton(onPressed: _activeGroupId == null || _membersLoading ? null : _refreshMembers, child: const Text('刷新成员')),
-              if (_isCurrentUserLeader)
-                TextButton(onPressed: _activeGroupId == null ? null : _showTransferLeaderDialog, child: const Text('移交组长')),
-            ],
-          ),
-          if (_membersLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: LinearProgressIndicator(),
+          if (_activeGroupId != null) ...[
+            const Divider(height: 24),
+            Row(
+              children: [
+                Text('成员列表', style: Theme.of(context).textTheme.titleSmall),
+                const Spacer(),
+                TextButton(onPressed: _activeGroupId == null || _membersLoading ? null : _refreshMembers, child: const Text('刷新成员')),
+                if (_isCurrentUserLeader)
+                  TextButton(onPressed: _activeGroupId == null ? null : _showTransferLeaderDialog, child: const Text('移交组长')),
+              ],
             ),
-          ..._members.map(
-            (member) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(member.name),
-              subtitle: Text('${member.phone} · ${member.role}'),
-              onTap: () => _showMemberInfoDialog(member),
-              trailing: member.role == '组长'
-                  ? const Text('当前组长')
-                  : member.userId == widget.currentUser.id
-                      ? TextButton(
-                          onPressed: _membersLoading ? null : () => _removeMember(member),
-                          child: const Text('退出'),
-                        )
-                      : _isCurrentUserLeader
-                          ? TextButton(
-                              onPressed: _membersLoading ? null : () => _removeMember(member),
-                              child: const Text('清退'),
-                            )
-                          : null,
+            if (_membersLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: LinearProgressIndicator(),
+              ),
+            ..._members.map(
+              (member) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(member.name),
+                subtitle: Text('${member.phone} · ${member.role}'),
+                onTap: () => _showMemberInfoDialog(member),
+                trailing: member.role == '组长'
+                    ? const Text('当前组长')
+                    : member.userId == widget.currentUser.id
+                        ? TextButton(
+                            onPressed: _membersLoading ? null : () => _removeMember(member),
+                            child: const Text('退出'),
+                          )
+                        : _isCurrentUserLeader
+                            ? TextButton(
+                                onPressed: _membersLoading ? null : () => _removeMember(member),
+                                child: const Text('清退'),
+                              )
+                            : null,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
