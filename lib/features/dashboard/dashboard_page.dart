@@ -74,10 +74,16 @@ class _DashboardPageState extends State<DashboardPage> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB';
   }
 
+  bool _isImageAttachment(String extension, String mimeType) {
+    final normalizedExtension = extension.toLowerCase();
+    final normalizedMimeType = mimeType.toLowerCase();
+    return normalizedMimeType.startsWith('image/') || const {'png', 'jpg', 'jpeg', 'gif', 'webp'}.contains(normalizedExtension);
+  }
+
   IconData _attachmentIcon(String extension, String mimeType) {
     final normalizedExtension = extension.toLowerCase();
     final normalizedMimeType = mimeType.toLowerCase();
-    if (normalizedMimeType.startsWith('image/') || const {'png', 'jpg', 'jpeg', 'gif', 'webp'}.contains(normalizedExtension)) {
+    if (_isImageAttachment(normalizedExtension, normalizedMimeType)) {
       return Icons.image_outlined;
     }
     if (normalizedExtension == 'pdf') {
@@ -423,6 +429,72 @@ class _DashboardPageState extends State<DashboardPage> {
       }
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('打开文件失败。')));
     }
+  }
+
+  void _previewImageAttachment(ChatAttachment attachment) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        final imageUrl = widget.apiService.buildFileUri(attachment.path).toString();
+        return Dialog(
+          insetPadding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  border: Border(bottom: BorderSide(color: Color(0xFFE0E3EA))),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        attachment.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _openChatAttachment(attachment),
+                      child: const Text('打开原图'),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: InteractiveViewer(
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text('图片预览加载失败，请使用“打开原图”。'),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _handleAttachmentTap(ChatAttachment attachment) {
+    if (_isImageAttachment(attachment.extension, attachment.mimeType)) {
+      _previewImageAttachment(attachment);
+      return;
+    }
+    _openChatAttachment(attachment);
   }
 
   Future<void> _sendMessage() async {
@@ -1919,7 +1991,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                               const SizedBox(height: 6),
                                               if (message.messageType == 'file' && message.file != null) ...[
                                                 InkWell(
-                                                  onTap: () => _openChatAttachment(message.file!),
+                                                  onTap: () => _handleAttachmentTap(message.file!),
                                                   borderRadius: BorderRadius.circular(10),
                                                   child: Container(
                                                     width: double.infinity,
@@ -1932,6 +2004,26 @@ class _DashboardPageState extends State<DashboardPage> {
                                                     child: Column(
                                                       crossAxisAlignment: CrossAxisAlignment.start,
                                                       children: [
+                                                        if (_isImageAttachment(message.file!.extension, message.file!.mimeType)) ...[
+                                                          ClipRRect(
+                                                            borderRadius: BorderRadius.circular(8),
+                                                            child: AspectRatio(
+                                                              aspectRatio: 16 / 9,
+                                                              child: Image.network(
+                                                                widget.apiService.buildFileUri(message.file!.path).toString(),
+                                                                fit: BoxFit.cover,
+                                                                errorBuilder: (context, error, stackTrace) {
+                                                                  return Container(
+                                                                    color: const Color(0xFFF0F3F8),
+                                                                    alignment: Alignment.center,
+                                                                    child: const Icon(Icons.broken_image_outlined),
+                                                                  );
+                                                                },
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          const SizedBox(height: 10),
+                                                        ],
                                                         Row(
                                                           children: [
                                                             Icon(
@@ -1946,12 +2038,17 @@ class _DashboardPageState extends State<DashboardPage> {
                                                               ),
                                                             ),
                                                             const SizedBox(width: 8),
-                                                            const Icon(Icons.open_in_new, size: 16),
+                                                            Icon(
+                                                              _isImageAttachment(message.file!.extension, message.file!.mimeType)
+                                                                  ? Icons.zoom_in_outlined
+                                                                  : Icons.open_in_new,
+                                                              size: 16,
+                                                            ),
                                                           ],
                                                         ),
                                                         const SizedBox(height: 6),
                                                         Text(
-                                                          '${message.file!.extension.toUpperCase()} · ${_formatFileSize(message.file!.size)} · 点击打开',
+                                                          '${message.file!.extension.toUpperCase()} · ${_formatFileSize(message.file!.size)} · ${_isImageAttachment(message.file!.extension, message.file!.mimeType) ? '点击预览' : '点击打开'}',
                                                           style: Theme.of(context).textTheme.bodySmall,
                                                         ),
                                                       ],
