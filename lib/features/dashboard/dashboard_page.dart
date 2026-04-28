@@ -2732,7 +2732,9 @@ class _DashboardPageState extends State<DashboardPage> {
                                                 ),
                                                 const SizedBox(height: 6),
                                                 InkWell(
-                                                  onTap: () => _handleAttachmentTap(message.file!),
+                                                  onTap: _isImageAttachment(message.file!.extension, message.file!.mimeType)
+                                                      ? () => _handleAttachmentTap(message.file!)
+                                                      : null,
                                                   borderRadius: BorderRadius.circular(10),
                                                   child: Container(
                                                     width: double.infinity,
@@ -2834,7 +2836,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                         ),
                                                         const SizedBox(height: 6),
                                                         Text(
-                                                          _isImageAttachment(message.file!.extension, message.file!.mimeType) ? '点击预览，文件名点击后下载并打开' : '点击文件名下载并打开',
+                                                          _isImageAttachment(message.file!.extension, message.file!.mimeType) ? '点击图片预览，点击文件名下载并打开' : '仅文件名可点击：下载并打开',
                                                           style: Theme.of(context).textTheme.bodySmall,
                                                         ),
                                                       ],
