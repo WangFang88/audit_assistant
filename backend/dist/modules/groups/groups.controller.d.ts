@@ -26,12 +26,12 @@ export declare class GroupsController {
         userId: string;
         name: string;
         phone: string;
-        role: "member" | "leader";
+        role: "leader" | "member";
     }[]>;
     invite(groupId: string, dto: InviteMemberDto): Promise<{
         groupId: string;
         phone: string;
-        role: "member" | "leader";
+        role: "leader" | "member";
         memberCount: number;
     }>;
     transferLeader(groupId: string, dto: TransferLeaderDto): Promise<{
@@ -48,11 +48,12 @@ export declare class GroupsController {
         removedUserId: string;
         removedAt: string;
         memberCount: number;
+        action: string;
     }>;
     updateMemberRole(groupId: string, memberId: string, dto: UpdateMemberRoleDto): Promise<{
         groupId: string;
         memberId: string;
-        role: "member" | "leader";
+        role: "leader" | "member";
     }>;
     deleteGroup(groupId: string): Promise<{
         deletedGroupId: string;

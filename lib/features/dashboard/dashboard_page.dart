@@ -1442,14 +1442,15 @@ class _DashboardPageState extends State<DashboardPage> {
       return;
     }
 
+    final isSelf = member.userId == widget.currentUser.id;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('确认清退成员'),
-        content: Text('确定要将 ${member.name} 移出当前项目组吗？'),
+        title: Text(isSelf ? '确认退出项目组' : '确认清退成员'),
+        content: Text(isSelf ? '确定要退出当前项目组吗？' : '确定要将 ${member.name} 移出当前项目组吗？'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('确认清退')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(isSelf ? '确认退出' : '确认清退')),
         ],
       ),
     );
@@ -2247,7 +2248,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildGroupPanel(List<ProjectGroup> groups) {
     return SectionCard(
       title: '项目组',
-      subtitle: '支持创建、邀请、清退、移交组长。',
+      subtitle: '支持创建、邀请、组长清退组员、成员自行退出、移交组长。',
       action: Wrap(
         spacing: 8,
         children: [
@@ -2318,10 +2319,17 @@ class _DashboardPageState extends State<DashboardPage> {
               onTap: () => _showMemberInfoDialog(member),
               trailing: member.role == '组长'
                   ? const Text('当前组长')
-                  : TextButton(
-                      onPressed: _membersLoading ? null : () => _removeMember(member),
-                      child: const Text('清退'),
-                    ),
+                  : member.userId == widget.currentUser.id
+                      ? TextButton(
+                          onPressed: _membersLoading ? null : () => _removeMember(member),
+                          child: const Text('退出'),
+                        )
+                      : _isCurrentUserLeader
+                          ? TextButton(
+                              onPressed: _membersLoading ? null : () => _removeMember(member),
+                              child: const Text('清退'),
+                            )
+                          : null,
             ),
           ),
         ],

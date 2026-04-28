@@ -58,17 +58,17 @@ export declare class GroupsService {
         userId: string;
         name: string;
         phone: string;
-        role: "member" | "leader";
+        role: "leader" | "member";
     }[]>;
     updateMemberRole(groupId: string, memberId: string, dto: UpdateMemberRoleDto): Promise<{
         groupId: string;
         memberId: string;
-        role: "member" | "leader";
+        role: "leader" | "member";
     }>;
     invite(groupId: string, dto: InviteMemberDto): Promise<{
         groupId: string;
         phone: string;
-        role: "member" | "leader";
+        role: "leader" | "member";
         memberCount: number;
     }>;
     transferLeader(groupId: string, dto: TransferLeaderDto): Promise<{
@@ -85,6 +85,7 @@ export declare class GroupsService {
         removedUserId: string;
         removedAt: string;
         memberCount: number;
+        action: string;
     }>;
     deleteGroup(groupId: string): Promise<{
         deletedGroupId: string;

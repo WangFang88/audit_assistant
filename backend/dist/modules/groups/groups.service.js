@@ -282,12 +282,25 @@ let GroupsService = class GroupsService {
         this.assertAdminCannotManageGroups();
         const group = await this.getGroupById(groupId);
         await this.assertCanAccessGroup(groupId);
+        const currentUser = this.getCurrentUser();
+        const currentMember = await this.teamMemberRepository.findOneBy({ teamId: groupId, userId: currentUser.id });
         const member = await this.teamMemberRepository.findOneBy({ id: Number(memberId), teamId: groupId });
         if (!member) {
             throw new common_1.NotFoundException('成员不存在');
         }
-        if (member.role === 'leader') {
-            throw new common_1.BadRequestException('请先移交组长后再清退当前组长');
+        const isSelfExit = member.userId === currentUser.id;
+        if (isSelfExit) {
+            if (member.role === 'leader') {
+                throw new common_1.BadRequestException('组长请先移交组长身份后再退出项目组');
+            }
+        }
+        else {
+            if (currentMember?.role !== 'leader') {
+                throw new common_1.ForbiddenException('只有组长才能清退组员');
+            }
+            if (member.role === 'leader') {
+                throw new common_1.BadRequestException('请先移交组长后再清退当前组长');
+            }
         }
         await this.teamMemberRepository.delete({ id: Number(memberId) });
         await this.chatService.removeUserFromGroupConversations(groupId, member.userId);
@@ -299,6 +312,7 @@ let GroupsService = class GroupsService {
             removedUserId: member.userId,
             removedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
             memberCount,
+            action: isSelfExit ? 'quit' : 'remove',
         };
     }
     async deleteGroup(groupId) {
