@@ -738,8 +738,12 @@ class _DashboardPageState extends State<DashboardPage> {
         withData: true,
         allowMultiple: true,
       );
-      final pickedFiles = result?.files.where((file) => file.path != null || file.bytes != null).toList() ?? const <PlatformFile>[];
-      if (!mounted || pickedFiles.isEmpty) {
+      if (!mounted || result == null) {
+        return;
+      }
+      final pickedFiles = result.files.where((file) => file.name.trim().isNotEmpty).toList();
+      if (pickedFiles.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('未读取到所选文件，请重试一次。')));
         return;
       }
       setState(() {
