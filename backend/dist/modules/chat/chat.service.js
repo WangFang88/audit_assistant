@@ -239,8 +239,12 @@ let ChatService = class ChatService {
         await this.messageRepository.save(this.buildSeedMessages());
         await this.conversationParticipantRepository.save(this.buildSeedParticipants());
     }
-    buildFileSummary(content, fileName) {
-        return content.length > 0 ? `[文件] ${content}` : `[文件] ${fileName}`;
+    buildFileSummary(content, fileName, mimeType, extension) {
+        const normalizedMimeType = (mimeType ?? '').toLowerCase();
+        const normalizedExtension = (extension ?? this.getFileExtension(fileName)).toLowerCase();
+        const isImage = normalizedMimeType.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(normalizedExtension);
+        const prefix = isImage ? '[图片]' : '[文件]';
+        return content.length > 0 ? `${prefix} ${content}` : `${prefix} ${fileName}`;
     }
     getFileExtension(fileName) {
         const extension = (0, node_path_1.extname)(fileName).replace('.', '').toLowerCase();
@@ -315,8 +319,17 @@ let ChatService = class ChatService {
             groupId: conversation.groupId,
             isTeamAgent: conversation.type === 'agent',
             unreadCount,
-            lastMessage: messages[messages.length - 1]?.content ?? '',
+            lastMessage: this.buildConversationPreview(messages[messages.length - 1]) ?? '',
         };
+    }
+    buildConversationPreview(message) {
+        if (message == null) {
+            return '';
+        }
+        if (message.messageType !== 'file' || message.file == null) {
+            return message.content;
+        }
+        return this.buildFileSummary(message.content, message.file.name, message.file.mimeType, message.file.extension);
     }
     toPublicMessage(message) {
         return {
@@ -462,7 +475,9 @@ let ChatService = class ChatService {
         const messageId = `msg-${Date.now()}`;
         const fileRecord = file != null ? await this.saveChatFile(conversation, messageId, file) : null;
         const messageContent = fileRecord == null ? content : (content || fileRecord.name);
-        const conversationSummary = fileRecord == null ? messageContent : this.buildFileSummary(content, fileRecord.name);
+        const conversationSummary = fileRecord == null
+            ? messageContent
+            : this.buildFileSummary(content, fileRecord.name, fileRecord.mimeType, fileRecord.extension);
         const messageEntity = this.messageRepository.create({
             id: messageId,
             conversationId: dto.conversationId,

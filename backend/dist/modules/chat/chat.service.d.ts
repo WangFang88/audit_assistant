@@ -50,6 +50,7 @@ export declare class ChatService {
     private toConversationRecord;
     private toMessageRecord;
     private toPublicConversation;
+    private buildConversationPreview;
     private toPublicMessage;
     private assertCanAccessConversation;
     private getConversationById;
