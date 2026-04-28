@@ -351,7 +351,7 @@ export class SubscriptionsService {
     return order;
   }
 
-  getOverview(actualGroupCount?: number) {
+  getOverview(actualGroupCount?: number, actualPrivateDocuments?: number) {
     this.ensureDailyUsageIsCurrent();
     const plan = this.getCurrentPlan();
     const latestOrder = this.getLatestSubscriptionOrder();
@@ -386,7 +386,7 @@ export class SubscriptionsService {
           .reverse(),
       usage: {
         groups: { used: actualGroupCount ?? this.usage.groups, limit: plan.limits.groupCount },
-        privateDocuments: { used: this.usage.privateDocuments, limit: plan.limits.privateDocuments },
+        privateDocuments: { used: actualPrivateDocuments ?? this.usage.privateDocuments, limit: plan.limits.privateDocuments },
         dailyQueries: { used: this.usage.dailyQueries, limit: plan.limits.dailyQueries },
       },
       limits: {
