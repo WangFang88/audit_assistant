@@ -32,6 +32,12 @@ let FileStorageService = class FileStorageService {
         if (fileName.length === 0) {
             return 'upload.bin';
         }
+        if (/[\u4e00-\u9fa5]/.test(fileName)) {
+            return fileName;
+        }
+        if (!/[\u00C0-\u00FF]/.test(fileName)) {
+            return fileName;
+        }
         try {
             const decoded = Buffer.from(fileName, 'latin1').toString('utf8');
             if (decoded.length > 0 && !decoded.includes('�')) {
