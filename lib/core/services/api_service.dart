@@ -237,6 +237,24 @@ class ApiService {
     return list.map(ChatMessage.fromJson).toList();
   }
 
+  Future<void> clearConversationMessages(String conversationId) async {
+    await _requestWithRefresh(
+      (headers) => _client.delete(
+        Uri.parse('$_baseUrl/chat/conversations/$conversationId/messages'),
+        headers: headers,
+      ),
+    );
+  }
+
+  Future<void> deleteDirectConversation(String conversationId) async {
+    await _requestWithRefresh(
+      (headers) => _client.delete(
+        Uri.parse('$_baseUrl/chat/direct-conversations/$conversationId'),
+        headers: headers,
+      ),
+    );
+  }
+
   Uri buildFileUri(String sourcePath) {
     final normalizedPath = sourcePath.startsWith('/') ? sourcePath : '/$sourcePath';
     final apiUri = Uri.parse(_baseUrl);

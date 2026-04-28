@@ -27,6 +27,7 @@ class _DashboardPageState extends State<DashboardPage> {
     text: '请检索与专项资金使用和采购审批相关的制度依据。',
   );
   final TextEditingController _messageController = TextEditingController();
+  final TextEditingController _messageSearchController = TextEditingController();
   final ScrollController _messagesScrollController = ScrollController();
 
   int _selectedIndex = 0;
@@ -47,9 +48,7 @@ class _DashboardPageState extends State<DashboardPage> {
   List<KnowledgeDocument> _documents = const [];
   List<ExtractionJob> _extractJobs = const [];
   PlatformFile? _selectedMessageFile;
-  String? _failedMessageContent;
-  PlatformFile? _failedMessageFile;
-  String? _lastSendError;
+  List<_PendingChatMessage> _pendingMessages = const [];
   String? _selectedConversationId;
   String? _selectedGroupId;
 
@@ -63,6 +62,7 @@ class _DashboardPageState extends State<DashboardPage> {
   void dispose() {
     _questionController.dispose();
     _messageController.dispose();
+    _messageSearchController.dispose();
     _messagesScrollController.dispose();
     super.dispose();
   }
@@ -79,21 +79,36 @@ class _DashboardPageState extends State<DashboardPage> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB';
   }
 
+  List<ChatMessage> get _visibleMessages {
+    final keyword = _messageSearchController.text.trim().toLowerCase();
+    if (keyword.isEmpty) {
+      return _messages;
+    }
+    return _messages.where((message) {
+      final fileName = message.file?.name.toLowerCase() ?? '';
+      return message.content.toLowerCase().contains(keyword) ||
+          message.senderName.toLowerCase().contains(keyword) ||
+          fileName.contains(keyword);
+    }).toList();
+  }
+
   bool _shouldShowSender(int index) {
+    final messages = _visibleMessages;
     if (index == 0) {
       return true;
     }
-    final previous = _messages[index - 1];
-    final current = _messages[index];
+    final previous = messages[index - 1];
+    final current = messages[index];
     return previous.senderName != current.senderName;
   }
 
   bool _shouldShowTimestamp(int index) {
-    if (index == _messages.length - 1) {
+    final messages = _visibleMessages;
+    if (index == messages.length - 1) {
       return true;
     }
-    final current = _messages[index];
-    final next = _messages[index + 1];
+    final current = messages[index];
+    final next = messages[index + 1];
     return current.sentAt != next.sentAt;
   }
 
@@ -454,9 +469,7 @@ class _DashboardPageState extends State<DashboardPage> {
       _chatLoading = true;
       _selectedConversationId = conversationId;
       _error = null;
-      _lastSendError = null;
-      _failedMessageContent = null;
-      _failedMessageFile = null;
+      _pendingMessages = const [];
     });
 
     try {
@@ -566,16 +579,70 @@ class _DashboardPageState extends State<DashboardPage> {
     _openChatAttachment(attachment);
   }
 
-  Future<void> _retryFailedMessage() async {
-    if ((_failedMessageContent == null || _failedMessageContent!.isEmpty) && _failedMessageFile == null) {
+  Future<void> _retryPendingMessage(String pendingId) async {
+    final pending = _pendingMessages.where((item) => item.id == pendingId).firstOrNull;
+    if (pending == null) {
       return;
     }
-    _messageController.text = _failedMessageContent ?? '';
+    _messageController.text = pending.content;
     setState(() {
-      _selectedMessageFile = _failedMessageFile;
-      _lastSendError = null;
+      _selectedMessageFile = pending.file;
+      _pendingMessages = _pendingMessages.where((item) => item.id != pendingId).toList();
     });
     await _sendMessage();
+  }
+
+  Future<void> _clearConversationMessages() async {
+    if (_selectedConversationId == null) {
+      return;
+    }
+    try {
+      await widget.apiService.clearConversationMessages(_selectedConversationId!);
+      await _loadConversationMessages(_selectedConversationId!);
+      if (!mounted) {
+        return;
+      }
+      await _loadDashboard(preferredGroupId: _activeGroupId);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('会话消息已清空。')));
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('清空会话失败。')));
+    }
+  }
+
+  Future<void> _deleteSelectedDirectConversation() async {
+    final conversation = _selectedConversation;
+    if (conversation == null || conversation.type != '私信') {
+      return;
+    }
+    try {
+      await widget.apiService.deleteDirectConversation(conversation.id);
+      await _loadDashboard(preferredGroupId: _activeGroupId);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('私聊会话已删除。')));
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('删除私聊会话失败。')));
+    }
   }
 
   Future<void> _sendMessage() async {
@@ -593,11 +660,23 @@ class _DashboardPageState extends State<DashboardPage> {
       return;
     }
 
+    final pendingId = 'pending-${DateTime.now().microsecondsSinceEpoch}';
+    final pendingMessage = _PendingChatMessage(
+      id: pendingId,
+      content: content,
+      file: selectedFile,
+      sentAt: DateTime.now().toIso8601String().replaceFirst('T', ' ').substring(0, 16),
+      status: _PendingChatMessageStatus.sending,
+    );
+
     setState(() {
       _sendingMessage = true;
       _error = null;
-      _lastSendError = null;
+      _pendingMessages = [..._pendingMessages, pendingMessage];
     });
+    _messageController.clear();
+    _selectedMessageFile = null;
+    _scrollMessagesToBottom();
 
     try {
       await widget.apiService.sendMessage(
@@ -607,12 +686,8 @@ class _DashboardPageState extends State<DashboardPage> {
         file: selectedFile,
         groupId: _activeConversationType == 'group' ? _activeGroupId : null,
       );
-      _messageController.clear();
       setState(() {
-        _selectedMessageFile = null;
-        _failedMessageContent = null;
-        _failedMessageFile = null;
-        _lastSendError = null;
+        _pendingMessages = _pendingMessages.where((item) => item.id != pendingId).toList();
       });
       await _loadConversationMessages(_selectedConversationId!);
     } on ApiException catch (error) {
@@ -621,9 +696,9 @@ class _DashboardPageState extends State<DashboardPage> {
       }
       setState(() {
         _error = error.message;
-        _lastSendError = error.message;
-        _failedMessageContent = content.isEmpty ? null : content;
-        _failedMessageFile = selectedFile;
+        _pendingMessages = _pendingMessages
+            .map((item) => item.id == pendingId ? item.copyWith(status: _PendingChatMessageStatus.failed, error: error.message) : item)
+            .toList();
       });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
@@ -632,9 +707,9 @@ class _DashboardPageState extends State<DashboardPage> {
       }
       setState(() {
         _error = '消息发送失败。';
-        _lastSendError = '消息发送失败。';
-        _failedMessageContent = content.isEmpty ? null : content;
-        _failedMessageFile = selectedFile;
+        _pendingMessages = _pendingMessages
+            .map((item) => item.id == pendingId ? item.copyWith(status: _PendingChatMessageStatus.failed, error: '消息发送失败。') : item)
+            .toList();
       });
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('消息发送失败，请重试。')));
     } finally {
@@ -2060,13 +2135,41 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         );
 
+        final visibleMessages = _visibleMessages;
         final messagePanel = SectionCard(
           title: activeConversation?.title ?? '消息详情',
           subtitle: _activeGroupId == null ? '请先在上方项目组面板中创建或选择项目组。' : activeConversation == null ? '请选择一个会话。' : '支持读取和发送消息。',
+          action: activeConversation == null
+              ? null
+              : Wrap(
+                  spacing: 8,
+                  children: [
+                    TextButton(
+                      onPressed: _clearConversationMessages,
+                      child: const Text('清空会话'),
+                    ),
+                    if (activeConversation.type == '私信')
+                      TextButton(
+                        onPressed: _deleteSelectedDirectConversation,
+                        child: const Text('删除私聊'),
+                      ),
+                  ],
+                ),
           child: SizedBox(
             height: compact ? 420 : 560,
             child: Column(
               children: [
+                if (activeConversation != null) ...[
+                  TextField(
+                    controller: _messageSearchController,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(
+                      hintText: '搜索消息内容或文件名',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 Expanded(
                   child: _chatLoading
                       ? const Center(child: CircularProgressIndicator())
@@ -2084,12 +2187,20 @@ class _DashboardPageState extends State<DashboardPage> {
                                     style: Theme.of(context).textTheme.bodyMedium,
                                   ),
                                 )
+                          : visibleMessages.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    '没有匹配的消息。',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                )
                           : ListView(
                               controller: _messagesScrollController,
-                              children: _messages
-                                  .asMap()
-                                  .entries
-                                  .map(
+                              children: [
+                                ...visibleMessages
+                                    .asMap()
+                                    .entries
+                                    .map(
                                     (entry) {
                                       final index = entry.key;
                                       final message = entry.value;
@@ -2266,36 +2377,90 @@ class _DashboardPageState extends State<DashboardPage> {
                                     },
                                   )
                                   .toList(),
+                                ..._pendingMessages.map(
+                                  (pending) => Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Container(
+                                      margin: const EdgeInsets.only(bottom: 12),
+                                      padding: const EdgeInsets.all(12),
+                                      constraints: const BoxConstraints(maxWidth: 420),
+                                      decoration: BoxDecoration(
+                                        color: pending.status == _PendingChatMessageStatus.failed
+                                            ? const Color(0xFFFFF1F3)
+                                            : const Color(0xFFE8F1FF),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: pending.status == _PendingChatMessageStatus.failed
+                                            ? Border.all(color: const Color(0xFFF1B9B9))
+                                            : null,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('我', style: TextStyle(fontWeight: FontWeight.w600)),
+                                          const SizedBox(height: 6),
+                                          if (pending.file != null)
+                                            Container(
+                                              width: double.infinity,
+                                              padding: const EdgeInsets.all(10),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withValues(alpha: 0.72),
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Icon(_attachmentIcon(pending.file!.extension ?? '', '')),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      pending.file!.name,
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          if (pending.file != null && pending.content.isNotEmpty)
+                                            const SizedBox(height: 8),
+                                          if (pending.content.isNotEmpty) Text(pending.content),
+                                          const SizedBox(height: 6),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  pending.status == _PendingChatMessageStatus.failed
+                                                      ? (pending.error ?? '发送失败')
+                                                      : '发送中...',
+                                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                        color: pending.status == _PendingChatMessageStatus.failed
+                                                            ? const Color(0xFFB42318)
+                                                            : null,
+                                                      ),
+                                                ),
+                                              ),
+                                              if (pending.status == _PendingChatMessageStatus.failed)
+                                                TextButton(
+                                                  onPressed: () => _retryPendingMessage(pending.id),
+                                                  child: const Text('重试'),
+                                                )
+                                              else
+                                                const SizedBox(
+                                                  height: 16,
+                                                  width: 16,
+                                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                                ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                 ),
                 const SizedBox(height: 12),
-                if (_lastSendError != null && !_sendingMessage)
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF4F4),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFF1B9B9)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.error_outline, color: Color(0xFFB42318)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _lastSendError!,
-                            style: const TextStyle(color: Color(0xFFB42318)),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: _retryFailedMessage,
-                          child: const Text('重试'),
-                        ),
-                      ],
-                    ),
-                  ),
                 if (_selectedMessageFile != null)
                   Container(
                     width: double.infinity,
@@ -2682,6 +2847,44 @@ class _GroupBundle {
   final List<ExtractionJob> extractJobs;
   final String? selectedConversationId;
   final List<ChatMessage> messages;
+}
+
+enum _PendingChatMessageStatus { sending, failed }
+
+class _PendingChatMessage {
+  const _PendingChatMessage({
+    required this.id,
+    required this.content,
+    required this.file,
+    required this.sentAt,
+    required this.status,
+    this.error,
+  });
+
+  final String id;
+  final String content;
+  final PlatformFile? file;
+  final String sentAt;
+  final _PendingChatMessageStatus status;
+  final String? error;
+
+  _PendingChatMessage copyWith({
+    String? id,
+    String? content,
+    PlatformFile? file,
+    String? sentAt,
+    _PendingChatMessageStatus? status,
+    String? error,
+  }) {
+    return _PendingChatMessage(
+      id: id ?? this.id,
+      content: content ?? this.content,
+      file: file ?? this.file,
+      sentAt: sentAt ?? this.sentAt,
+      status: status ?? this.status,
+      error: error ?? this.error,
+    );
+  }
 }
 
 class _NavPage {

@@ -695,18 +695,47 @@ export class ChatService {
     return conversation.id;
   }
 
-  async removeDirectConversation(conversationId: string) {
-    const conversation = await this.conversationRepository.findOneBy({
-      id: conversationId,
-      conversationType: 'direct',
-    });
-    if (!conversation) {
-      return;
+  async clearConversationMessages(conversationId: string) {
+    this.assertAdminCannotUseChat();
+    const conversation = await this.getConversationById(conversationId);
+    await this.assertCanAccessConversation(conversation);
+    await this.messageRepository.delete({ conversationId });
+    await this.conversationRepository.update(
+      { id: conversationId },
+      {
+        lastMessage: null,
+        lastMessageAt: null,
+      },
+    );
+    const currentUser = this.authService.me();
+    await this.conversationParticipantRepository.update(
+      { conversationId, userId: currentUser.id, status: 'active' },
+      {
+        unreadCount: 0,
+        lastReadAt: new Date(),
+      },
+    );
+    if (conversation.type === 'group') {
+      this.fileStorageService.removeChatConversationFiles('group', conversationId);
     }
+    if (conversation.type === 'direct') {
+      this.fileStorageService.removeChatConversationFiles('direct', conversationId);
+    }
+    return { success: true };
+  }
+
+  async removeDirectConversation(conversationId: string) {
+    this.assertAdminCannotUseChat();
+    const conversation = await this.getConversationById(conversationId);
+    if (conversation.type !== 'direct') {
+      throw new BadRequestException('仅支持删除私聊会话');
+    }
+    await this.assertCanAccessConversation(conversation);
     await this.messageRepository.delete({ conversationId });
     await this.conversationParticipantRepository.delete({ conversationId });
     await this.conversationRepository.delete({ id: conversationId });
     this.fileStorageService.removeChatConversationFiles('direct', conversationId);
+    return { success: true };
   }
 
   async findOrCreateDirectConversation(targetUserId: string) {

@@ -26,6 +26,12 @@ export declare class ChatController {
             extension: string;
         } | null;
     }[]>;
+    clearMessages(conversationId: string): Promise<{
+        success: boolean;
+    }>;
+    removeDirectConversation(conversationId: string): Promise<{
+        success: boolean;
+    }>;
     sendMessage(dto: SendMessageDto, file?: Express.Multer.File): Promise<{
         id: string;
         conversationId: string;

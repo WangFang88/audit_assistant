@@ -26,6 +26,12 @@ let ChatController = class ChatController {
     async listMessages(conversationId) {
         return this.chatService.listMessages(conversationId);
     }
+    async clearMessages(conversationId) {
+        return this.chatService.clearConversationMessages(conversationId);
+    }
+    async removeDirectConversation(conversationId) {
+        return this.chatService.removeDirectConversation(conversationId);
+    }
     async sendMessage(dto, file) {
         return this.chatService.sendMessage(dto, file);
     }
@@ -48,6 +54,20 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "listMessages", null);
+__decorate([
+    (0, common_1.Delete)('conversations/:conversationId/messages'),
+    __param(0, (0, common_1.Param)('conversationId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "clearMessages", null);
+__decorate([
+    (0, common_1.Delete)('direct-conversations/:conversationId'),
+    __param(0, (0, common_1.Param)('conversationId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "removeDirectConversation", null);
 __decorate([
     (0, common_1.Post)('messages'),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),

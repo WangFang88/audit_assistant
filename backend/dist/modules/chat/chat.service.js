@@ -580,18 +580,40 @@ let ChatService = class ChatService {
         });
         return conversation.id;
     }
-    async removeDirectConversation(conversationId) {
-        const conversation = await this.conversationRepository.findOneBy({
-            id: conversationId,
-            conversationType: 'direct',
+    async clearConversationMessages(conversationId) {
+        this.assertAdminCannotUseChat();
+        const conversation = await this.getConversationById(conversationId);
+        await this.assertCanAccessConversation(conversation);
+        await this.messageRepository.delete({ conversationId });
+        await this.conversationRepository.update({ id: conversationId }, {
+            lastMessage: null,
+            lastMessageAt: null,
         });
-        if (!conversation) {
-            return;
+        const currentUser = this.authService.me();
+        await this.conversationParticipantRepository.update({ conversationId, userId: currentUser.id, status: 'active' }, {
+            unreadCount: 0,
+            lastReadAt: new Date(),
+        });
+        if (conversation.type === 'group') {
+            this.fileStorageService.removeChatConversationFiles('group', conversationId);
         }
+        if (conversation.type === 'direct') {
+            this.fileStorageService.removeChatConversationFiles('direct', conversationId);
+        }
+        return { success: true };
+    }
+    async removeDirectConversation(conversationId) {
+        this.assertAdminCannotUseChat();
+        const conversation = await this.getConversationById(conversationId);
+        if (conversation.type !== 'direct') {
+            throw new common_1.BadRequestException('仅支持删除私聊会话');
+        }
+        await this.assertCanAccessConversation(conversation);
         await this.messageRepository.delete({ conversationId });
         await this.conversationParticipantRepository.delete({ conversationId });
         await this.conversationRepository.delete({ id: conversationId });
         this.fileStorageService.removeChatConversationFiles('direct', conversationId);
+        return { success: true };
     }
     async findOrCreateDirectConversation(targetUserId) {
         this.assertAdminCannotUseChat();
