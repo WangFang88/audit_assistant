@@ -62,7 +62,7 @@ export declare class OverviewService {
             userId: string;
             name: string;
             phone: string;
-            role: "member" | "leader";
+            role: "leader" | "member";
         }[];
         documents: {
             id: string;

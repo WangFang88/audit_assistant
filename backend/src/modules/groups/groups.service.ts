@@ -190,8 +190,11 @@ export class GroupsService {
     const teams = await this.teamRepository.findByIds(groupIds);
     return Promise.all(
       teams.map(async (team) => {
-        const memberCount = await this.teamMemberRepository.countBy({ teamId: team.id });
-        return this.toGroupRecord(team, memberCount, 0);
+        const [memberCount, privateDocumentCount] = await Promise.all([
+          this.teamMemberRepository.countBy({ teamId: team.id }),
+          this.documentsService.countPrivateDocuments([team.id]),
+        ]);
+        return this.toGroupRecord(team, memberCount, privateDocumentCount);
       }),
     );
   }
