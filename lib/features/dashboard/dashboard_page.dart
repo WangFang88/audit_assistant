@@ -2083,68 +2083,87 @@ class _DashboardPageState extends State<DashboardPage> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFFE0E3EA)),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (_isImageAttachment(_selectedMessageFile!.extension ?? '', '')) ...[
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: AspectRatio(
-                              aspectRatio: 16 / 9,
-                              child: _selectedMessageFile!.bytes == null
-                                  ? Container(
-                                      color: const Color(0xFFF0F3F8),
-                                      alignment: Alignment.center,
-                                      child: const Icon(Icons.image_outlined),
-                                    )
-                                  : Image.memory(
-                                      _selectedMessageFile!.bytes!,
-                                      fit: BoxFit.cover,
-                                    ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                        ],
-                        Row(
-                          children: [
-                            Icon(
-                              _attachmentIcon(
-                                _selectedMessageFile!.extension ?? '',
-                                '',
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 160),
+                      opacity: _sendingMessage ? 0.6 : 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_isImageAttachment(_selectedMessageFile!.extension ?? '', '')) ...[
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: AspectRatio(
+                                aspectRatio: 16 / 9,
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    _selectedMessageFile!.bytes == null
+                                        ? Container(
+                                            color: const Color(0xFFF0F3F8),
+                                            alignment: Alignment.center,
+                                            child: const Icon(Icons.image_outlined),
+                                          )
+                                        : Image.memory(
+                                            _selectedMessageFile!.bytes!,
+                                            fit: BoxFit.cover,
+                                          ),
+                                    if (_sendingMessage)
+                                      Container(
+                                        color: Colors.black.withValues(alpha: 0.18),
+                                        alignment: Alignment.center,
+                                        child: const SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _selectedMessageFile!.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
-                                  ),
-                                  Text(
-                                    '${_formatFileSize(_selectedMessageFile!.size)}${_isImageAttachment(_selectedMessageFile!.extension ?? '', '') ? ' · 图片预览' : ''}',
-                                    style: Theme.of(context).textTheme.bodySmall,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: '移除文件',
-                              onPressed: _sendingMessage
-                                  ? null
-                                  : () {
-                                      setState(() {
-                                        _selectedMessageFile = null;
-                                      });
-                                    },
-                              icon: const Icon(Icons.close),
-                            ),
+                            const SizedBox(height: 10),
                           ],
-                        ),
-                      ],
+                          Row(
+                            children: [
+                              Icon(
+                                _attachmentIcon(
+                                  _selectedMessageFile!.extension ?? '',
+                                  '',
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _selectedMessageFile!.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                    ),
+                                    Text(
+                                      '${_formatFileSize(_selectedMessageFile!.size)}${_isImageAttachment(_selectedMessageFile!.extension ?? '', '') ? ' · 图片预览' : ''}${_sendingMessage ? ' · 发送中' : ''}',
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: '移除文件',
+                                onPressed: _sendingMessage
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          _selectedMessageFile = null;
+                                        });
+                                      },
+                                icon: const Icon(Icons.close),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 Row(
@@ -2187,15 +2206,16 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    FilledButton(
+                    FilledButton.icon(
                       onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage ? null : _sendMessage,
-                      child: _sendingMessage
+                      icon: _sendingMessage
                           ? const SizedBox(
-                              height: 18,
-                              width: 18,
+                              height: 16,
+                              width: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('发送'),
+                          : const Icon(Icons.send),
+                      label: Text(_sendingMessage ? '发送中...' : '发送'),
                     ),
                   ],
                 ),
