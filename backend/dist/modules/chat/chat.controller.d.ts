@@ -31,7 +31,7 @@ export declare class ChatController {
     clearMessages(conversationId: string): Promise<{
         success: boolean;
     }>;
-    downloadMessageFile(conversationId: string, messageId: string, res: any): Promise<NonSharedBuffer>;
+    downloadMessageFile(conversationId: string, messageId: string, res: any): Promise<void>;
     removeMessage(conversationId: string, messageId: string): Promise<{
         success: boolean;
     }>;

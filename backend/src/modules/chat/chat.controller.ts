@@ -25,12 +25,12 @@ export class ChatController {
   async downloadMessageFile(
     @Param('conversationId') conversationId: string,
     @Param('messageId') messageId: string,
-    @Res({ passthrough: true }) res: any,
+    @Res() res: any,
   ) {
     const result = await this.chatService.downloadMessageFile(conversationId, messageId);
     res.setHeader('Content-Type', result.mimeType);
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(result.fileName)}`);
-    return result.buffer;
+    res.send(result.buffer);
   }
 
   @Delete('conversations/:conversationId/messages/:messageId')
