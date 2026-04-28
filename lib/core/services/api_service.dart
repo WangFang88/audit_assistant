@@ -563,12 +563,8 @@ class ApiService {
     final fileName = file.name.trim().isEmpty ? 'upload.bin' : file.name;
     final fileBytes = file.bytes;
     if (fileBytes != null) {
-      return http.MultipartFile(
-        'file',
-        _trackUploadProgress(Stream<List<int>>.value(fileBytes), fileBytes.length, onProgress),
-        fileBytes.length,
-        filename: fileName,
-      );
+      onProgress?.call(0.2);
+      return http.MultipartFile.fromBytes('file', fileBytes, filename: fileName);
     }
 
     final filePath = file.path;
@@ -576,31 +572,8 @@ class ApiService {
       throw const ApiException('未获取到上传文件内容');
     }
 
-    final ioFile = File(filePath);
-    final fileLength = await ioFile.length();
-    return http.MultipartFile(
-      'file',
-      _trackUploadProgress(ioFile.openRead(), fileLength, onProgress),
-      fileLength,
-      filename: fileName,
-    );
-  }
-
-  Stream<List<int>> _trackUploadProgress(
-    Stream<List<int>> source,
-    int totalBytes,
-    void Function(double progress)? onProgress,
-  ) async* {
-    if (onProgress == null || totalBytes <= 0) {
-      yield* source;
-      return;
-    }
-    var sentBytes = 0;
-    await for (final chunk in source) {
-      sentBytes += chunk.length;
-      onProgress((sentBytes / totalBytes).clamp(0, 1).toDouble());
-      yield chunk;
-    }
+    onProgress?.call(0.2);
+    return http.MultipartFile.fromPath('file', filePath, filename: fileName);
   }
 
   void _handleUnauthorized(int statusCode) {
