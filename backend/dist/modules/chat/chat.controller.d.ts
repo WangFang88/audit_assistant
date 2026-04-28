@@ -18,6 +18,7 @@ export declare class ChatController {
         senderName: string;
         content: string;
         sentAt: string;
+        readStatus: boolean;
         messageType: "text" | "file" | "system";
         file: {
             name: string;
@@ -45,6 +46,7 @@ export declare class ChatController {
         senderName: string;
         content: string;
         sentAt: string;
+        readStatus: boolean;
         messageType: "text" | "file" | "system";
         file: {
             name: string;

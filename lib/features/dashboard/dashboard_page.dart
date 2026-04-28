@@ -32,6 +32,7 @@ class _DashboardPageState extends State<DashboardPage> {
   final TextEditingController _conversationSearchController = TextEditingController();
   final ScrollController _messagesScrollController = ScrollController();
   static const _pinnedConversationIdsKey = 'chat.pinnedConversationIds';
+  static const _mutedConversationIdsKey = 'chat.mutedConversationIds';
 
   int _selectedIndex = 0;
   bool _loading = true;
@@ -50,9 +51,10 @@ class _DashboardPageState extends State<DashboardPage> {
   List<GroupMember> _members = const [];
   List<KnowledgeDocument> _documents = const [];
   List<ExtractionJob> _extractJobs = const [];
-  PlatformFile? _selectedMessageFile;
+  List<PlatformFile> _selectedMessageFiles = const [];
   List<_PendingChatMessage> _pendingMessages = const [];
   Set<String> _pinnedConversationIds = <String>{};
+  Set<String> _mutedConversationIds = <String>{};
   String? _selectedConversationId;
   String? _selectedGroupId;
 
@@ -60,6 +62,7 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _restorePinnedConversations();
+    _restoreMutedConversations();
     _loadDashboard();
   }
 
@@ -92,6 +95,11 @@ class _DashboardPageState extends State<DashboardPage> {
       final bPinned = _pinnedConversationIds.contains(b.id);
       if (aPinned != bPinned) {
         return aPinned ? -1 : 1;
+      }
+      final aMuted = _mutedConversationIds.contains(a.id);
+      final bMuted = _mutedConversationIds.contains(b.id);
+      if (aMuted != bMuted) {
+        return aMuted ? 1 : -1;
       }
       if (a.unreadCount != b.unreadCount) {
         return b.unreadCount.compareTo(a.unreadCount);
@@ -147,6 +155,27 @@ class _DashboardPageState extends State<DashboardPage> {
     final current = messages[index];
     final next = messages[index + 1];
     return current.sentAt != next.sentAt;
+  }
+
+  int get _firstUnreadMessageIndex {
+    for (var i = 0; i < _messages.length; i += 1) {
+      if (!_messages[i].readStatus) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  String _messageDayLabel(String sentAt) {
+    return sentAt.length >= 10 ? sentAt.substring(0, 10) : sentAt;
+  }
+
+  bool _shouldShowDayDivider(int index) {
+    final messages = _visibleMessages;
+    if (index == 0) {
+      return true;
+    }
+    return _messageDayLabel(messages[index - 1].sentAt) != _messageDayLabel(messages[index].sentAt);
   }
 
   bool _isImageAttachment(String extension, String mimeType) {
@@ -466,6 +495,31 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
+  Future<void> _restoreMutedConversations() async {
+    final prefs = await SharedPreferences.getInstance();
+    final mutedIds = prefs.getStringList(_mutedConversationIdsKey) ?? const <String>[];
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _mutedConversationIds = mutedIds.toSet();
+    });
+  }
+
+  Future<void> _toggleMutedConversation(String conversationId) async {
+    final nextMutedIds = _mutedConversationIds.contains(conversationId)
+        ? (_mutedConversationIds.toSet()..remove(conversationId))
+        : (_mutedConversationIds.toSet()..add(conversationId));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_mutedConversationIdsKey, nextMutedIds.toList());
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _mutedConversationIds = nextMutedIds;
+    });
+  }
+
   Future<void> _runSearch() async {
     final question = _questionController.text.trim();
     final searchGroupId = _isAdmin ? null : _activeGroupId;
@@ -533,6 +587,25 @@ class _DashboardPageState extends State<DashboardPage> {
       _messagesScrollController.animateTo(
         _messagesScrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  void _jumpToFirstUnreadMessage() {
+    final index = _firstUnreadMessageIndex;
+    if (index < 0) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_messagesScrollController.hasClients) {
+        return;
+      }
+      final targetOffset = (index * 120).toDouble();
+      final maxOffset = _messagesScrollController.position.maxScrollExtent;
+      _messagesScrollController.animateTo(
+        targetOffset.clamp(0, maxOffset),
+        duration: const Duration(milliseconds: 240),
         curve: Curves.easeOut,
       );
     });
@@ -657,6 +730,29 @@ class _DashboardPageState extends State<DashboardPage> {
     _openChatAttachment(attachment);
   }
 
+  Future<void> _pickChatFiles() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'],
+        withData: true,
+        allowMultiple: true,
+      );
+      final pickedFiles = result?.files.where((file) => file.path != null || file.bytes != null).toList() ?? const <PlatformFile>[];
+      if (!mounted || pickedFiles.isEmpty) {
+        return;
+      }
+      setState(() {
+        _selectedMessageFiles = [..._selectedMessageFiles, ...pickedFiles];
+      });
+    } on PlatformException {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('文件选择失败，请重试。')));
+    }
+  }
+
   Future<void> _retryPendingMessage(String pendingId) async {
     final pending = _pendingMessages.where((item) => item.id == pendingId).firstOrNull;
     if (pending == null) {
@@ -664,7 +760,7 @@ class _DashboardPageState extends State<DashboardPage> {
     }
     _messageController.text = pending.content;
     setState(() {
-      _selectedMessageFile = pending.file;
+      _selectedMessageFiles = pending.file == null ? const [] : [pending.file!];
       _pendingMessages = _pendingMessages.where((item) => item.id != pendingId).toList();
     });
     await _sendMessage();
@@ -815,12 +911,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> _sendMessage() async {
     final content = _messageController.text.trim();
-    final selectedFile = _selectedMessageFile;
+    final selectedFiles = [..._selectedMessageFiles];
     if (_isAdmin || _selectedConversationId == null) {
       return;
     }
 
-    if (content.isEmpty && selectedFile == null) {
+    if (content.isEmpty && selectedFiles.isEmpty) {
       if (!mounted) {
         return;
       }
@@ -828,57 +924,79 @@ class _DashboardPageState extends State<DashboardPage> {
       return;
     }
 
-    final pendingId = 'pending-${DateTime.now().microsecondsSinceEpoch}';
-    final pendingMessage = _PendingChatMessage(
-      id: pendingId,
-      content: content,
-      file: selectedFile,
-      sentAt: DateTime.now().toIso8601String().replaceFirst('T', ' ').substring(0, 16),
-      status: _PendingChatMessageStatus.sending,
-      progress: selectedFile == null ? 1 : 0,
-    );
+    final pendingMessages = selectedFiles.isEmpty
+        ? [
+            _PendingChatMessage(
+              id: 'pending-${DateTime.now().microsecondsSinceEpoch}',
+              content: content,
+              file: null,
+              sentAt: DateTime.now().toIso8601String().replaceFirst('T', ' ').substring(0, 16),
+              status: _PendingChatMessageStatus.sending,
+              progress: 1,
+            ),
+          ]
+        : selectedFiles
+            .asMap()
+            .entries
+            .map(
+              (entry) => _PendingChatMessage(
+                id: 'pending-${DateTime.now().microsecondsSinceEpoch}-${entry.key}',
+                content: content,
+                file: entry.value,
+                sentAt: DateTime.now().toIso8601String().replaceFirst('T', ' ').substring(0, 16),
+                status: _PendingChatMessageStatus.sending,
+                progress: 0,
+              ),
+            )
+            .toList();
 
     setState(() {
       _sendingMessage = true;
       _error = null;
-      _pendingMessages = [..._pendingMessages, pendingMessage];
+      _pendingMessages = [..._pendingMessages, ...pendingMessages];
     });
     _messageController.clear();
-    _selectedMessageFile = null;
+    _selectedMessageFiles = const [];
     _scrollMessagesToBottom();
 
     try {
-      await widget.apiService.sendMessage(
-        conversationId: _selectedConversationId!,
-        conversationType: _activeConversationType,
-        content: content.isEmpty ? null : content,
-        file: selectedFile,
-        groupId: _activeConversationType == 'group' ? _activeGroupId : null,
-        onSendProgress: selectedFile == null
-            ? null
-            : (progress) {
-                if (!mounted) {
-                  return;
-                }
-                setState(() {
-                  _pendingMessages = _pendingMessages
-                      .map((item) => item.id == pendingId ? item.copyWith(progress: progress) : item)
-                      .toList();
-                });
-              },
-      );
-      setState(() {
-        _pendingMessages = _pendingMessages.where((item) => item.id != pendingId).toList();
-      });
+      for (final pending in pendingMessages) {
+        await widget.apiService.sendMessage(
+          conversationId: _selectedConversationId!,
+          conversationType: _activeConversationType,
+          content: content.isEmpty ? null : content,
+          file: pending.file,
+          groupId: _activeConversationType == 'group' ? _activeGroupId : null,
+          onSendProgress: pending.file == null
+              ? null
+              : (progress) {
+                  if (!mounted) {
+                    return;
+                  }
+                  setState(() {
+                    _pendingMessages = _pendingMessages
+                        .map((item) => item.id == pending.id ? item.copyWith(progress: progress) : item)
+                        .toList();
+                  });
+                },
+        );
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _pendingMessages = _pendingMessages.where((item) => item.id != pending.id).toList();
+        });
+      }
       await _loadConversationMessages(_selectedConversationId!);
     } on ApiException catch (error) {
       if (!mounted) {
         return;
       }
+      final failedIds = pendingMessages.map((item) => item.id).toSet();
       setState(() {
         _error = error.message;
         _pendingMessages = _pendingMessages
-            .map((item) => item.id == pendingId ? item.copyWith(status: _PendingChatMessageStatus.failed, error: error.message) : item)
+            .map((item) => failedIds.contains(item.id) ? item.copyWith(status: _PendingChatMessageStatus.failed, error: error.message) : item)
             .toList();
       });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
@@ -886,10 +1004,11 @@ class _DashboardPageState extends State<DashboardPage> {
       if (!mounted) {
         return;
       }
+      final failedIds = pendingMessages.map((item) => item.id).toSet();
       setState(() {
         _error = '消息发送失败。';
         _pendingMessages = _pendingMessages
-            .map((item) => item.id == pendingId ? item.copyWith(status: _PendingChatMessageStatus.failed, error: '消息发送失败。') : item)
+            .map((item) => failedIds.contains(item.id) ? item.copyWith(status: _PendingChatMessageStatus.failed, error: '消息发送失败。') : item)
             .toList();
       });
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('消息发送失败，请重试。')));
@@ -2344,6 +2463,15 @@ class _DashboardPageState extends State<DashboardPage> {
                                           ],
                                           const SizedBox(width: 8),
                                           IconButton(
+                                            tooltip: _mutedConversationIds.contains(item.id) ? '取消静音' : '静音会话',
+                                            onPressed: () => _toggleMutedConversation(item.id),
+                                            icon: Icon(
+                                              _mutedConversationIds.contains(item.id) ? Icons.notifications_off : Icons.notifications_off_outlined,
+                                              size: 18,
+                                              color: _mutedConversationIds.contains(item.id) ? const Color(0xFF667085) : null,
+                                            ),
+                                          ),
+                                          IconButton(
                                             tooltip: _pinnedConversationIds.contains(item.id) ? '取消置顶' : '置顶会话',
                                             onPressed: () => _togglePinnedConversation(item.id),
                                             icon: Icon(
@@ -2381,6 +2509,11 @@ class _DashboardPageState extends State<DashboardPage> {
               : Wrap(
                   spacing: 8,
                   children: [
+                    if (_firstUnreadMessageIndex >= 0)
+                      TextButton(
+                        onPressed: _jumpToFirstUnreadMessage,
+                        child: const Text('定位未读'),
+                      ),
                     TextButton(
                       onPressed: _clearConversationMessages,
                       child: const Text('清空会话'),
@@ -2444,25 +2577,75 @@ class _DashboardPageState extends State<DashboardPage> {
                                       final isCurrentUser = message.senderName == widget.currentUser.name;
                                       final showSender = _shouldShowSender(index);
                                       final showTimestamp = _shouldShowTimestamp(index);
+                                      final showDayDivider = _shouldShowDayDivider(index);
+                                      final isFirstUnread = index == _firstUnreadMessageIndex;
                                       if (message.messageType == 'system') {
-                                        return Center(
-                                          child: Container(
-                                            margin: const EdgeInsets.only(bottom: 12),
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFF2F4F7),
-                                              borderRadius: BorderRadius.circular(999),
+                                        return Column(
+                                          children: [
+                                            if (showDayDivider)
+                                              Container(
+                                                margin: const EdgeInsets.only(bottom: 12),
+                                                child: Row(
+                                                  children: [
+                                                    const Expanded(child: Divider()),
+                                                    Padding(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                                                      child: Text(_messageDayLabel(message.sentAt), style: Theme.of(context).textTheme.bodySmall),
+                                                    ),
+                                                    const Expanded(child: Divider()),
+                                                  ],
+                                                ),
+                                              ),
+                                            if (isFirstUnread)
+                                              Container(
+                                                margin: const EdgeInsets.only(bottom: 12),
+                                                child: Row(
+                                                  children: [
+                                                    const Expanded(child: Divider()),
+                                                    Padding(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                                                      child: Text('以下为未读消息', style: Theme.of(context).textTheme.bodySmall),
+                                                    ),
+                                                    const Expanded(child: Divider()),
+                                                  ],
+                                                ),
+                                              ),
+                                            Center(
+                                              child: Container(
+                                                margin: const EdgeInsets.only(bottom: 12),
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFF2F4F7),
+                                                  borderRadius: BorderRadius.circular(999),
+                                                ),
+                                                child: Text(
+                                                  message.content,
+                                                  style: Theme.of(context).textTheme.bodySmall,
+                                                ),
+                                              ),
                                             ),
-                                            child: Text(
-                                              message.content,
-                                              style: Theme.of(context).textTheme.bodySmall,
-                                            ),
-                                          ),
+                                          ],
                                         );
                                       }
-                                      return Align(
-                                        alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
-                                        child: Container(
+                                      return Column(
+                                        children: [
+                                          if (isFirstUnread)
+                                            Container(
+                                              margin: const EdgeInsets.only(bottom: 12),
+                                              child: Row(
+                                                children: [
+                                                  const Expanded(child: Divider()),
+                                                  Padding(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                                    child: Text('以下为未读消息', style: Theme.of(context).textTheme.bodySmall),
+                                                  ),
+                                                  const Expanded(child: Divider()),
+                                                ],
+                                              ),
+                                            ),
+                                          Align(
+                                            alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+                                            child: Container(
                                           margin: const EdgeInsets.only(bottom: 12),
                                           padding: const EdgeInsets.all(12),
                                           constraints: const BoxConstraints(maxWidth: 420),
@@ -2700,6 +2883,8 @@ class _DashboardPageState extends State<DashboardPage> {
                                             ],
                                           ),
                                         ),
+                                          ),
+                                        ],
                                       );
                                     },
                                   )
@@ -2794,7 +2979,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                 ),
                 const SizedBox(height: 12),
-                if (_selectedMessageFile != null)
+                if (_selectedMessageFiles.isNotEmpty)
                   Container(
                     width: double.infinity,
                     margin: const EdgeInsets.only(bottom: 12),
@@ -2810,78 +2995,50 @@ class _DashboardPageState extends State<DashboardPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_isImageAttachment(_selectedMessageFile!.extension ?? '', '')) ...[
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: AspectRatio(
-                                aspectRatio: 16 / 9,
-                                child: Stack(
-                                  fit: StackFit.expand,
+                          Text('已选择 ${_selectedMessageFiles.length} 个文件', style: const TextStyle(fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 10),
+                          ..._selectedMessageFiles.asMap().entries.map(
+                            (entry) {
+                              final file = entry.value;
+                              return Container(
+                                margin: EdgeInsets.only(bottom: entry.key == _selectedMessageFiles.length - 1 ? 0 : 10),
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: const Color(0xFFE0E3EA)),
+                                ),
+                                child: Row(
                                   children: [
-                                    _selectedMessageFile!.bytes == null
-                                        ? Container(
-                                            color: const Color(0xFFF0F3F8),
-                                            alignment: Alignment.center,
-                                            child: const Icon(Icons.image_outlined),
-                                          )
-                                        : Image.memory(
-                                            _selectedMessageFile!.bytes!,
-                                            fit: BoxFit.cover,
+                                    Icon(_attachmentIcon(file.extension ?? '', '')),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(file.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                          Text(
+                                            '${_formatFileSize(file.size)}${_isImageAttachment(file.extension ?? '', '') ? ' · 图片' : ''}${_sendingMessage ? ' · 发送中' : ''}',
+                                            style: Theme.of(context).textTheme.bodySmall,
                                           ),
-                                    if (_sendingMessage)
-                                      Container(
-                                        color: Colors.black.withValues(alpha: 0.18),
-                                        alignment: Alignment.center,
-                                        child: const SizedBox(
-                                          width: 24,
-                                          height: 24,
-                                          child: CircularProgressIndicator(strokeWidth: 2),
-                                        ),
+                                        ],
                                       ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                          ],
-                          Row(
-                            children: [
-                              Icon(
-                                _attachmentIcon(
-                                  _selectedMessageFile!.extension ?? '',
-                                  '',
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _selectedMessageFile!.name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontWeight: FontWeight.w600),
                                     ),
-                                    Text(
-                                      '${_formatFileSize(_selectedMessageFile!.size)}${_isImageAttachment(_selectedMessageFile!.extension ?? '', '') ? ' · 图片预览' : ''}${_sendingMessage ? ' · 发送中' : ''}',
-                                      style: Theme.of(context).textTheme.bodySmall,
+                                    IconButton(
+                                      tooltip: '移除文件',
+                                      onPressed: _sendingMessage
+                                          ? null
+                                          : () {
+                                              setState(() {
+                                                _selectedMessageFiles = _selectedMessageFiles.where((item) => item != file).toList();
+                                              });
+                                            },
+                                      icon: const Icon(Icons.close),
                                     ),
                                   ],
                                 ),
-                              ),
-                              IconButton(
-                                tooltip: '移除文件',
-                                onPressed: _sendingMessage
-                                    ? null
-                                    : () {
-                                        setState(() {
-                                          _selectedMessageFile = null;
-                                        });
-                                      },
-                                icon: const Icon(Icons.close),
-                              ),
-                            ],
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -2907,27 +3064,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                 child: OutlinedButton.icon(
                                   onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage || _activeConversationType == 'agent'
                                       ? null
-                                      : () async {
-                                          try {
-                                            final result = await FilePicker.platform.pickFiles(
-                                              type: FileType.custom,
-                                              allowedExtensions: const ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'],
-                                              withData: true,
-                                            );
-                                            final picked = result?.files.singleOrNull;
-                                            if (!mounted || picked == null) {
-                                              return;
-                                            }
-                                            setState(() {
-                                              _selectedMessageFile = picked;
-                                            });
-                                          } on PlatformException {
-                                            if (!mounted) {
-                                              return;
-                                            }
-                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('文件选择失败，请重试。')));
-                                          }
-                                        },
+                                      : _pickChatFiles,
                                   icon: const Icon(Icons.attach_file),
                                   label: const Text('选择文件'),
                                 ),
@@ -2956,27 +3093,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             tooltip: '发送文件',
                             onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage || _activeConversationType == 'agent'
                                 ? null
-                                : () async {
-                                    try {
-                                      final result = await FilePicker.platform.pickFiles(
-                                        type: FileType.custom,
-                                        allowedExtensions: const ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'],
-                                        withData: true,
-                                      );
-                                      final picked = result?.files.singleOrNull;
-                                      if (!mounted || picked == null) {
-                                        return;
-                                      }
-                                      setState(() {
-                                        _selectedMessageFile = picked;
-                                      });
-                                    } on PlatformException {
-                                      if (!mounted) {
-                                        return;
-                                      }
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('文件选择失败，请重试。')));
-                                    }
-                                  },
+                                : _pickChatFiles,
                             icon: const Icon(Icons.attach_file),
                           ),
                           const SizedBox(width: 8),

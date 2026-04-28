@@ -406,6 +406,7 @@ class ChatMessage {
     required this.senderName,
     required this.content,
     required this.sentAt,
+    required this.readStatus,
     required this.messageType,
     required this.file,
   });
@@ -415,6 +416,7 @@ class ChatMessage {
   final String senderName;
   final String content;
   final String sentAt;
+  final bool readStatus;
   final String messageType;
   final ChatAttachment? file;
 
@@ -425,6 +427,7 @@ class ChatMessage {
       senderName: json['senderName'] as String? ?? '',
       content: json['content'] as String? ?? '',
       sentAt: json['sentAt'] as String? ?? '',
+      readStatus: json['readStatus'] as bool? ?? true,
       messageType: json['messageType'] as String? ?? 'text',
       file: (json['file'] as Map<String, dynamic>?) == null
           ? null

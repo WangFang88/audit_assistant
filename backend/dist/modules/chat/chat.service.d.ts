@@ -76,6 +76,7 @@ export declare class ChatService {
         senderName: string;
         content: string;
         sentAt: string;
+        readStatus: boolean;
         messageType: "text" | "file" | "system";
         file: MessageFileRecord | null;
     }[]>;
@@ -85,6 +86,7 @@ export declare class ChatService {
         senderName: string;
         content: string;
         sentAt: string;
+        readStatus: boolean;
         messageType: "text" | "file" | "system";
         file: MessageFileRecord | null;
     }>;

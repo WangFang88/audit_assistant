@@ -339,6 +339,7 @@ let ChatService = class ChatService {
             senderName: message.senderName,
             content: message.content,
             sentAt: message.sentAt,
+            readStatus: message.readStatus,
             messageType: message.messageType,
             file: message.file,
         };
