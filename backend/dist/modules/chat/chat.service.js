@@ -566,6 +566,11 @@ let ChatService = class ChatService {
         await this.messageRepository.delete(conversationIds.map((conversationId) => ({ conversationId })));
         await this.conversationParticipantRepository.delete(conversationIds.map((conversationId) => ({ conversationId })));
         await this.conversationRepository.delete(conversationIds.map((id) => ({ id })));
+        for (const conversation of conversations) {
+            if (conversation.conversationType === 'group') {
+                this.fileStorageService.removeChatConversationFiles('group', conversation.id);
+            }
+        }
     }
     async syncGroupAgent(group, agent) {
         const conversation = await this.createAgentConversation(group);
@@ -574,6 +579,19 @@ let ChatService = class ChatService {
             agentId: agent.id,
         });
         return conversation.id;
+    }
+    async removeDirectConversation(conversationId) {
+        const conversation = await this.conversationRepository.findOneBy({
+            id: conversationId,
+            conversationType: 'direct',
+        });
+        if (!conversation) {
+            return;
+        }
+        await this.messageRepository.delete({ conversationId });
+        await this.conversationParticipantRepository.delete({ conversationId });
+        await this.conversationRepository.delete({ id: conversationId });
+        this.fileStorageService.removeChatConversationFiles('direct', conversationId);
     }
     async findOrCreateDirectConversation(targetUserId) {
         this.assertAdminCannotUseChat();

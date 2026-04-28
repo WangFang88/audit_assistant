@@ -2389,59 +2389,122 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     ),
                   ),
-                Row(
-                  children: [
-                    IconButton(
-                      tooltip: '发送文件',
-                      onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage || _activeConversationType == 'agent'
-                          ? null
-                          : () async {
-                              try {
-                                final result = await FilePicker.platform.pickFiles(
-                                  type: FileType.custom,
-                                  allowedExtensions: const ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'],
-                                  withData: true,
-                                );
-                                final picked = result?.files.singleOrNull;
-                                if (!mounted || picked == null) {
-                                  return;
-                                }
-                                setState(() {
-                                  _selectedMessageFile = picked;
-                                });
-                              } on PlatformException {
-                                if (!mounted) {
-                                  return;
-                                }
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('文件选择失败，请重试。')));
-                              }
-                            },
-                      icon: const Icon(Icons.attach_file),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _messageController,
-                        enabled: _activeGroupId != null && _selectedConversationId != null && !_sendingMessage,
-                        decoration: InputDecoration(
-                          labelText: _activeConversationType == 'agent' ? '输入消息（Agent 会话暂不支持文件）' : '输入消息或附言',
-                        ),
+                compact
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          TextField(
+                            controller: _messageController,
+                            minLines: 1,
+                            maxLines: 4,
+                            enabled: _activeGroupId != null && _selectedConversationId != null && !_sendingMessage,
+                            decoration: InputDecoration(
+                              labelText: _activeConversationType == 'agent' ? '输入消息（Agent 会话暂不支持文件）' : '输入消息或附言',
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage || _activeConversationType == 'agent'
+                                      ? null
+                                      : () async {
+                                          try {
+                                            final result = await FilePicker.platform.pickFiles(
+                                              type: FileType.custom,
+                                              allowedExtensions: const ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'],
+                                              withData: true,
+                                            );
+                                            final picked = result?.files.singleOrNull;
+                                            if (!mounted || picked == null) {
+                                              return;
+                                            }
+                                            setState(() {
+                                              _selectedMessageFile = picked;
+                                            });
+                                          } on PlatformException {
+                                            if (!mounted) {
+                                              return;
+                                            }
+                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('文件选择失败，请重试。')));
+                                          }
+                                        },
+                                  icon: const Icon(Icons.attach_file),
+                                  label: const Text('选择文件'),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: FilledButton.icon(
+                                  onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage ? null : _sendMessage,
+                                  icon: _sendingMessage
+                                      ? const SizedBox(
+                                          height: 16,
+                                          width: 16,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : const Icon(Icons.send),
+                                  label: Text(_sendingMessage ? '发送中...' : '发送'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          IconButton(
+                            tooltip: '发送文件',
+                            onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage || _activeConversationType == 'agent'
+                                ? null
+                                : () async {
+                                    try {
+                                      final result = await FilePicker.platform.pickFiles(
+                                        type: FileType.custom,
+                                        allowedExtensions: const ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'],
+                                        withData: true,
+                                      );
+                                      final picked = result?.files.singleOrNull;
+                                      if (!mounted || picked == null) {
+                                        return;
+                                      }
+                                      setState(() {
+                                        _selectedMessageFile = picked;
+                                      });
+                                    } on PlatformException {
+                                      if (!mounted) {
+                                        return;
+                                      }
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('文件选择失败，请重试。')));
+                                    }
+                                  },
+                            icon: const Icon(Icons.attach_file),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: _messageController,
+                              enabled: _activeGroupId != null && _selectedConversationId != null && !_sendingMessage,
+                              decoration: InputDecoration(
+                                labelText: _activeConversationType == 'agent' ? '输入消息（Agent 会话暂不支持文件）' : '输入消息或附言',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          FilledButton.icon(
+                            onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage ? null : _sendMessage,
+                            icon: _sendingMessage
+                                ? const SizedBox(
+                                    height: 16,
+                                    width: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.send),
+                            label: Text(_sendingMessage ? '发送中...' : '发送'),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    FilledButton.icon(
-                      onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage ? null : _sendMessage,
-                      icon: _sendingMessage
-                          ? const SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.send),
-                      label: Text(_sendingMessage ? '发送中...' : '发送'),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),

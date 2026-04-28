@@ -95,6 +95,7 @@ export declare class ChatService {
         id: string;
         name: string;
     }, agent: TeamAgentRecord): Promise<string>;
+    removeDirectConversation(conversationId: string): Promise<void>;
     findOrCreateDirectConversation(targetUserId: string): Promise<ConversationRecord>;
 }
 export { SendMessageDto };

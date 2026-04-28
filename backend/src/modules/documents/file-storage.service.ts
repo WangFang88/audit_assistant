@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
 export type SavedFileRecord = {
@@ -10,6 +10,15 @@ export type SavedFileRecord = {
 
 @Injectable()
 export class FileStorageService {
+  private readonly allowedChatFileExtensions = new Set(['.pdf', '.docx', '.xlsx', '.png', '.jpg', '.jpeg']);
+  private readonly allowedChatMimeTypes = new Set([
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'image/png',
+    'image/jpeg',
+  ]);
+
   private getUploadRoot() {
     return join(process.cwd(), '.data', 'uploads');
   }
@@ -50,17 +59,34 @@ export class FileStorageService {
     return this.writeStoredFile(folder, options.file, logicalPath);
   }
 
+  private assertAllowedChatFile(file: Express.Multer.File) {
+    const extension = (extname(this.sanitizeFileName(file.originalname || 'upload.bin')) || '.bin').toLowerCase();
+    const mimeType = (file.mimetype || '').toLowerCase();
+    if (!this.allowedChatFileExtensions.has(extension) || !this.allowedChatMimeTypes.has(mimeType)) {
+      throw new BadRequestException('当前仅支持 PDF、DOCX、XLSX、PNG、JPG、JPEG 文件');
+    }
+  }
+
   saveChatFile(options: {
     file: Express.Multer.File;
     conversationId: string;
     messageId: string;
     conversationType: 'group' | 'direct';
   }) {
+    this.assertAllowedChatFile(options.file);
     const channel = options.conversationType === 'group' ? 'groups' : 'direct';
     const folder = join(this.getUploadRoot(), 'chat', channel, options.conversationId, options.messageId);
     const extension = extname(this.sanitizeFileName(options.file.originalname || 'upload.bin')) || '.bin';
     const logicalPath = `/files/chat/${channel}/${options.conversationId}/${options.messageId}/original${extension}`;
 
     return this.writeStoredFile(folder, options.file, logicalPath);
+  }
+
+  removeChatConversationFiles(conversationType: 'group' | 'direct', conversationId: string) {
+    const channel = conversationType === 'group' ? 'groups' : 'direct';
+    const folder = join(this.getUploadRoot(), 'chat', channel, conversationId);
+    if (existsSync(folder)) {
+      rmSync(folder, { recursive: true, force: true });
+    }
   }
 }

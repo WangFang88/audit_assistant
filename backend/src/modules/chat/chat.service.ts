@@ -676,6 +676,11 @@ export class ChatService {
     await this.messageRepository.delete(conversationIds.map((conversationId) => ({ conversationId })));
     await this.conversationParticipantRepository.delete(conversationIds.map((conversationId) => ({ conversationId })));
     await this.conversationRepository.delete(conversationIds.map((id) => ({ id })));
+    for (const conversation of conversations) {
+      if (conversation.conversationType === 'group') {
+        this.fileStorageService.removeChatConversationFiles('group', conversation.id);
+      }
+    }
   }
 
   async syncGroupAgent(group: { id: string; name: string }, agent: TeamAgentRecord) {
@@ -688,6 +693,20 @@ export class ChatService {
       },
     );
     return conversation.id;
+  }
+
+  async removeDirectConversation(conversationId: string) {
+    const conversation = await this.conversationRepository.findOneBy({
+      id: conversationId,
+      conversationType: 'direct',
+    });
+    if (!conversation) {
+      return;
+    }
+    await this.messageRepository.delete({ conversationId });
+    await this.conversationParticipantRepository.delete({ conversationId });
+    await this.conversationRepository.delete({ id: conversationId });
+    this.fileStorageService.removeChatConversationFiles('direct', conversationId);
   }
 
   async findOrCreateDirectConversation(targetUserId: string) {

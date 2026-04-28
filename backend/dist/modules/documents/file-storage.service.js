@@ -11,6 +11,16 @@ const common_1 = require("@nestjs/common");
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
 let FileStorageService = class FileStorageService {
+    constructor() {
+        this.allowedChatFileExtensions = new Set(['.pdf', '.docx', '.xlsx', '.png', '.jpg', '.jpeg']);
+        this.allowedChatMimeTypes = new Set([
+            'application/pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'image/png',
+            'image/jpeg',
+        ]);
+    }
     getUploadRoot() {
         return (0, node_path_1.join)(process.cwd(), '.data', 'uploads');
     }
@@ -39,12 +49,27 @@ let FileStorageService = class FileStorageService {
             : `/files/public/${options.documentId}/original${(0, node_path_1.extname)(this.sanitizeFileName(options.file.originalname || 'upload.bin')) || '.bin'}`;
         return this.writeStoredFile(folder, options.file, logicalPath);
     }
+    assertAllowedChatFile(file) {
+        const extension = ((0, node_path_1.extname)(this.sanitizeFileName(file.originalname || 'upload.bin')) || '.bin').toLowerCase();
+        const mimeType = (file.mimetype || '').toLowerCase();
+        if (!this.allowedChatFileExtensions.has(extension) || !this.allowedChatMimeTypes.has(mimeType)) {
+            throw new common_1.BadRequestException('当前仅支持 PDF、DOCX、XLSX、PNG、JPG、JPEG 文件');
+        }
+    }
     saveChatFile(options) {
+        this.assertAllowedChatFile(options.file);
         const channel = options.conversationType === 'group' ? 'groups' : 'direct';
         const folder = (0, node_path_1.join)(this.getUploadRoot(), 'chat', channel, options.conversationId, options.messageId);
         const extension = (0, node_path_1.extname)(this.sanitizeFileName(options.file.originalname || 'upload.bin')) || '.bin';
         const logicalPath = `/files/chat/${channel}/${options.conversationId}/${options.messageId}/original${extension}`;
         return this.writeStoredFile(folder, options.file, logicalPath);
+    }
+    removeChatConversationFiles(conversationType, conversationId) {
+        const channel = conversationType === 'group' ? 'groups' : 'direct';
+        const folder = (0, node_path_1.join)(this.getUploadRoot(), 'chat', channel, conversationId);
+        if ((0, node_fs_1.existsSync)(folder)) {
+            (0, node_fs_1.rmSync)(folder, { recursive: true, force: true });
+        }
     }
 };
 exports.FileStorageService = FileStorageService;
