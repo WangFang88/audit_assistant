@@ -152,6 +152,18 @@ class ApiService {
     return user;
   }
 
+  Future<AppUser> updateProfile({required String name}) async {
+    final response = await _requestWithRefresh(
+      (headers) => _client.patch(
+        Uri.parse('$_baseUrl/auth/me'),
+        headers: {...headers, 'Content-Type': 'application/json'},
+        body: jsonEncode({'name': name}),
+      ),
+    );
+    final json = _decodeMap(response);
+    return AppUser.fromJson(json);
+  }
+
   Future<DashboardOverview> fetchDashboard({String? groupId}) async {
     final uri = Uri.parse('$_baseUrl/overview/dashboard').replace(
       queryParameters: groupId == null ? null : {'groupId': groupId},

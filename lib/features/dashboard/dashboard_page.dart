@@ -552,6 +552,31 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  Future<void> _showEditNameDialog(String currentName) async {
+    final controller = TextEditingController(text: currentName);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('修改姓名'),
+        content: TextField(controller: controller, decoration: const InputDecoration(labelText: '姓名'), autofocus: true),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('保存')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final name = controller.text.trim();
+    if (name.isEmpty) return;
+    try {
+      await widget.apiService.updateProfile(name: name);
+      await _loadDashboard();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('修改失败：$e')));
+    }
+  }
+
   Future<void> _showCreateGroupDialog() async {
     if (_isAdmin) {
       return;
@@ -1922,7 +1947,18 @@ class _DashboardPageState extends State<DashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('姓名：${user.name}'),
+              Row(
+                children: [
+                  Text('姓名：${user.name}'),
+                  const SizedBox(width: 8),
+                  if (!_isAdmin)
+                    TextButton(
+                      onPressed: () => _showEditNameDialog(user.name),
+                      style: TextButton.styleFrom(minimumSize: Size.zero, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
+                      child: const Text('修改'),
+                    ),
+                ],
+              ),
               const SizedBox(height: 8),
               Text(_isAdmin ? '管理员账号：admin' : '手机号：${user.phone}'),
               const SizedBox(height: 8),
