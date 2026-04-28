@@ -90,11 +90,12 @@ class _DashboardPageState extends State<DashboardPage> {
       if (selectedId != null && _selectedIndex == 1) {
         final messages = await widget.apiService.fetchMessages(selectedId);
         if (!mounted) return;
-        final hadMessages = _messages.length;
+        final lastKnownId = _messages.isNotEmpty ? _messages.last.id : null;
+        final hasNew = messages.isNotEmpty && messages.last.id != lastKnownId;
         setState(() {
           _messages = messages;
         });
-        if (messages.length > hadMessages) {
+        if (hasNew) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (_messagesScrollController.hasClients) {
               _messagesScrollController.animateTo(
