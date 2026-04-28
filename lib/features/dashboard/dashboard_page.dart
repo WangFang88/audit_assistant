@@ -688,6 +688,10 @@ class _DashboardPageState extends State<DashboardPage> {
       if (!mounted) {
         return;
       }
+      if (savedPath == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('文件已开始下载。')));
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('文件已保存到：$savedPath')));
       await widget.apiService.openFilePath(savedPath);
     } on ApiException catch (error) {

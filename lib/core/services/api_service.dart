@@ -5,6 +5,9 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+
+import 'file_download_helper_stub.dart'
+    if (dart.library.js_interop) 'file_download_helper_web.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -337,7 +340,7 @@ class ApiService {
     }
   }
 
-  Future<String> downloadChatMessageFile({
+  Future<String?> downloadChatMessageFile({
     required String conversationId,
     required String messageId,
     required String fileName,
@@ -350,6 +353,12 @@ class ApiService {
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException('文件下载失败：$fileName (${response.statusCode})');
+    }
+
+    final mimeType = response.headers['content-type'] ?? 'application/octet-stream';
+    if (kIsWeb) {
+      await saveBytesAsDownload(response.bodyBytes, fileName, mimeType);
+      return null;
     }
 
     final pickedDirectory = await FilePicker.platform.getDirectoryPath(dialogTitle: '选择保存位置');
