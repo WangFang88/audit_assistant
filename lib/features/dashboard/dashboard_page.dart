@@ -28,6 +28,7 @@ class _DashboardPageState extends State<DashboardPage> {
   );
   final TextEditingController _messageController = TextEditingController();
   final TextEditingController _messageSearchController = TextEditingController();
+  final TextEditingController _conversationSearchController = TextEditingController();
   final ScrollController _messagesScrollController = ScrollController();
 
   int _selectedIndex = 0;
@@ -63,6 +64,7 @@ class _DashboardPageState extends State<DashboardPage> {
     _questionController.dispose();
     _messageController.dispose();
     _messageSearchController.dispose();
+    _conversationSearchController.dispose();
     _messagesScrollController.dispose();
     super.dispose();
   }
@@ -77,6 +79,17 @@ class _DashboardPageState extends State<DashboardPage> {
       return '${(bytes / 1024).toStringAsFixed(bytes < 10 * 1024 ? 1 : 0)} KB';
     }
     return '${(bytes / (1024 * 1024)).toStringAsFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB';
+  }
+
+  List<ConversationSummary> get _visibleConversations {
+    final keyword = _conversationSearchController.text.trim().toLowerCase();
+    if (keyword.isEmpty) {
+      return _conversations;
+    }
+    return _conversations.where((conversation) {
+      return conversation.title.toLowerCase().contains(keyword) ||
+          conversation.lastMessage.toLowerCase().contains(keyword);
+    }).toList();
   }
 
   List<ChatMessage> get _visibleMessages {
@@ -1234,6 +1247,25 @@ class _DashboardPageState extends State<DashboardPage> {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('文本块内容已复制。')));
   }
 
+  Future<void> _copyMessageContent(String content) async {
+    if (content.trim().isEmpty) {
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: content));
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('消息内容已复制。')));
+  }
+
+  Future<void> _copyAttachmentPath(ChatAttachment attachment) async {
+    await Clipboard.setData(ClipboardData(text: attachment.path));
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('附件路径已复制。')));
+  }
+
   Future<void> _showDocumentChunksDialog(KnowledgeDocument document) async {
     try {
       final chunks = await widget.apiService.fetchDocumentChunks(document.id);
@@ -2072,6 +2104,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildChat() {
     final activeConversation = _selectedConversation;
+    final visibleConversations = _visibleConversations;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -2086,52 +2119,74 @@ class _DashboardPageState extends State<DashboardPage> {
               : '已按当前项目组 Agent 优先展示会话与消息。',
           child: SizedBox(
             height: compact ? 320 : 560,
-            child: _conversations.isEmpty
-                ? Center(
-                    child: Text(
-                      '暂无会话',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  )
-                : ListView(
-                    children: _conversations
-                        .map(
-                          (item) => ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            selected: item.id == _selectedConversationId,
-                            onTap: () => _loadConversationMessages(item.id),
-                            leading: CircleAvatar(child: Text(item.isTeamAgent ? '智' : item.type == '群聊' ? '群' : '私')),
-                            title: Row(
-                              children: [
-                                Expanded(child: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
-                                if (item.unreadCount > 0) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFD92D20),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: Text(
-                                      item.unreadCount > 99 ? '99+' : '${item.unreadCount}',
-                                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            subtitle: Text(
-                              item.lastMessage,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontWeight: item.unreadCount > 0 ? FontWeight.w600 : FontWeight.w400,
-                              ),
-                            ),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _conversationSearchController,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    hintText: '搜索会话标题或最后消息',
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: _conversations.isEmpty
+                      ? Center(
+                          child: Text(
+                            '暂无会话',
+                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         )
-                        .toList(),
-                  ),
+                      : visibleConversations.isEmpty
+                          ? Center(
+                              child: Text(
+                                '没有匹配的会话。',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            )
+                          : ListView(
+                              children: visibleConversations
+                                  .map(
+                                    (item) => ListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      selected: item.id == _selectedConversationId,
+                                      onTap: () => _loadConversationMessages(item.id),
+                                      leading: CircleAvatar(child: Text(item.isTeamAgent ? '智' : item.type == '群聊' ? '群' : '私')),
+                                      title: Row(
+                                        children: [
+                                          Expanded(child: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                          if (item.unreadCount > 0) ...[
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFD92D20),
+                                                borderRadius: BorderRadius.circular(999),
+                                              ),
+                                              child: Text(
+                                                item.unreadCount > 99 ? '99+' : '${item.unreadCount}',
+                                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                      subtitle: Text(
+                                        item.lastMessage,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontWeight: item.unreadCount > 0 ? FontWeight.w600 : FontWeight.w400,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                ),
+              ],
+            ),
           ),
         );
 
@@ -2227,6 +2282,27 @@ class _DashboardPageState extends State<DashboardPage> {
                                                 const SizedBox(height: 6),
                                               ],
                                               if (message.messageType == 'file' && message.file != null) ...[
+                                                Align(
+                                                  alignment: Alignment.centerRight,
+                                                  child: Wrap(
+                                                    spacing: 8,
+                                                    runSpacing: 8,
+                                                    children: [
+                                                      if (message.content.isNotEmpty && message.content != message.file!.name)
+                                                        TextButton.icon(
+                                                          onPressed: () => _copyMessageContent(message.content),
+                                                          icon: const Icon(Icons.content_copy_outlined, size: 16),
+                                                          label: const Text('复制附言'),
+                                                        ),
+                                                      TextButton.icon(
+                                                        onPressed: () => _copyAttachmentPath(message.file!),
+                                                        icon: const Icon(Icons.link_outlined, size: 16),
+                                                        label: const Text('复制路径'),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 6),
                                                 InkWell(
                                                   onTap: () => _handleAttachmentTap(message.file!),
                                                   borderRadius: BorderRadius.circular(10),
@@ -2364,8 +2440,19 @@ class _DashboardPageState extends State<DashboardPage> {
                                                   const SizedBox(height: 8),
                                                   Text(message.content),
                                                 ],
-                                              ] else
+                                              ] else ...[
+                                                if (message.content.isNotEmpty)
+                                                  Align(
+                                                    alignment: Alignment.centerRight,
+                                                    child: TextButton.icon(
+                                                      onPressed: () => _copyMessageContent(message.content),
+                                                      icon: const Icon(Icons.content_copy_outlined, size: 16),
+                                                      label: const Text('复制消息'),
+                                                    ),
+                                                  ),
+                                                if (message.content.isNotEmpty) const SizedBox(height: 6),
                                                 Text(message.content),
+                                              ],
                                               if (showTimestamp) ...[
                                                 const SizedBox(height: 6),
                                                 Text(message.sentAt, style: Theme.of(context).textTheme.bodySmall),
