@@ -342,11 +342,9 @@ class ApiService {
     required String fileName,
   }) async {
     final uri = buildFileUri(sourcePath);
-    final response = await _requestWithRefresh(
-      (headers) => _client.get(uri, headers: headers),
-    );
+    final response = await _client.get(uri);
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException('文件下载失败：$fileName');
+      throw ApiException('文件下载失败：$fileName (${response.statusCode})');
     }
 
     final pickedDirectory = await FilePicker.platform.getDirectoryPath(dialogTitle: '选择保存位置');
