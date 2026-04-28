@@ -64,6 +64,34 @@ class _DashboardPageState extends State<DashboardPage> {
 
   String? get _activeGroupId => _selectedGroupId;
 
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) {
+      return '$bytes B';
+    }
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(bytes < 10 * 1024 ? 1 : 0)} KB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB';
+  }
+
+  IconData _attachmentIcon(String extension, String mimeType) {
+    final normalizedExtension = extension.toLowerCase();
+    final normalizedMimeType = mimeType.toLowerCase();
+    if (normalizedMimeType.startsWith('image/') || const {'png', 'jpg', 'jpeg', 'gif', 'webp'}.contains(normalizedExtension)) {
+      return Icons.image_outlined;
+    }
+    if (normalizedExtension == 'pdf') {
+      return Icons.picture_as_pdf_outlined;
+    }
+    if (const {'doc', 'docx'}.contains(normalizedExtension)) {
+      return Icons.description_outlined;
+    }
+    if (const {'xls', 'xlsx', 'csv'}.contains(normalizedExtension)) {
+      return Icons.table_chart_outlined;
+    }
+    return Icons.attach_file;
+  }
+
   bool get _isAdmin {
     return widget.currentUser.role == '管理员' || widget.currentUser.role == 'admin';
   }
@@ -1906,7 +1934,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                                       children: [
                                                         Row(
                                                           children: [
-                                                            const Icon(Icons.attach_file, size: 18),
+                                                            Icon(
+                                                              _attachmentIcon(message.file!.extension, message.file!.mimeType),
+                                                              size: 18,
+                                                            ),
                                                             const SizedBox(width: 6),
                                                             Expanded(
                                                               child: Text(
@@ -1920,7 +1951,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                         ),
                                                         const SizedBox(height: 6),
                                                         Text(
-                                                          '${message.file!.extension.toUpperCase()} · ${message.file!.size} 字节 · 点击打开',
+                                                          '${message.file!.extension.toUpperCase()} · ${_formatFileSize(message.file!.size)} · 点击打开',
                                                           style: Theme.of(context).textTheme.bodySmall,
                                                         ),
                                                       ],
@@ -1957,7 +1988,12 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.attach_file),
+                        Icon(
+                          _attachmentIcon(
+                            _selectedMessageFile!.extension ?? '',
+                            '',
+                          ),
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -1969,7 +2005,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(fontWeight: FontWeight.w600),
                               ),
-                              Text('${_selectedMessageFile!.size} 字节', style: Theme.of(context).textTheme.bodySmall),
+                              Text(_formatFileSize(_selectedMessageFile!.size), style: Theme.of(context).textTheme.bodySmall),
                             ],
                           ),
                         ),
