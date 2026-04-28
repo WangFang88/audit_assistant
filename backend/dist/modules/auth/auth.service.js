@@ -22,7 +22,6 @@ const auth_user_repository_1 = require("../../database/repositories/auth-user.re
 const user_entity_1 = require("../../database/entities/user.entity");
 const audit_service_1 = require("../audit/audit.service");
 const local_state_service_1 = require("../subscriptions/local-state.service");
-const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 class LoginDto {
 }
 exports.LoginDto = LoginDto;
@@ -67,11 +66,10 @@ __decorate([
     __metadata("design:type", String)
 ], UpdateProfileDto.prototype, "name", void 0);
 let AuthService = class AuthService {
-    constructor(localStateService, authUserRepository, userRepository, subscriptionsService, auditService) {
+    constructor(localStateService, authUserRepository, userRepository, auditService) {
         this.localStateService = localStateService;
         this.authUserRepository = authUserRepository;
         this.userRepository = userRepository;
-        this.subscriptionsService = subscriptionsService;
         this.auditService = auditService;
         this.demoUsers = [
             {
@@ -88,7 +86,7 @@ let AuthService = class AuthService {
                 name: '审计组长',
                 phone: '13800138001',
                 role: 'member',
-                trialEndsAt: this.buildTrialEndsAt(),
+                trialEndsAt: this.getDefaultTrialEndsAt(),
                 passwordHash: (0, crypto_1.createHash)('sha256').update('123456').digest('hex'),
                 subscriptionType: 'free',
             },
@@ -97,7 +95,7 @@ let AuthService = class AuthService {
                 name: '审计助理',
                 phone: '13800138002',
                 role: 'member',
-                trialEndsAt: this.buildTrialEndsAt(),
+                trialEndsAt: this.getDefaultTrialEndsAt(),
                 passwordHash: (0, crypto_1.createHash)('sha256').update('123456').digest('hex'),
                 subscriptionType: 'free',
             },
@@ -106,7 +104,7 @@ let AuthService = class AuthService {
                 name: '法规顾问',
                 phone: '13800138003',
                 role: 'member',
-                trialEndsAt: this.buildTrialEndsAt(),
+                trialEndsAt: this.getDefaultTrialEndsAt(),
                 passwordHash: (0, crypto_1.createHash)('sha256').update('123456').digest('hex'),
                 subscriptionType: 'free',
             },
@@ -172,7 +170,7 @@ let AuthService = class AuthService {
                 name: entity.nickname,
                 phone: entity.phone,
                 role: entity.role,
-                trialEndsAt: (entity.subscriptionExpiredAt ?? new Date(`${this.buildTrialEndsAt()}T00:00:00.000Z`)).toISOString().slice(0, 10),
+                trialEndsAt: (entity.subscriptionExpiredAt ?? new Date(`${this.getDefaultTrialEndsAt()}T00:00:00.000Z`)).toISOString().slice(0, 10),
                 passwordHash: entity.passwordHash,
             };
         }));
@@ -231,8 +229,10 @@ let AuthService = class AuthService {
     createUserName(phone) {
         return `新用户${phone.slice(-4)}`;
     }
-    buildTrialEndsAt() {
-        return this.subscriptionsService.buildTrialEndsAt();
+    getDefaultTrialEndsAt(baseDate = new Date()) {
+        const nextDate = new Date(baseDate.getTime());
+        nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+        return nextDate.toISOString().slice(0, 10);
     }
     async login(dto) {
         const user = this.findUserByPhone(dto.phone);
@@ -269,7 +269,7 @@ let AuthService = class AuthService {
             name: this.createUserName(phone),
             phone,
             role: 'member',
-            trialEndsAt: this.buildTrialEndsAt(),
+            trialEndsAt: this.getDefaultTrialEndsAt(),
             passwordHash,
             subscriptionType: 'free',
         };
@@ -334,11 +334,9 @@ exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __param(2, (0, typeorm_1.InjectRepository)(user_entity_1.UserEntity)),
-    __param(3, (0, common_1.Inject)((0, common_1.forwardRef)(() => subscriptions_service_1.SubscriptionsService))),
     __metadata("design:paramtypes", [local_state_service_1.LocalStateService,
         auth_user_repository_1.AuthUserRepository,
         typeorm_2.Repository,
-        subscriptions_service_1.SubscriptionsService,
         audit_service_1.AuditService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

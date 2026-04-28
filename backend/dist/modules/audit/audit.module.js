@@ -11,7 +11,6 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const database_support_module_1 = require("../../database/database-support.module");
 const audit_event_entity_1 = require("../../database/entities/audit-event.entity");
-const auth_module_1 = require("../auth/auth.module");
 const audit_controller_1 = require("./audit.controller");
 const audit_service_1 = require("./audit.service");
 let AuditModule = class AuditModule {
@@ -19,7 +18,7 @@ let AuditModule = class AuditModule {
 exports.AuditModule = AuditModule;
 exports.AuditModule = AuditModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([audit_event_entity_1.AuditEventEntity]), database_support_module_1.DatabaseSupportModule, (0, common_1.forwardRef)(() => auth_module_1.AuthModule)],
+        imports: [typeorm_1.TypeOrmModule.forFeature([audit_event_entity_1.AuditEventEntity]), database_support_module_1.DatabaseSupportModule],
         controllers: [audit_controller_1.AuditController],
         providers: [audit_service_1.AuditService],
         exports: [audit_service_1.AuditService],

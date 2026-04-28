@@ -3,7 +3,6 @@ import { AuthUserRepository } from '../../database/repositories/auth-user.reposi
 import { UserEntity } from '../../database/entities/user.entity';
 import { AuditService } from '../audit/audit.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
-import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 declare class LoginDto {
     phone: string;
     password: string;
@@ -34,9 +33,8 @@ export declare class AuthService {
     private readonly localStateService;
     private readonly authUserRepository;
     private readonly userRepository;
-    private readonly subscriptionsService;
     private readonly auditService;
-    constructor(localStateService: LocalStateService, authUserRepository: AuthUserRepository, userRepository: Repository<UserEntity>, subscriptionsService: SubscriptionsService, auditService: AuditService);
+    constructor(localStateService: LocalStateService, authUserRepository: AuthUserRepository, userRepository: Repository<UserEntity>, auditService: AuditService);
     private readonly demoUsers;
     private registeredUsers;
     private currentUser;
@@ -56,7 +54,7 @@ export declare class AuthService {
     private setCurrentUser;
     private buildAuthResponse;
     private createUserName;
-    private buildTrialEndsAt;
+    private getDefaultTrialEndsAt;
     login(dto: LoginDto): Promise<{
         accessToken: string;
         refreshToken: string;

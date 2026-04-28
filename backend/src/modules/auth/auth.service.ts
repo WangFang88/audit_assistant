@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import { BadRequestException, Injectable, UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { IsString, Matches, MinLength, MaxLength } from 'class-validator';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -7,7 +7,6 @@ import { AuthUserRepository, AuthUserSnapshot } from '../../database/repositorie
 import { UserEntity } from '../../database/entities/user.entity';
 import { AuditService } from '../audit/audit.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
-import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 class LoginDto {
   @IsString()
@@ -63,8 +62,6 @@ export class AuthService {
     private readonly authUserRepository: AuthUserRepository,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
-    @Inject(forwardRef(() => SubscriptionsService))
-    private readonly subscriptionsService: SubscriptionsService,
     private readonly auditService: AuditService,
   ) {
     const persistedUsers = this.localStateService.readState().users;
@@ -100,7 +97,7 @@ export class AuthService {
       name: '审计组长',
       phone: '13800138001',
       role: 'member',
-      trialEndsAt: this.buildTrialEndsAt(),
+      trialEndsAt: this.getDefaultTrialEndsAt(),
       passwordHash: createHash('sha256').update('123456').digest('hex'),
       subscriptionType: 'free',
     },
@@ -109,7 +106,7 @@ export class AuthService {
       name: '审计助理',
       phone: '13800138002',
       role: 'member',
-      trialEndsAt: this.buildTrialEndsAt(),
+      trialEndsAt: this.getDefaultTrialEndsAt(),
       passwordHash: createHash('sha256').update('123456').digest('hex'),
       subscriptionType: 'free',
     },
@@ -118,7 +115,7 @@ export class AuthService {
       name: '法规顾问',
       phone: '13800138003',
       role: 'member',
-      trialEndsAt: this.buildTrialEndsAt(),
+      trialEndsAt: this.getDefaultTrialEndsAt(),
       passwordHash: createHash('sha256').update('123456').digest('hex'),
       subscriptionType: 'free',
     },
@@ -174,7 +171,7 @@ export class AuthService {
           name: entity.nickname,
           phone: entity.phone,
           role: entity.role,
-          trialEndsAt: (entity.subscriptionExpiredAt ?? new Date(`${this.buildTrialEndsAt()}T00:00:00.000Z`)).toISOString().slice(0, 10),
+          trialEndsAt: (entity.subscriptionExpiredAt ?? new Date(`${this.getDefaultTrialEndsAt()}T00:00:00.000Z`)).toISOString().slice(0, 10),
           passwordHash: entity.passwordHash,
         };
       }),
@@ -249,8 +246,10 @@ export class AuthService {
     return `新用户${phone.slice(-4)}`;
   }
 
-  private buildTrialEndsAt() {
-    return this.subscriptionsService.buildTrialEndsAt();
+  private getDefaultTrialEndsAt(baseDate: Date = new Date()) {
+    const nextDate = new Date(baseDate.getTime());
+    nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+    return nextDate.toISOString().slice(0, 10);
   }
 
   async login(dto: LoginDto) {
@@ -293,7 +292,7 @@ export class AuthService {
       name: this.createUserName(phone),
       phone,
       role: 'member',
-      trialEndsAt: this.buildTrialEndsAt(),
+      trialEndsAt: this.getDefaultTrialEndsAt(),
       passwordHash,
       subscriptionType: 'free',
     };
