@@ -529,13 +529,22 @@ export class ChatService {
     await this.assertCanAccessConversation(conversation);
     const currentUser = this.authService.me();
     await this.ensureConversationParticipants(conversationId, [currentUser.id]);
+    const now = new Date();
     await this.conversationParticipantRepository.update(
       { conversationId, userId: currentUser.id, status: 'active' },
       {
         unreadCount: 0,
-        lastReadAt: new Date(),
+        lastReadAt: now,
       },
     );
+    if (conversation.type === 'direct') {
+      await this.conversationRepository.update(
+        { id: conversationId },
+        {
+          lastMessageAt: now,
+        },
+      );
+    }
     const messages = await this.getConversationMessages(conversationId, conversation);
     return messages.map((message) => this.toPublicMessage(message));
   }

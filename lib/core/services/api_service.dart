@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -255,6 +256,28 @@ class ApiService {
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       throw ApiException('无法打开文件：$sourcePath');
     }
+  }
+
+  Future<String> downloadFile({
+    required String sourcePath,
+    required String fileName,
+  }) async {
+    final uri = buildFileUri(sourcePath);
+    final response = await _requestWithRefresh(
+      (headers) => _client.get(uri, headers: headers),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException('文件下载失败：$fileName');
+    }
+
+    final pickedDirectory = await FilePicker.platform.getDirectoryPath(dialogTitle: '选择保存位置');
+    if (pickedDirectory == null || pickedDirectory.isEmpty) {
+      throw ApiException('已取消保存文件');
+    }
+
+    final file = File('$pickedDirectory/$fileName');
+    await file.writeAsBytes(response.bodyBytes, flush: true);
+    return file.path;
   }
 
   Future<ChatMessage> sendMessage({

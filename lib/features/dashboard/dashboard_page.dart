@@ -47,6 +47,9 @@ class _DashboardPageState extends State<DashboardPage> {
   List<KnowledgeDocument> _documents = const [];
   List<ExtractionJob> _extractJobs = const [];
   PlatformFile? _selectedMessageFile;
+  String? _failedMessageContent;
+  PlatformFile? _failedMessageFile;
+  String? _lastSendError;
   String? _selectedConversationId;
   String? _selectedGroupId;
 
@@ -397,6 +400,9 @@ class _DashboardPageState extends State<DashboardPage> {
       _chatLoading = true;
       _selectedConversationId = conversationId;
       _error = null;
+      _lastSendError = null;
+      _failedMessageContent = null;
+      _failedMessageFile = null;
     });
 
     try {
@@ -447,6 +453,32 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  Future<void> _downloadChatAttachment(ChatAttachment attachment) async {
+    try {
+      final savedPath = await widget.apiService.downloadFile(
+        sourcePath: attachment.path,
+        fileName: attachment.name,
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('文件已保存到：$savedPath')));
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      if (error.message == '已取消保存文件') {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('下载文件失败。')));
+    }
+  }
+
   void _previewImageAttachment(ChatAttachment attachment) {
     showDialog<void>(
       context: context,
@@ -472,6 +504,10 @@ class _DashboardPageState extends State<DashboardPage> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
+                    ),
+                    TextButton(
+                      onPressed: () => _downloadChatAttachment(attachment),
+                      child: const Text('下载'),
                     ),
                     TextButton(
                       onPressed: () => _openChatAttachment(attachment),
@@ -513,6 +549,18 @@ class _DashboardPageState extends State<DashboardPage> {
     _openChatAttachment(attachment);
   }
 
+  Future<void> _retryFailedMessage() async {
+    if ((_failedMessageContent == null || _failedMessageContent!.isEmpty) && _failedMessageFile == null) {
+      return;
+    }
+    _messageController.text = _failedMessageContent ?? '';
+    setState(() {
+      _selectedMessageFile = _failedMessageFile;
+      _lastSendError = null;
+    });
+    await _sendMessage();
+  }
+
   Future<void> _sendMessage() async {
     final content = _messageController.text.trim();
     final selectedFile = _selectedMessageFile;
@@ -531,6 +579,7 @@ class _DashboardPageState extends State<DashboardPage> {
     setState(() {
       _sendingMessage = true;
       _error = null;
+      _lastSendError = null;
     });
 
     try {
@@ -544,6 +593,9 @@ class _DashboardPageState extends State<DashboardPage> {
       _messageController.clear();
       setState(() {
         _selectedMessageFile = null;
+        _failedMessageContent = null;
+        _failedMessageFile = null;
+        _lastSendError = null;
       });
       await _loadConversationMessages(_selectedConversationId!);
     } on ApiException catch (error) {
@@ -552,14 +604,22 @@ class _DashboardPageState extends State<DashboardPage> {
       }
       setState(() {
         _error = error.message;
+        _lastSendError = error.message;
+        _failedMessageContent = content.isEmpty ? null : content;
+        _failedMessageFile = selectedFile;
       });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
       if (!mounted) {
         return;
       }
       setState(() {
         _error = '消息发送失败。';
+        _lastSendError = '消息发送失败。';
+        _failedMessageContent = content.isEmpty ? null : content;
+        _failedMessageFile = selectedFile;
       });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('消息发送失败，请重试。')));
     } finally {
       if (mounted) {
         setState(() {
@@ -1949,9 +2009,33 @@ class _DashboardPageState extends State<DashboardPage> {
                             selected: item.id == _selectedConversationId,
                             onTap: () => _loadConversationMessages(item.id),
                             leading: CircleAvatar(child: Text(item.isTeamAgent ? '智' : item.type == '群聊' ? '群' : '私')),
-                            title: Text(item.title),
-                            subtitle: Text(item.lastMessage),
-                            trailing: item.unreadCount > 0 ? Chip(label: Text('${item.unreadCount}')) : null,
+                            title: Row(
+                              children: [
+                                Expanded(child: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                if (item.unreadCount > 0) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFD92D20),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      item.unreadCount > 99 ? '99+' : '${item.unreadCount}',
+                                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            subtitle: Text(
+                              item.lastMessage,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: item.unreadCount > 0 ? FontWeight.w600 : FontWeight.w400,
+                              ),
+                            ),
                           ),
                         )
                         .toList(),
@@ -2068,6 +2152,32 @@ class _DashboardPageState extends State<DashboardPage> {
                                                           '${message.file!.extension.toUpperCase()} · ${_formatFileSize(message.file!.size)} · ${_isImageAttachment(message.file!.extension, message.file!.mimeType) ? '点击预览' : '点击打开'}',
                                                           style: Theme.of(context).textTheme.bodySmall,
                                                         ),
+                                                        const SizedBox(height: 8),
+                                                        Wrap(
+                                                          spacing: 8,
+                                                          runSpacing: 8,
+                                                          children: [
+                                                            OutlinedButton.icon(
+                                                              onPressed: () => _downloadChatAttachment(message.file!),
+                                                              icon: const Icon(Icons.download_outlined, size: 16),
+                                                              label: const Text('下载'),
+                                                            ),
+                                                            OutlinedButton.icon(
+                                                              onPressed: () => _openChatAttachment(message.file!),
+                                                              icon: Icon(
+                                                                _isImageAttachment(message.file!.extension, message.file!.mimeType)
+                                                                    ? Icons.open_in_new
+                                                                    : Icons.visibility_outlined,
+                                                                size: 16,
+                                                              ),
+                                                              label: Text(
+                                                                _isImageAttachment(message.file!.extension, message.file!.mimeType)
+                                                                    ? '打开原图'
+                                                                    : '打开',
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
                                                       ],
                                                     ),
                                                   ),
@@ -2090,6 +2200,33 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                 ),
                 const SizedBox(height: 12),
+                if (_lastSendError != null && !_sendingMessage)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF4F4),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFF1B9B9)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Color(0xFFB42318)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _lastSendError!,
+                            style: const TextStyle(color: Color(0xFFB42318)),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _retryFailedMessage,
+                          child: const Text('重试'),
+                        ),
+                      ],
+                    ),
+                  ),
                 if (_selectedMessageFile != null)
                   Container(
                     width: double.infinity,
