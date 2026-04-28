@@ -27,12 +27,27 @@ export class FileStorageService {
     return join(process.cwd(), '.data', 'uploads');
   }
 
+  private normalizeOriginalFileName(fileName: string) {
+    if (fileName.length === 0) {
+      return 'upload.bin';
+    }
+    try {
+      const decoded = Buffer.from(fileName, 'latin1').toString('utf8');
+      if (decoded.length > 0 && !decoded.includes('�')) {
+        return decoded;
+      }
+    } catch (_) {
+      // ignore and fallback to original name
+    }
+    return fileName;
+  }
+
   sanitizeFileName(fileName: string) {
     return fileName.replace(/[^a-zA-Z0-9._-\u4e00-\u9fa5]+/g, '-');
   }
 
   private writeStoredFile(folder: string, file: Express.Multer.File, logicalPath: string): SavedFileRecord {
-    const sanitizedFileName = this.sanitizeFileName(file.originalname || 'upload.bin');
+    const sanitizedFileName = this.sanitizeFileName(this.normalizeOriginalFileName(file.originalname || 'upload.bin'));
     const extension = extname(sanitizedFileName) || '.bin';
     mkdirSync(folder, { recursive: true });
 
@@ -56,15 +71,16 @@ export class FileStorageService {
     const folder = options.libraryType === 'private'
       ? join(this.getUploadRoot(), 'teams', options.groupId ?? 'unknown', options.documentId)
       : join(this.getUploadRoot(), 'public', options.documentId);
+    const normalizedFileName = this.normalizeOriginalFileName(options.file.originalname || 'upload.bin');
     const logicalPath = options.libraryType === 'private'
-      ? `/files/teams/${options.groupId}/${options.documentId}/original${extname(this.sanitizeFileName(options.file.originalname || 'upload.bin')) || '.bin'}`
-      : `/files/public/${options.documentId}/original${extname(this.sanitizeFileName(options.file.originalname || 'upload.bin')) || '.bin'}`;
+      ? `/files/teams/${options.groupId}/${options.documentId}/original${extname(this.sanitizeFileName(normalizedFileName)) || '.bin'}`
+      : `/files/public/${options.documentId}/original${extname(this.sanitizeFileName(normalizedFileName)) || '.bin'}`;
 
     return this.writeStoredFile(folder, options.file, logicalPath);
   }
 
   private assertAllowedChatFile(file: Express.Multer.File) {
-    const extension = (extname(this.sanitizeFileName(file.originalname || 'upload.bin')) || '.bin').toLowerCase();
+    const extension = (extname(this.sanitizeFileName(this.normalizeOriginalFileName(file.originalname || 'upload.bin'))) || '.bin').toLowerCase();
     const mimeType = (file.mimetype || '').toLowerCase();
     if (!this.allowedChatFileExtensions.has(extension)) {
       throw new BadRequestException('当前仅支持 PDF、DOCX、XLSX、PNG、JPG、JPEG 文件');
@@ -83,7 +99,7 @@ export class FileStorageService {
     this.assertAllowedChatFile(options.file);
     const channel = options.conversationType === 'group' ? 'groups' : 'direct';
     const folder = join(this.getUploadRoot(), 'chat', channel, options.conversationId, options.messageId);
-    const extension = extname(this.sanitizeFileName(options.file.originalname || 'upload.bin')) || '.bin';
+    const extension = extname(this.sanitizeFileName(this.normalizeOriginalFileName(options.file.originalname || 'upload.bin'))) || '.bin';
     const logicalPath = `/files/chat/${channel}/${options.conversationId}/${options.messageId}/original${extension}`;
 
     return this.writeStoredFile(folder, options.file, logicalPath);

@@ -7,6 +7,7 @@ export declare class FileStorageService {
     private readonly allowedChatFileExtensions;
     private readonly allowedChatMimeTypes;
     private getUploadRoot;
+    private normalizeOriginalFileName;
     sanitizeFileName(fileName: string): string;
     private writeStoredFile;
     saveFile(options: {
