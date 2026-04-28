@@ -1466,8 +1466,20 @@ class _DashboardPageState extends State<DashboardPage> {
 
     try {
       await widget.apiService.removeMember(groupId: _activeGroupId!, memberId: member.id);
-      await _refreshMembers();
-      await _loadDashboard(preferredGroupId: _activeGroupId);
+      if (isSelf) {
+        await _loadDashboard();
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('你已退出当前项目组。')));
+      } else {
+        await _refreshMembers();
+        await _loadDashboard(preferredGroupId: _activeGroupId);
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('成员已清退。')));
+      }
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -1480,7 +1492,7 @@ class _DashboardPageState extends State<DashboardPage> {
         return;
       }
       setState(() {
-        _error = '成员清退失败。';
+        _error = isSelf ? '退出项目组失败。' : '成员清退失败。';
       });
     } finally {
       if (mounted) {
