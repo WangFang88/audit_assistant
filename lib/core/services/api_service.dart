@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:web/web.dart' as web;
 
 import 'file_download_helper_stub.dart'
     if (dart.library.js_interop) 'file_download_helper_web.dart';
@@ -16,7 +17,18 @@ import '../models/app_models.dart';
 class ApiService {
   ApiService({http.Client? client, String? baseUrl})
       : _client = client ?? http.Client(),
-        _baseUrl = baseUrl ?? 'http://localhost:3000/api';
+        _baseUrl = baseUrl ?? _resolveBaseUrl();
+
+  static String _resolveBaseUrl() {
+    const configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
+    if (configuredBaseUrl.isNotEmpty) {
+      return configuredBaseUrl;
+    }
+    if (kIsWeb) {
+      return '${web.window.location.origin}/api';
+    }
+    return 'http://localhost:3000/api';
+  }
 
   static const _accessTokenKey = 'auth.accessToken';
   static const _refreshTokenKey = 'auth.refreshToken';

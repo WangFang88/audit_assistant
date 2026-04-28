@@ -29,7 +29,7 @@ class _AuditAssistantAppState extends State<AuditAssistantApp> {
     AppUser? user;
     try {
       user = await _apiService.restoreSession();
-    } on ApiException {
+    } catch (_) {
       user = null;
     }
 
