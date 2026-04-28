@@ -77,5 +77,6 @@ export declare class ChatService {
         id: string;
         name: string;
     }, agent: TeamAgentRecord): Promise<string>;
+    findOrCreateDirectConversation(targetUserId: string): Promise<ConversationRecord>;
 }
 export { SendMessageDto };

@@ -591,7 +591,9 @@ class _DashboardPageState extends State<DashboardPage> {
           _conversations = [conversation, ..._conversations];
         }
         _selectedConversationId = conversation.id;
+        _selectedIndex = 1; // 切换到对话 tab
       });
+      await _loadConversationMessages(conversation.id);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('发起私聊失败：$e')));

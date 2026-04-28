@@ -28,6 +28,9 @@ let ChatController = class ChatController {
     async sendMessage(dto) {
         return this.chatService.sendMessage(dto);
     }
+    async findOrCreateDirectConversation(targetUserId) {
+        return this.chatService.findOrCreateDirectConversation(targetUserId);
+    }
 };
 exports.ChatController = ChatController;
 __decorate([
@@ -51,6 +54,13 @@ __decorate([
     __metadata("design:paramtypes", [chat_service_1.SendMessageDto]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "sendMessage", null);
+__decorate([
+    (0, common_1.Post)('direct-conversations'),
+    __param(0, (0, common_1.Body)('targetUserId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "findOrCreateDirectConversation", null);
 exports.ChatController = ChatController = __decorate([
     (0, common_1.Controller)('chat'),
     __metadata("design:paramtypes", [chat_service_1.ChatService])

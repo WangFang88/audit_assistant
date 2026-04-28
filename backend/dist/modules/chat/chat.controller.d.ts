@@ -25,4 +25,11 @@ export declare class ChatController {
         content: string;
         sentAt: string;
     }>;
+    findOrCreateDirectConversation(targetUserId: string): Promise<{
+        id: string;
+        type: "group" | "direct" | "agent";
+        title: string;
+        groupId: string | null;
+        agentId: string | null;
+    }>;
 }

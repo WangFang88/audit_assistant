@@ -280,6 +280,9 @@ let AuthService = class AuthService {
     getUserByPhone(phone) {
         return this.findUserByPhone(phone);
     }
+    getUserById(id) {
+        return this.users.find((u) => u.id === id) ?? null;
+    }
     async updateProfile(dto) {
         const user = this.users.find((u) => u.id === this.currentUser.id);
         if (!user) {

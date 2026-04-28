@@ -493,6 +493,32 @@ let ChatService = class ChatService {
         });
         return conversation.id;
     }
+    async findOrCreateDirectConversation(targetUserId) {
+        this.assertAdminCannotUseChat();
+        const currentUser = this.authService.me();
+        if (currentUser.id === targetUserId) {
+            throw new common_1.BadRequestException('不能与自己发起私聊');
+        }
+        const myParticipations = await this.conversationParticipantRepository.findBy({ userId: currentUser.id });
+        for (const p of myParticipations) {
+            const conv = await this.conversationRepository.findOneBy({ id: p.conversationId, conversationType: 'direct' });
+            if (!conv)
+                continue;
+            const peer = await this.conversationParticipantRepository.findOneBy({ conversationId: conv.id, userId: targetUserId });
+            if (peer)
+                return this.toConversationRecord(conv);
+        }
+        const targetUser = this.authService.getUserById(targetUserId);
+        const conv = this.conversationRepository.create({
+            id: `conv-direct-${Date.now()}`,
+            conversationType: 'direct',
+            title: targetUser?.name ?? targetUserId,
+            createdBy: currentUser.id,
+        });
+        const saved = await this.conversationRepository.save(conv);
+        await this.ensureConversationParticipants(saved.id, [currentUser.id, targetUserId]);
+        return this.toConversationRecord(saved);
+    }
 };
 exports.ChatService = ChatService;
 exports.ChatService = ChatService = __decorate([
