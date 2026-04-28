@@ -381,6 +381,22 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  Future<void> _openChatAttachment(ChatAttachment attachment) async {
+    try {
+      await widget.apiService.openFilePath(attachment.path);
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('打开文件失败。')));
+    }
+  }
+
   Future<void> _sendMessage() async {
     final content = _messageController.text.trim();
     final selectedFile = _selectedMessageFile;
@@ -1874,40 +1890,41 @@ class _DashboardPageState extends State<DashboardPage> {
                                               Text(message.senderName, style: const TextStyle(fontWeight: FontWeight.w600)),
                                               const SizedBox(height: 6),
                                               if (message.messageType == 'file' && message.file != null) ...[
-                                                Container(
-                                                  width: double.infinity,
-                                                  padding: const EdgeInsets.all(10),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white.withValues(alpha: 0.72),
-                                                    borderRadius: BorderRadius.circular(10),
-                                                    border: Border.all(color: const Color(0xFFD9E2F2)),
-                                                  ),
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Row(
-                                                        children: [
-                                                          const Icon(Icons.attach_file, size: 18),
-                                                          const SizedBox(width: 6),
-                                                          Expanded(
-                                                            child: Text(
-                                                              message.file!.name,
-                                                              style: const TextStyle(fontWeight: FontWeight.w600),
+                                                InkWell(
+                                                  onTap: () => _openChatAttachment(message.file!),
+                                                  borderRadius: BorderRadius.circular(10),
+                                                  child: Container(
+                                                    width: double.infinity,
+                                                    padding: const EdgeInsets.all(10),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white.withValues(alpha: 0.72),
+                                                      borderRadius: BorderRadius.circular(10),
+                                                      border: Border.all(color: const Color(0xFFD9E2F2)),
+                                                    ),
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Row(
+                                                          children: [
+                                                            const Icon(Icons.attach_file, size: 18),
+                                                            const SizedBox(width: 6),
+                                                            Expanded(
+                                                              child: Text(
+                                                                message.file!.name,
+                                                                style: const TextStyle(fontWeight: FontWeight.w600),
+                                                              ),
                                                             ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      const SizedBox(height: 6),
-                                                      Text(
-                                                        '${message.file!.extension.toUpperCase()} · ${message.file!.size} 字节',
-                                                        style: Theme.of(context).textTheme.bodySmall,
-                                                      ),
-                                                      const SizedBox(height: 4),
-                                                      SelectableText(
-                                                        message.file!.path,
-                                                        style: Theme.of(context).textTheme.bodySmall,
-                                                      ),
-                                                    ],
+                                                            const SizedBox(width: 8),
+                                                            const Icon(Icons.open_in_new, size: 16),
+                                                          ],
+                                                        ),
+                                                        const SizedBox(height: 6),
+                                                        Text(
+                                                          '${message.file!.extension.toUpperCase()} · ${message.file!.size} 字节 · 点击打开',
+                                                          style: Theme.of(context).textTheme.bodySmall,
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
                                                 ),
                                                 if (message.content.isNotEmpty && message.content != message.file!.name) ...[

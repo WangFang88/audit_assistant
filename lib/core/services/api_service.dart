@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/app_models.dart';
 
@@ -233,6 +234,27 @@ class ApiService {
     );
     final list = _decodeList(response);
     return list.map(ChatMessage.fromJson).toList();
+  }
+
+  Uri buildFileUri(String sourcePath) {
+    final normalizedPath = sourcePath.startsWith('/') ? sourcePath : '/$sourcePath';
+    final apiUri = Uri.parse(_baseUrl);
+    final baseSegments = List<String>.from(apiUri.pathSegments);
+    if (baseSegments.isNotEmpty && baseSegments.last == 'api') {
+      baseSegments.removeLast();
+    }
+    final fullSegments = <String>[
+      ...baseSegments.where((segment) => segment.isNotEmpty),
+      ...normalizedPath.split('/').where((segment) => segment.isNotEmpty),
+    ];
+    return apiUri.replace(pathSegments: fullSegments, queryParameters: null);
+  }
+
+  Future<void> openFilePath(String sourcePath) async {
+    final uri = buildFileUri(sourcePath);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      throw ApiException('无法打开文件：$sourcePath');
+    }
   }
 
   Future<ChatMessage> sendMessage({
