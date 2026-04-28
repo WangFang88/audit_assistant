@@ -310,13 +310,15 @@ export class AuthService {
     return this.findUserByPhone(phone);
   }
 
-  updateProfile(dto: UpdateProfileDto) {
+  async updateProfile(dto: UpdateProfileDto) {
     const user = this.users.find((u) => u.id === this.currentUser.id);
     if (!user) {
       throw new UnauthorizedException('用户不存在');
     }
     user.name = dto.name;
     this.currentUser = { ...this.currentUser, name: dto.name };
+    this.persistUsers();
+    await this.userRepository.update({ id: this.currentUser.id }, { nickname: dto.name }).catch(() => {});
     return this.currentUser;
   }
 
