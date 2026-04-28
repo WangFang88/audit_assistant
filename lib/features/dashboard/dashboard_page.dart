@@ -552,6 +552,52 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  Future<void> _showMemberInfoDialog(GroupMember member) async {
+    final isCurrentUser = member.userId == widget.currentUser.id;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(member.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('手机号：${member.phone}'),
+            const SizedBox(height: 4),
+            Text('角色：${member.role}'),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭')),
+          if (!isCurrentUser)
+            FilledButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _startDirectChat(member);
+              },
+              child: const Text('发起私聊'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _startDirectChat(GroupMember member) async {
+    try {
+      final conversation = await widget.apiService.createDirectConversation(targetUserId: member.userId);
+      if (!mounted) return;
+      setState(() {
+        if (!_conversations.any((c) => c.id == conversation.id)) {
+          _conversations = [conversation, ..._conversations];
+        }
+        _selectedConversationId = conversation.id;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('发起私聊失败：$e')));
+    }
+  }
+
   Future<void> _showEditNameDialog(String currentName) async {
     final controller = TextEditingController(text: currentName);
     final confirmed = await showDialog<bool>(
@@ -1641,6 +1687,7 @@ class _DashboardPageState extends State<DashboardPage> {
               contentPadding: EdgeInsets.zero,
               title: Text(member.name),
               subtitle: Text('${member.phone} · ${member.role}'),
+              onTap: () => _showMemberInfoDialog(member),
               trailing: member.role == '组长'
                   ? const Text('当前组长')
                   : TextButton(

@@ -310,6 +310,10 @@ export class AuthService {
     return this.findUserByPhone(phone);
   }
 
+  getUserById(id: string) {
+    return this.users.find((u) => u.id === id) ?? null;
+  }
+
   async updateProfile(dto: UpdateProfileDto) {
     const user = this.users.find((u) => u.id === this.currentUser.id);
     if (!user) {

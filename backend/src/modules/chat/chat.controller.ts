@@ -19,4 +19,9 @@ export class ChatController {
   async sendMessage(@Body() dto: SendMessageDto) {
     return this.chatService.sendMessage(dto);
   }
+
+  @Post('direct-conversations')
+  async findOrCreateDirectConversation(@Body('targetUserId') targetUserId: string) {
+    return this.chatService.findOrCreateDirectConversation(targetUserId);
+  }
 }

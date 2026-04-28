@@ -164,6 +164,17 @@ class ApiService {
     return AppUser.fromJson(json);
   }
 
+  Future<ConversationSummary> createDirectConversation({required String targetUserId}) async {
+    final response = await _requestWithRefresh(
+      (headers) => _client.post(
+        Uri.parse('$_baseUrl/chat/direct-conversations'),
+        headers: {...headers, 'Content-Type': 'application/json'},
+        body: jsonEncode({'targetUserId': targetUserId}),
+      ),
+    );
+    return ConversationSummary.fromJson(_decodeMap(response));
+  }
+
   Future<DashboardOverview> fetchDashboard({String? groupId}) async {
     final uri = Uri.parse('$_baseUrl/overview/dashboard').replace(
       queryParameters: groupId == null ? null : {'groupId': groupId},

@@ -70,7 +70,7 @@ export declare class AuthService {
     validateAccessToken(token: string): DemoUser | null;
     me(): DemoUser;
     getUserByPhone(phone: string): AuthUserRecord | null;
-    updateProfile(dto: UpdateProfileDto): DemoUser;
+    updateProfile(dto: UpdateProfileDto): Promise<DemoUser>;
     private syncUsersToDatabase;
     isAdmin(): boolean;
 }

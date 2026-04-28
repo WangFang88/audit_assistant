@@ -42,11 +42,11 @@ export declare class AuthController {
         role: "admin" | "member";
         trialEndsAt: string;
     };
-    updateProfile(dto: UpdateProfileDto): {
+    updateProfile(dto: UpdateProfileDto): Promise<{
         id: string;
         name: string;
         phone: string;
         role: "admin" | "member";
         trialEndsAt: string;
-    };
+    }>;
 }
