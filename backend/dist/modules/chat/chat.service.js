@@ -348,6 +348,8 @@ let ChatService = class ChatService {
             await this.groupsService.assertCanAccessGroup(groupId);
         }
         const currentUser = this.authService.me();
+        const myParticipations = await this.conversationParticipantRepository.findBy({ userId: currentUser.id });
+        const myConversationIds = new Set(myParticipations.map((p) => p.conversationId));
         const entities = await this.conversationRepository.find({
             where: { status: 'active' },
             order: { lastMessageAt: 'DESC', createdAt: 'ASC' },
@@ -356,7 +358,7 @@ let ChatService = class ChatService {
         const visibleConversations = conversations
             .filter((conversation) => {
             if (conversation.type === 'direct') {
-                return true;
+                return myConversationIds.has(conversation.id);
             }
             return groupId != null && conversation.groupId === groupId;
         })
@@ -505,7 +507,10 @@ let ChatService = class ChatService {
             if (!conv)
                 continue;
             const peer = await this.conversationParticipantRepository.findOneBy({ conversationId: conv.id, userId: targetUserId });
-            if (peer)
+            if (!peer)
+                continue;
+            const allParticipants = await this.conversationParticipantRepository.findBy({ conversationId: conv.id });
+            if (allParticipants.length === 2)
                 return this.toConversationRecord(conv);
         }
         const targetUser = this.authService.getUserById(targetUserId);
