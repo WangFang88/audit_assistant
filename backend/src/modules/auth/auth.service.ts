@@ -1,7 +1,10 @@
 import { createHash } from 'crypto';
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { IsString, Matches, MinLength, MaxLength } from 'class-validator';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { AuthUserRepository, AuthUserSnapshot } from '../../database/repositories/auth-user.repository';
+import { UserEntity } from '../../database/entities/user.entity';
 import { LocalStateService } from '../subscriptions/local-state.service';
 
 class LoginDto {
