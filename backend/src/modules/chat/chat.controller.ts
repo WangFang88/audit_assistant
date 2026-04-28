@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ChatService, SendMessageDto } from './chat.service';
 
 @Controller('chat')
@@ -16,8 +17,9 @@ export class ChatController {
   }
 
   @Post('messages')
-  async sendMessage(@Body() dto: SendMessageDto) {
-    return this.chatService.sendMessage(dto);
+  @UseInterceptors(FileInterceptor('file'))
+  async sendMessage(@Body() dto: SendMessageDto, @UploadedFile() file?: Express.Multer.File) {
+    return this.chatService.sendMessage(dto, file);
   }
 
   @Post('direct-conversations')

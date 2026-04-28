@@ -5,7 +5,7 @@ export declare class MessageEntity {
     senderAgentId: string | null;
     senderType: 'user' | 'agent' | 'system';
     content: string;
-    messageType: 'text' | 'system';
+    messageType: 'text' | 'file' | 'system';
     metadata: Record<string, unknown> | null;
     sentAt: Date;
 }

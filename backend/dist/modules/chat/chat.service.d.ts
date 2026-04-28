@@ -3,12 +3,13 @@ import { ConversationParticipantEntity } from '../../database/entities/conversat
 import { ConversationEntity } from '../../database/entities/conversation.entity';
 import { MessageEntity } from '../../database/entities/message.entity';
 import { AuthService } from '../auth/auth.service';
+import { FileStorageService } from '../documents/file-storage.service';
 import { GroupsService } from '../groups/groups.service';
 import { TeamAgentRecord } from '../team-agents/team-agents.service';
 declare class SendMessageDto {
     conversationType: 'group' | 'direct' | 'agent';
     conversationId: string;
-    content: string;
+    content?: string;
     groupId?: string;
 }
 type ConversationRecord = {
@@ -18,13 +19,21 @@ type ConversationRecord = {
     groupId: string | null;
     agentId: string | null;
 };
+type MessageFileRecord = {
+    name: string;
+    path: string;
+    size: number;
+    mimeType: string;
+    extension: string;
+};
 export declare class ChatService {
     private readonly conversationRepository;
     private readonly conversationParticipantRepository;
     private readonly messageRepository;
     private readonly authService;
+    private readonly fileStorageService;
     private readonly groupsService;
-    constructor(conversationRepository: Repository<ConversationEntity>, conversationParticipantRepository: Repository<ConversationParticipantEntity>, messageRepository: Repository<MessageEntity>, authService: AuthService, groupsService: GroupsService);
+    constructor(conversationRepository: Repository<ConversationEntity>, conversationParticipantRepository: Repository<ConversationParticipantEntity>, messageRepository: Repository<MessageEntity>, authService: AuthService, fileStorageService: FileStorageService, groupsService: GroupsService);
     private formatDateTime;
     private assertAdminCannotUseChat;
     private buildSeedConversations;
@@ -34,6 +43,10 @@ export declare class ChatService {
     syncGroupConversationParticipants(groupId: string, userIds: string[]): Promise<void>;
     removeUserFromGroupConversations(groupId: string, userId: string): Promise<void>;
     private ensureSeedData;
+    private buildFileSummary;
+    private getFileExtension;
+    private buildFileMetadata;
+    private saveChatFile;
     private toConversationRecord;
     private toMessageRecord;
     private toPublicConversation;
@@ -60,13 +73,17 @@ export declare class ChatService {
         senderName: string;
         content: string;
         sentAt: string;
+        messageType: "text" | "file" | "system";
+        file: MessageFileRecord | null;
     }[]>;
-    sendMessage(dto: SendMessageDto): Promise<{
+    sendMessage(dto: SendMessageDto, file?: Express.Multer.File): Promise<{
         id: string;
         conversationId: string;
         senderName: string;
         content: string;
         sentAt: string;
+        messageType: "text" | "file" | "system";
+        file: MessageFileRecord | null;
     }>;
     createAgentConversation(group: {
         id: string;

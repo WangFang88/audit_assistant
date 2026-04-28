@@ -16,11 +16,13 @@ exports.SendMessageDto = exports.ChatService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const class_validator_1 = require("class-validator");
+const node_path_1 = require("node:path");
 const typeorm_2 = require("typeorm");
 const conversation_participant_entity_1 = require("../../database/entities/conversation-participant.entity");
 const conversation_entity_1 = require("../../database/entities/conversation.entity");
 const message_entity_1 = require("../../database/entities/message.entity");
 const auth_service_1 = require("../auth/auth.service");
+const file_storage_service_1 = require("../documents/file-storage.service");
 const groups_service_1 = require("../groups/groups.service");
 class SendMessageDto {
 }
@@ -35,6 +37,7 @@ __decorate([
     __metadata("design:type", String)
 ], SendMessageDto.prototype, "conversationId", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MinLength)(1),
     __metadata("design:type", String)
@@ -45,11 +48,12 @@ __decorate([
     __metadata("design:type", String)
 ], SendMessageDto.prototype, "groupId", void 0);
 let ChatService = class ChatService {
-    constructor(conversationRepository, conversationParticipantRepository, messageRepository, authService, groupsService) {
+    constructor(conversationRepository, conversationParticipantRepository, messageRepository, authService, fileStorageService, groupsService) {
         this.conversationRepository = conversationRepository;
         this.conversationParticipantRepository = conversationParticipantRepository;
         this.messageRepository = messageRepository;
         this.authService = authService;
+        this.fileStorageService = fileStorageService;
         this.groupsService = groupsService;
     }
     formatDateTime(date) {
@@ -235,6 +239,31 @@ let ChatService = class ChatService {
         await this.messageRepository.save(this.buildSeedMessages());
         await this.conversationParticipantRepository.save(this.buildSeedParticipants());
     }
+    buildFileSummary(content, fileName) {
+        return content.length > 0 ? `[文件] ${content}` : `[文件] ${fileName}`;
+    }
+    getFileExtension(fileName) {
+        const extension = (0, node_path_1.extname)(fileName).replace('.', '').toLowerCase();
+        return extension;
+    }
+    buildFileMetadata(file, savedFile) {
+        return {
+            name: savedFile.originalName,
+            path: savedFile.sourcePath,
+            size: file.size,
+            mimeType: file.mimetype,
+            extension: savedFile.extension.replace('.', '').toLowerCase() || this.getFileExtension(savedFile.originalName),
+        };
+    }
+    async saveChatFile(conversation, messageId, file) {
+        const savedFile = this.fileStorageService.saveChatFile({
+            file,
+            conversationId: conversation.id,
+            messageId,
+            conversationType: conversation.type === 'group' ? 'group' : 'direct',
+        });
+        return this.buildFileMetadata(file, savedFile);
+    }
     toConversationRecord(entity) {
         return {
             id: entity.id,
@@ -245,12 +274,26 @@ let ChatService = class ChatService {
         };
     }
     toMessageRecord(entity, conversation) {
-        const metadata = entity.metadata ?? {};
+        const metadata = (entity.metadata ?? {});
         const senderName = typeof metadata.senderName === 'string'
             ? metadata.senderName
             : entity.senderType === 'agent'
                 ? conversation.title
                 : '未知发送者';
+        const rawFile = metadata.file;
+        const file = rawFile != null && typeof rawFile === 'object'
+            ? {
+                name: typeof rawFile.name === 'string' ? rawFile.name : '',
+                path: typeof rawFile.path === 'string' ? rawFile.path : '',
+                size: typeof rawFile.size === 'number' ? rawFile.size : 0,
+                mimeType: typeof rawFile.mimeType === 'string'
+                    ? rawFile.mimeType
+                    : '',
+                extension: typeof rawFile.extension === 'string'
+                    ? rawFile.extension
+                    : '',
+            }
+            : null;
         return {
             id: entity.id,
             conversationId: entity.conversationId,
@@ -260,6 +303,8 @@ let ChatService = class ChatService {
             content: entity.content,
             sentAt: this.formatDateTime(entity.sentAt),
             readStatus: metadata.readStatus !== false,
+            messageType: entity.messageType,
+            file,
         };
     }
     toPublicConversation(conversation, messages, unreadCount) {
@@ -280,6 +325,8 @@ let ChatService = class ChatService {
             senderName: message.senderName,
             content: message.content,
             sentAt: message.sentAt,
+            messageType: message.messageType,
+            file: message.file,
         };
     }
     async assertCanAccessConversation(conversation, groupId) {
@@ -393,36 +440,48 @@ let ChatService = class ChatService {
         const messages = await this.getConversationMessages(conversationId, conversation);
         return messages.map((message) => this.toPublicMessage(message));
     }
-    async sendMessage(dto) {
+    async sendMessage(dto, file) {
         this.assertAdminCannotUseChat();
         const conversation = await this.getConversationById(dto.conversationId);
         if (conversation.type !== dto.conversationType) {
             throw new common_1.ForbiddenException('当前会话类型与发送目标不一致');
         }
         await this.assertCanAccessConversation(conversation, dto.groupId);
+        const content = dto.content?.trim() ?? '';
+        if (file == null && content.length === 0) {
+            throw new common_1.BadRequestException('请输入消息内容后再发送');
+        }
+        if (file != null && conversation.type === 'agent') {
+            throw new common_1.BadRequestException('当前仅支持私信和群聊发送文件');
+        }
         const currentUser = this.authService.me();
         const receiverUserId = conversation.type === 'direct'
             ? (await this.getDirectConversationPeerUserId(dto.conversationId, currentUser.id)) ?? currentUser.id
             : null;
         const sentAt = new Date();
+        const messageId = `msg-${Date.now()}`;
+        const fileRecord = file != null ? await this.saveChatFile(conversation, messageId, file) : null;
+        const messageContent = fileRecord == null ? content : (content || fileRecord.name);
+        const conversationSummary = fileRecord == null ? messageContent : this.buildFileSummary(content, fileRecord.name);
         const messageEntity = this.messageRepository.create({
-            id: `msg-${Date.now()}`,
+            id: messageId,
             conversationId: dto.conversationId,
             senderUserId: currentUser.id,
             senderAgentId: null,
             senderType: 'user',
-            content: dto.content,
-            messageType: 'text',
+            content: messageContent,
+            messageType: fileRecord == null ? 'text' : 'file',
             metadata: {
                 senderName: currentUser.name,
                 readStatus: conversation.type !== 'direct',
                 receiverUserId,
+                file: fileRecord,
             },
             sentAt,
         });
         await this.ensureConversationParticipants(dto.conversationId, [currentUser.id, ...(receiverUserId != null ? [receiverUserId] : [])]);
         const savedMessage = await this.messageRepository.save(messageEntity);
-        await this.updateConversationLastMessage(dto.conversationId, dto.content, sentAt);
+        await this.updateConversationLastMessage(dto.conversationId, conversationSummary, sentAt);
         await this.bumpUnreadCountForConversation(dto.conversationId, currentUser.id);
         if (conversation.type === 'agent') {
             const replySentAt = new Date();
@@ -531,11 +590,12 @@ exports.ChatService = ChatService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(conversation_entity_1.ConversationEntity)),
     __param(1, (0, typeorm_1.InjectRepository)(conversation_participant_entity_1.ConversationParticipantEntity)),
     __param(2, (0, typeorm_1.InjectRepository)(message_entity_1.MessageEntity)),
-    __param(4, (0, common_1.Inject)((0, common_1.forwardRef)(() => groups_service_1.GroupsService))),
+    __param(5, (0, common_1.Inject)((0, common_1.forwardRef)(() => groups_service_1.GroupsService))),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         auth_service_1.AuthService,
+        file_storage_service_1.FileStorageService,
         groups_service_1.GroupsService])
 ], ChatService);
 //# sourceMappingURL=chat.service.js.map

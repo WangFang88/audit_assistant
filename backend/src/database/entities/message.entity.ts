@@ -21,7 +21,7 @@ export class MessageEntity {
   content!: string;
 
   @Column({ name: 'message_type', type: 'varchar', length: 16, default: 'text' })
-  messageType!: 'text' | 'system';
+  messageType!: 'text' | 'file' | 'system';
 
   @Column({ name: 'metadata', type: 'jsonb', nullable: true })
   metadata!: Record<string, unknown> | null;

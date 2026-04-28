@@ -17,13 +17,29 @@ export declare class ChatController {
         senderName: string;
         content: string;
         sentAt: string;
+        messageType: "text" | "file" | "system";
+        file: {
+            name: string;
+            path: string;
+            size: number;
+            mimeType: string;
+            extension: string;
+        } | null;
     }[]>;
-    sendMessage(dto: SendMessageDto): Promise<{
+    sendMessage(dto: SendMessageDto, file?: Express.Multer.File): Promise<{
         id: string;
         conversationId: string;
         senderName: string;
         content: string;
         sentAt: string;
+        messageType: "text" | "file" | "system";
+        file: {
+            name: string;
+            path: string;
+            size: number;
+            mimeType: string;
+            extension: string;
+        } | null;
     }>;
     findOrCreateDirectConversation(targetUserId: string): Promise<{
         id: string;

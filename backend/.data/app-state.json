@@ -1125,6 +1125,38 @@
       "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
       "queriedAt": "2026-04-27 19:18:52",
       "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777346966629",
+      "userId": "user-1",
+      "teamId": null,
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-27 19:29:26",
+      "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777347036544",
+      "userId": "user-2",
+      "teamId": "group-1",
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-27 19:30:36",
+      "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777347068167",
+      "userId": "user-2",
+      "teamId": "group-1",
+      "queryText": "帮我列出问题需要引用哪些条款“2023年12月4日召开的理事会实际为2024年3月3日召开。2023年度理事会召开次数只有1次。”",
+      "queriedAt": "2026-04-27 19:31:08",
+      "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777347154061",
+      "userId": "user-2",
+      "teamId": "group-1",
+      "queryText": "帮我列出问题需要引用哪些条款“农禾之家基金会提供的2022年1月6日备案的章程中住所为北京市东城区兴隆街58号7层710与基金会法人登记证书注明的住所北京市东城区崇文门外大街3号楼14层南办1410不符。”",
+      "queriedAt": "2026-04-27 19:32:34",
+      "consumedQuota": 1
     }
   ],
   "subscriptions": [

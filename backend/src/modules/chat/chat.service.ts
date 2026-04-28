@@ -1,11 +1,13 @@
 import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { extname } from 'node:path';
 import { Repository } from 'typeorm';
 import { ConversationParticipantEntity } from '../../database/entities/conversation-participant.entity';
 import { ConversationEntity } from '../../database/entities/conversation.entity';
 import { MessageEntity } from '../../database/entities/message.entity';
 import { AuthService } from '../auth/auth.service';
+import { FileStorageService, SavedFileRecord } from '../documents/file-storage.service';
 import { GroupsService } from '../groups/groups.service';
 import { TeamAgentRecord } from '../team-agents/team-agents.service';
 
@@ -17,9 +19,10 @@ class SendMessageDto {
   @MinLength(2)
   conversationId!: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  content!: string;
+  content?: string;
 
   @IsOptional()
   @IsString()
@@ -34,6 +37,14 @@ type ConversationRecord = {
   agentId: string | null;
 };
 
+type MessageFileRecord = {
+  name: string;
+  path: string;
+  size: number;
+  mimeType: string;
+  extension: string;
+};
+
 type MessageRecord = {
   id: string;
   conversationId: string;
@@ -43,6 +54,8 @@ type MessageRecord = {
   content: string;
   sentAt: string;
   readStatus: boolean;
+  messageType: 'text' | 'file' | 'system';
+  file: MessageFileRecord | null;
 };
 
 @Injectable()
@@ -55,6 +68,7 @@ export class ChatService {
     @InjectRepository(MessageEntity)
     private readonly messageRepository: Repository<MessageEntity>,
     private readonly authService: AuthService,
+    private readonly fileStorageService: FileStorageService,
     @Inject(forwardRef(() => GroupsService))
     private readonly groupsService: GroupsService,
   ) {}
@@ -263,6 +277,39 @@ export class ChatService {
     await this.conversationParticipantRepository.save(this.buildSeedParticipants());
   }
 
+  private buildFileSummary(content: string, fileName: string) {
+    return content.length > 0 ? `[文件] ${content}` : `[文件] ${fileName}`;
+  }
+
+  private getFileExtension(fileName: string) {
+    const extension = extname(fileName).replace('.', '').toLowerCase();
+    return extension;
+  }
+
+  private buildFileMetadata(file: Express.Multer.File, savedFile: SavedFileRecord): MessageFileRecord {
+    return {
+      name: savedFile.originalName,
+      path: savedFile.sourcePath,
+      size: file.size,
+      mimeType: file.mimetype,
+      extension: savedFile.extension.replace('.', '').toLowerCase() || this.getFileExtension(savedFile.originalName),
+    };
+  }
+
+  private async saveChatFile(
+    conversation: ConversationRecord,
+    messageId: string,
+    file: Express.Multer.File,
+  ): Promise<MessageFileRecord> {
+    const savedFile = this.fileStorageService.saveChatFile({
+      file,
+      conversationId: conversation.id,
+      messageId,
+      conversationType: conversation.type === 'group' ? 'group' : 'direct',
+    });
+    return this.buildFileMetadata(file, savedFile);
+  }
+
   private toConversationRecord(entity: ConversationEntity): ConversationRecord {
     return {
       id: entity.id,
@@ -274,13 +321,30 @@ export class ChatService {
   }
 
   private toMessageRecord(entity: MessageEntity, conversation: ConversationRecord): MessageRecord {
-    const metadata = entity.metadata ?? {};
+    const metadata = (entity.metadata ?? {}) as Record<string, unknown>;
     const senderName =
       typeof metadata.senderName === 'string'
         ? metadata.senderName
         : entity.senderType === 'agent'
           ? conversation.title
           : '未知发送者';
+    const rawFile = metadata.file;
+    const file =
+      rawFile != null && typeof rawFile === 'object'
+        ? {
+            name: typeof (rawFile as Record<string, unknown>).name === 'string' ? ((rawFile as Record<string, unknown>).name as string) : '',
+            path: typeof (rawFile as Record<string, unknown>).path === 'string' ? ((rawFile as Record<string, unknown>).path as string) : '',
+            size: typeof (rawFile as Record<string, unknown>).size === 'number' ? ((rawFile as Record<string, unknown>).size as number) : 0,
+            mimeType:
+              typeof (rawFile as Record<string, unknown>).mimeType === 'string'
+                ? ((rawFile as Record<string, unknown>).mimeType as string)
+                : '',
+            extension:
+              typeof (rawFile as Record<string, unknown>).extension === 'string'
+                ? ((rawFile as Record<string, unknown>).extension as string)
+                : '',
+          }
+        : null;
 
     return {
       id: entity.id,
@@ -291,6 +355,8 @@ export class ChatService {
       content: entity.content,
       sentAt: this.formatDateTime(entity.sentAt),
       readStatus: metadata.readStatus !== false,
+      messageType: entity.messageType,
+      file,
     };
   }
 
@@ -313,6 +379,8 @@ export class ChatService {
       senderName: message.senderName,
       content: message.content,
       sentAt: message.sentAt,
+      messageType: message.messageType,
+      file: message.file,
     };
   }
 
@@ -458,7 +526,7 @@ export class ChatService {
     return messages.map((message) => this.toPublicMessage(message));
   }
 
-  async sendMessage(dto: SendMessageDto) {
+  async sendMessage(dto: SendMessageDto, file?: Express.Multer.File) {
     this.assertAdminCannotUseChat();
     const conversation = await this.getConversationById(dto.conversationId);
 
@@ -468,31 +536,46 @@ export class ChatService {
 
     await this.assertCanAccessConversation(conversation, dto.groupId);
 
+    const content = dto.content?.trim() ?? '';
+    if (file == null && content.length === 0) {
+      throw new BadRequestException('请输入消息内容后再发送');
+    }
+
+    if (file != null && conversation.type === 'agent') {
+      throw new BadRequestException('当前仅支持私信和群聊发送文件');
+    }
+
     const currentUser = this.authService.me();
     const receiverUserId =
       conversation.type === 'direct'
         ? (await this.getDirectConversationPeerUserId(dto.conversationId, currentUser.id)) ?? currentUser.id
         : null;
     const sentAt = new Date();
+    const messageId = `msg-${Date.now()}`;
+    const fileRecord =
+      file != null ? await this.saveChatFile(conversation, messageId, file) : null;
+    const messageContent = fileRecord == null ? content : (content || fileRecord.name);
+    const conversationSummary = fileRecord == null ? messageContent : this.buildFileSummary(content, fileRecord.name);
     const messageEntity = this.messageRepository.create({
-      id: `msg-${Date.now()}`,
+      id: messageId,
       conversationId: dto.conversationId,
       senderUserId: currentUser.id,
       senderAgentId: null,
       senderType: 'user',
-      content: dto.content,
-      messageType: 'text',
+      content: messageContent,
+      messageType: fileRecord == null ? 'text' : 'file',
       metadata: {
         senderName: currentUser.name,
         readStatus: conversation.type !== 'direct',
         receiverUserId,
+        file: fileRecord,
       },
       sentAt,
     });
 
     await this.ensureConversationParticipants(dto.conversationId, [currentUser.id, ...(receiverUserId != null ? [receiverUserId] : [])]);
     const savedMessage = await this.messageRepository.save(messageEntity);
-    await this.updateConversationLastMessage(dto.conversationId, dto.content, sentAt);
+    await this.updateConversationLastMessage(dto.conversationId, conversationSummary, sentAt);
     await this.bumpUnreadCountForConversation(dto.conversationId, currentUser.id);
 
     if (conversation.type === 'agent') {
@@ -594,7 +677,6 @@ export class ChatService {
       if (!conv) continue;
       const peer = await this.conversationParticipantRepository.findOneBy({ conversationId: conv.id, userId: targetUserId });
       if (!peer) continue;
-      // 确认只有这两个参与者（精确匹配，避免误判 seed 会话）
       const allParticipants = await this.conversationParticipantRepository.findBy({ conversationId: conv.id });
       if (allParticipants.length === 2) return this.toConversationRecord(conv);
     }

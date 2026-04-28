@@ -16,6 +16,6 @@ import { EmbeddingService } from './embedding.service';
   imports: [TypeOrmModule.forFeature([DocumentEntity, DocumentChunkEntity, DocumentExtractionJobEntity]), AuthModule, forwardRef(() => GroupsModule), SubscriptionsModule],
   controllers: [DocumentsController],
   providers: [DocumentsService, FileStorageService, TextExtractionService, EmbeddingService],
-  exports: [DocumentsService, EmbeddingService],
+  exports: [DocumentsService, EmbeddingService, FileStorageService],
 })
 export class DocumentsModule {}

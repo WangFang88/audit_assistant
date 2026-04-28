@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
+export type SavedFileRecord = {
+  sourcePath: string;
+  originalName: string;
+  extension: string;
+};
+
 @Injectable()
 export class FileStorageService {
   private getUploadRoot() {
@@ -12,30 +18,49 @@ export class FileStorageService {
     return fileName.replace(/[^a-zA-Z0-9._-\u4e00-\u9fa5]+/g, '-');
   }
 
+  private writeStoredFile(folder: string, file: Express.Multer.File, logicalPath: string): SavedFileRecord {
+    const sanitizedFileName = this.sanitizeFileName(file.originalname || 'upload.bin');
+    const extension = extname(sanitizedFileName) || '.bin';
+    mkdirSync(folder, { recursive: true });
+
+    const storedFileName = `original${extension}`;
+    const storedFilePath = join(folder, storedFileName);
+    writeFileSync(storedFilePath, file.buffer);
+
+    return {
+      sourcePath: logicalPath.replace(/\\/g, '/'),
+      originalName: sanitizedFileName,
+      extension,
+    };
+  }
+
   saveFile(options: {
     file: Express.Multer.File;
     libraryType: 'public' | 'private';
     documentId: string;
     groupId?: string;
   }) {
-    const sanitizedFileName = this.sanitizeFileName(options.file.originalname || 'upload.bin');
-    const extension = extname(sanitizedFileName) || '.bin';
     const folder = options.libraryType === 'private'
       ? join(this.getUploadRoot(), 'teams', options.groupId ?? 'unknown', options.documentId)
       : join(this.getUploadRoot(), 'public', options.documentId);
-    mkdirSync(folder, { recursive: true });
-
-    const storedFileName = `original${extension}`;
-    const storedFilePath = join(folder, storedFileName);
-    writeFileSync(storedFilePath, options.file.buffer);
-
     const logicalPath = options.libraryType === 'private'
-      ? `/files/teams/${options.groupId}/${options.documentId}/${storedFileName}`
-      : `/files/public/${options.documentId}/${storedFileName}`;
+      ? `/files/teams/${options.groupId}/${options.documentId}/original${extname(this.sanitizeFileName(options.file.originalname || 'upload.bin')) || '.bin'}`
+      : `/files/public/${options.documentId}/original${extname(this.sanitizeFileName(options.file.originalname || 'upload.bin')) || '.bin'}`;
 
-    return {
-      sourcePath: logicalPath,
-      originalName: sanitizedFileName,
-    };
+    return this.writeStoredFile(folder, options.file, logicalPath);
+  }
+
+  saveChatFile(options: {
+    file: Express.Multer.File;
+    conversationId: string;
+    messageId: string;
+    conversationType: 'group' | 'direct';
+  }) {
+    const channel = options.conversationType === 'group' ? 'groups' : 'direct';
+    const folder = join(this.getUploadRoot(), 'chat', channel, options.conversationId, options.messageId);
+    const extension = extname(this.sanitizeFileName(options.file.originalname || 'upload.bin')) || '.bin';
+    const logicalPath = `/files/chat/${channel}/${options.conversationId}/${options.messageId}/original${extension}`;
+
+    return this.writeStoredFile(folder, options.file, logicalPath);
   }
 }

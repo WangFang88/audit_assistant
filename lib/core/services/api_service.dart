@@ -238,22 +238,26 @@ class ApiService {
   Future<ChatMessage> sendMessage({
     required String conversationId,
     required String conversationType,
-    required String content,
+    String? content,
+    PlatformFile? file,
     String? groupId,
   }) async {
-    final response = await _requestWithRefresh(
-      (headers) => _client.post(
-        Uri.parse('$_baseUrl/chat/messages'),
-        headers: headers,
-        body: jsonEncode({
-          'conversationId': conversationId,
-          'conversationType': conversationType,
-          'content': content,
-          'groupId': groupId,
-        }),
-      ),
-      headers: {'Content-Type': 'application/json'},
-    );
+    final response = await _multipartRequestWithRefresh((headers) async {
+      final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/chat/messages'));
+      request.headers.addAll(headers);
+      request.fields['conversationId'] = conversationId;
+      request.fields['conversationType'] = conversationType;
+      if (content != null && content.trim().isNotEmpty) {
+        request.fields['content'] = content.trim();
+      }
+      if (groupId != null && groupId.isNotEmpty) {
+        request.fields['groupId'] = groupId;
+      }
+      if (file != null) {
+        request.files.add(await _buildMultipartFile(file));
+      }
+      return request;
+    });
 
     final json = _decodeMap(response);
     return ChatMessage.fromJson(json);

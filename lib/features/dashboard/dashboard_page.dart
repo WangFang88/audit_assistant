@@ -45,6 +45,7 @@ class _DashboardPageState extends State<DashboardPage> {
   List<GroupMember> _members = const [];
   List<KnowledgeDocument> _documents = const [];
   List<ExtractionJob> _extractJobs = const [];
+  PlatformFile? _selectedMessageFile;
   String? _selectedConversationId;
   String? _selectedGroupId;
 
@@ -382,15 +383,16 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> _sendMessage() async {
     final content = _messageController.text.trim();
+    final selectedFile = _selectedMessageFile;
     if (_isAdmin || _selectedConversationId == null) {
       return;
     }
 
-    if (content.isEmpty) {
+    if (content.isEmpty && selectedFile == null) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请输入消息内容后再发送。')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请输入消息或选择文件后再发送。')));
       return;
     }
 
@@ -403,10 +405,14 @@ class _DashboardPageState extends State<DashboardPage> {
       await widget.apiService.sendMessage(
         conversationId: _selectedConversationId!,
         conversationType: _activeConversationType,
-        content: content,
+        content: content.isEmpty ? null : content,
+        file: selectedFile,
         groupId: _activeConversationType == 'group' ? _activeGroupId : null,
       );
       _messageController.clear();
+      setState(() {
+        _selectedMessageFile = null;
+      });
       await _loadConversationMessages(_selectedConversationId!);
     } on ApiException catch (error) {
       if (!mounted) {
@@ -1867,7 +1873,49 @@ class _DashboardPageState extends State<DashboardPage> {
                                             children: [
                                               Text(message.senderName, style: const TextStyle(fontWeight: FontWeight.w600)),
                                               const SizedBox(height: 6),
-                                              Text(message.content),
+                                              if (message.messageType == 'file' && message.file != null) ...[
+                                                Container(
+                                                  width: double.infinity,
+                                                  padding: const EdgeInsets.all(10),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white.withValues(alpha: 0.72),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                    border: Border.all(color: const Color(0xFFD9E2F2)),
+                                                  ),
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Row(
+                                                        children: [
+                                                          const Icon(Icons.attach_file, size: 18),
+                                                          const SizedBox(width: 6),
+                                                          Expanded(
+                                                            child: Text(
+                                                              message.file!.name,
+                                                              style: const TextStyle(fontWeight: FontWeight.w600),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 6),
+                                                      Text(
+                                                        '${message.file!.extension.toUpperCase()} · ${message.file!.size} 字节',
+                                                        style: Theme.of(context).textTheme.bodySmall,
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      SelectableText(
+                                                        message.file!.path,
+                                                        style: Theme.of(context).textTheme.bodySmall,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                if (message.content.isNotEmpty && message.content != message.file!.name) ...[
+                                                  const SizedBox(height: 8),
+                                                  Text(message.content),
+                                                ],
+                                              ] else
+                                                Text(message.content),
                                               const SizedBox(height: 6),
                                               Text(message.sentAt, style: Theme.of(context).textTheme.bodySmall),
                                             ],
@@ -1880,13 +1928,85 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                 ),
                 const SizedBox(height: 12),
+                if (_selectedMessageFile != null)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F7FA),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE0E3EA)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.attach_file),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _selectedMessageFile!.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              Text('${_selectedMessageFile!.size} 字节', style: Theme.of(context).textTheme.bodySmall),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: '移除文件',
+                          onPressed: _sendingMessage
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _selectedMessageFile = null;
+                                  });
+                                },
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                  ),
                 Row(
                   children: [
+                    IconButton(
+                      tooltip: '发送文件',
+                      onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage || _activeConversationType == 'agent'
+                          ? null
+                          : () async {
+                              try {
+                                final result = await FilePicker.platform.pickFiles(
+                                  type: FileType.custom,
+                                  allowedExtensions: const ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'],
+                                  withData: true,
+                                );
+                                final picked = result?.files.singleOrNull;
+                                if (!mounted || picked == null) {
+                                  return;
+                                }
+                                setState(() {
+                                  _selectedMessageFile = picked;
+                                });
+                              } on PlatformException {
+                                if (!mounted) {
+                                  return;
+                                }
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('文件选择失败，请重试。')));
+                              }
+                            },
+                      icon: const Icon(Icons.attach_file),
+                    ),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: TextField(
                         controller: _messageController,
                         enabled: _activeGroupId != null && _selectedConversationId != null && !_sendingMessage,
-                        decoration: const InputDecoration(labelText: '输入消息'),
+                        decoration: InputDecoration(
+                          labelText: _activeConversationType == 'agent' ? '输入消息（Agent 会话暂不支持文件）' : '输入消息或附言',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),

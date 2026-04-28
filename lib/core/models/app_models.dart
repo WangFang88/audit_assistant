@@ -370,6 +370,32 @@ class ConversationSummary {
   }
 }
 
+class ChatAttachment {
+  const ChatAttachment({
+    required this.name,
+    required this.path,
+    required this.size,
+    required this.mimeType,
+    required this.extension,
+  });
+
+  final String name;
+  final String path;
+  final int size;
+  final String mimeType;
+  final String extension;
+
+  factory ChatAttachment.fromJson(Map<String, dynamic> json) {
+    return ChatAttachment(
+      name: json['name'] as String? ?? '',
+      path: json['path'] as String? ?? '',
+      size: json['size'] as int? ?? 0,
+      mimeType: json['mimeType'] as String? ?? '',
+      extension: json['extension'] as String? ?? '',
+    );
+  }
+}
+
 class ChatMessage {
   const ChatMessage({
     required this.id,
@@ -377,6 +403,8 @@ class ChatMessage {
     required this.senderName,
     required this.content,
     required this.sentAt,
+    required this.messageType,
+    required this.file,
   });
 
   final String id;
@@ -384,6 +412,8 @@ class ChatMessage {
   final String senderName;
   final String content;
   final String sentAt;
+  final String messageType;
+  final ChatAttachment? file;
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
@@ -392,6 +422,10 @@ class ChatMessage {
       senderName: json['senderName'] as String? ?? '',
       content: json['content'] as String? ?? '',
       sentAt: json['sentAt'] as String? ?? '',
+      messageType: json['messageType'] as String? ?? 'text',
+      file: (json['file'] as Map<String, dynamic>?) == null
+          ? null
+          : ChatAttachment.fromJson(json['file'] as Map<String, dynamic>),
     );
   }
 }
