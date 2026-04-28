@@ -295,7 +295,7 @@ class ApiService {
   }
 
   Future<void> openFilePath(String sourcePath) async {
-    final uri = buildFileUri(sourcePath);
+    final uri = sourcePath.startsWith('/') ? buildFileUri(sourcePath) : Uri.file(sourcePath);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       throw ApiException('无法打开文件：$sourcePath');
     }

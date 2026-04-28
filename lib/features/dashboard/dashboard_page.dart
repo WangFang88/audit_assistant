@@ -681,6 +681,7 @@ class _DashboardPageState extends State<DashboardPage> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('文件已保存到：$savedPath')));
+      await widget.apiService.openFilePath(savedPath);
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -693,7 +694,7 @@ class _DashboardPageState extends State<DashboardPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('下载文件失败。')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('下载或打开文件失败。')));
     }
   }
 
@@ -2785,9 +2786,12 @@ class _DashboardPageState extends State<DashboardPage> {
                                                               child: Column(
                                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                                 children: [
-                                                                  Text(
-                                                                    message.file!.name,
-                                                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                                                  InkWell(
+                                                                    onTap: () => _downloadChatAttachment(message.file!),
+                                                                    child: Text(
+                                                                      message.file!.name,
+                                                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                                                    ),
                                                                   ),
                                                                   const SizedBox(height: 4),
                                                                   Wrap(
@@ -2830,34 +2834,8 @@ class _DashboardPageState extends State<DashboardPage> {
                                                         ),
                                                         const SizedBox(height: 6),
                                                         Text(
-                                                          _isImageAttachment(message.file!.extension, message.file!.mimeType) ? '点击预览' : '点击打开',
+                                                          _isImageAttachment(message.file!.extension, message.file!.mimeType) ? '点击预览，文件名点击后下载并打开' : '点击文件名下载并打开',
                                                           style: Theme.of(context).textTheme.bodySmall,
-                                                        ),
-                                                        const SizedBox(height: 8),
-                                                        Wrap(
-                                                          spacing: 8,
-                                                          runSpacing: 8,
-                                                          children: [
-                                                            OutlinedButton.icon(
-                                                              onPressed: () => _downloadChatAttachment(message.file!),
-                                                              icon: const Icon(Icons.download_outlined, size: 16),
-                                                              label: const Text('下载'),
-                                                            ),
-                                                            OutlinedButton.icon(
-                                                              onPressed: () => _openChatAttachment(message.file!),
-                                                              icon: Icon(
-                                                                _isImageAttachment(message.file!.extension, message.file!.mimeType)
-                                                                    ? Icons.open_in_new
-                                                                    : Icons.visibility_outlined,
-                                                                size: 16,
-                                                              ),
-                                                              label: Text(
-                                                                _isImageAttachment(message.file!.extension, message.file!.mimeType)
-                                                                    ? '打开原图'
-                                                                    : '打开',
-                                                              ),
-                                                            ),
-                                                          ],
                                                         ),
                                                       ],
                                                     ),
