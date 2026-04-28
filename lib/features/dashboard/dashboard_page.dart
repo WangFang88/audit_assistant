@@ -690,11 +690,11 @@ class _DashboardPageState extends State<DashboardPage> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
-    } catch (_) {
+    } catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('下载或打开文件失败。')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('下载或打开文件失败：$error')));
     }
   }
 

@@ -306,21 +306,33 @@ class ApiService {
   }
 
   Future<void> _openLocalFile(String filePath) async {
-    ProcessResult result;
     if (Platform.isWindows) {
-      result = await Process.run('cmd', ['/c', 'start', '', filePath]);
-    } else if (Platform.isMacOS) {
-      result = await Process.run('open', [filePath]);
-    } else if (Platform.isLinux) {
-      result = await Process.run('xdg-open', [filePath]);
-    } else {
-      final uri = Uri.file(filePath);
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      final result = await Process.run('explorer.exe', [filePath]);
+      if (result.exitCode == 0) {
+        return;
+      }
+      final fallback = await Process.run('cmd', ['/c', 'start', '', filePath]);
+      if (fallback.exitCode == 0) {
+        return;
+      }
+      throw ApiException('无法打开文件：$filePath');
+    }
+    if (Platform.isMacOS) {
+      final result = await Process.run('open', [filePath]);
+      if (result.exitCode != 0) {
         throw ApiException('无法打开文件：$filePath');
       }
       return;
     }
-    if (result.exitCode != 0) {
+    if (Platform.isLinux) {
+      final result = await Process.run('xdg-open', [filePath]);
+      if (result.exitCode != 0) {
+        throw ApiException('无法打开文件：$filePath');
+      }
+      return;
+    }
+    final uri = Uri.file(filePath);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       throw ApiException('无法打开文件：$filePath');
     }
   }
