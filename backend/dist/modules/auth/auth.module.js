@@ -9,7 +9,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthModule = void 0;
 const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
+const typeorm_1 = require("@nestjs/typeorm");
 const database_support_module_1 = require("../../database/database-support.module");
+const user_entity_1 = require("../../database/entities/user.entity");
 const subscriptions_module_1 = require("../subscriptions/subscriptions.module");
 const auth_controller_1 = require("./auth.controller");
 const auth_guard_1 = require("./auth.guard");
@@ -19,7 +21,7 @@ let AuthModule = class AuthModule {
 exports.AuthModule = AuthModule;
 exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
-        imports: [database_support_module_1.DatabaseSupportModule, (0, common_1.forwardRef)(() => subscriptions_module_1.SubscriptionsModule)],
+        imports: [database_support_module_1.DatabaseSupportModule, (0, common_1.forwardRef)(() => subscriptions_module_1.SubscriptionsModule), typeorm_1.TypeOrmModule.forFeature([user_entity_1.UserEntity])],
         controllers: [auth_controller_1.AuthController],
         providers: [
             auth_service_1.AuthService,

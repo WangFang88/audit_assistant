@@ -59,6 +59,8 @@ export class AuthService {
   constructor(
     private readonly localStateService: LocalStateService,
     private readonly authUserRepository: AuthUserRepository,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
   ) {
     const persistedUsers = this.localStateService.readState().users;
     if (persistedUsers && persistedUsers.length > 0) {
@@ -315,6 +317,16 @@ export class AuthService {
     user.name = dto.name;
     this.currentUser = { ...this.currentUser, name: dto.name };
     return this.currentUser;
+  }
+
+
+  private async syncUsersToDatabase() {
+    for (const user of this.users) {
+      await this.userRepository.upsert(
+        { id: user.id, phone: user.phone, nickname: user.name, passwordHash: user.passwordHash ?? '', role: user.role as 'admin' | 'member' },
+        ['id'],
+      ).catch(() => {});
+    }
   }
 
   isAdmin() {
