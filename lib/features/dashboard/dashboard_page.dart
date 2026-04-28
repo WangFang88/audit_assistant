@@ -27,6 +27,7 @@ class _DashboardPageState extends State<DashboardPage> {
     text: '请检索与专项资金使用和采购审批相关的制度依据。',
   );
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _messagesScrollController = ScrollController();
 
   int _selectedIndex = 0;
   bool _loading = true;
@@ -59,6 +60,7 @@ class _DashboardPageState extends State<DashboardPage> {
   void dispose() {
     _questionController.dispose();
     _messageController.dispose();
+    _messagesScrollController.dispose();
     super.dispose();
   }
 
@@ -373,6 +375,19 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  void _scrollMessagesToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_messagesScrollController.hasClients) {
+        return;
+      }
+      _messagesScrollController.animateTo(
+        _messagesScrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
   Future<void> _loadConversationMessages(String conversationId) async {
     if (_isAdmin) {
       return;
@@ -392,6 +407,7 @@ class _DashboardPageState extends State<DashboardPage> {
       setState(() {
         _messages = messages;
       });
+      _scrollMessagesToBottom();
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -1968,6 +1984,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   ),
                                 )
                           : ListView(
+                              controller: _messagesScrollController,
                               children: _messages
                                   .map(
                                     (message) {
