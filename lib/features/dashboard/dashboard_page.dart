@@ -1795,10 +1795,10 @@ class _DashboardPageState extends State<DashboardPage> {
               : '已按当前项目组 Agent 优先展示会话与消息。',
           child: SizedBox(
             height: compact ? 320 : 560,
-            child: _activeGroupId == null
+            child: _conversations.isEmpty
                 ? Center(
                     child: Text(
-                      '请先创建或选择项目组。',
+                      '暂无会话',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   )
