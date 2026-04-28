@@ -746,14 +746,14 @@ export class ChatService {
     if (!message) {
       throw new NotFoundException('消息不存在');
     }
-    const metadata = (message.metadata ?? {}) as { file?: SavedFileRecord };
-    if (message.messageType !== 'file' || metadata.file?.sourcePath == null) {
+    const metadata = (message.metadata ?? {}) as { file?: MessageFileRecord };
+    if (message.messageType !== 'file' || metadata.file?.path == null) {
       throw new BadRequestException('当前消息不包含可下载附件');
     }
     return {
-      fileName: metadata.file.originalName,
-      mimeType: (metadata.file as SavedFileRecord & { mimeType?: string }).mimeType ?? 'application/octet-stream',
-      buffer: this.fileStorageService.readStoredFile(metadata.file.sourcePath),
+      fileName: metadata.file.name,
+      mimeType: metadata.file.mimeType.length === 0 ? 'application/octet-stream' : metadata.file.mimeType,
+      buffer: this.fileStorageService.readStoredFile(metadata.file.path),
     };
   }
 
@@ -769,9 +769,9 @@ export class ChatService {
     if (message.senderUserId !== currentUser.id) {
       throw new ForbiddenException('仅支持删除自己发送的消息');
     }
-    const metadata = (message.metadata ?? {}) as { file?: SavedFileRecord };
-    if (message.messageType === 'file' && metadata.file?.sourcePath) {
-      this.fileStorageService.removeChatMessageFile(metadata.file.sourcePath);
+    const metadata = (message.metadata ?? {}) as { file?: MessageFileRecord };
+    if (message.messageType === 'file' && metadata.file?.path) {
+      this.fileStorageService.removeChatMessageFile(metadata.file.path);
     }
     await this.messageRepository.delete({ id: messageId, conversationId });
     await this.refreshConversationPreview(conversation);
@@ -793,9 +793,9 @@ export class ChatService {
     if (message.messageType === 'system') {
       throw new BadRequestException('系统消息不支持撤回');
     }
-    const metadata = (message.metadata ?? {}) as { file?: SavedFileRecord; senderName?: string; readStatus?: boolean; receiverUserId?: string | null };
-    if (message.messageType === 'file' && metadata.file?.sourcePath) {
-      this.fileStorageService.removeChatMessageFile(metadata.file.sourcePath);
+    const metadata = (message.metadata ?? {}) as { file?: MessageFileRecord; senderName?: string; readStatus?: boolean; receiverUserId?: string | null };
+    if (message.messageType === 'file' && metadata.file?.path) {
+      this.fileStorageService.removeChatMessageFile(metadata.file.path);
     }
     await this.messageRepository.update(
       { id: messageId, conversationId },

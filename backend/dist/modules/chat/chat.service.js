@@ -621,13 +621,13 @@ let ChatService = class ChatService {
             throw new common_1.NotFoundException('消息不存在');
         }
         const metadata = (message.metadata ?? {});
-        if (message.messageType !== 'file' || metadata.file?.sourcePath == null) {
+        if (message.messageType !== 'file' || metadata.file?.path == null) {
             throw new common_1.BadRequestException('当前消息不包含可下载附件');
         }
         return {
-            fileName: metadata.file.originalName,
-            mimeType: metadata.file.mimeType ?? 'application/octet-stream',
-            buffer: this.fileStorageService.readStoredFile(metadata.file.sourcePath),
+            fileName: metadata.file.name,
+            mimeType: metadata.file.mimeType.length === 0 ? 'application/octet-stream' : metadata.file.mimeType,
+            buffer: this.fileStorageService.readStoredFile(metadata.file.path),
         };
     }
     async removeMessage(conversationId, messageId) {
@@ -643,8 +643,8 @@ let ChatService = class ChatService {
             throw new common_1.ForbiddenException('仅支持删除自己发送的消息');
         }
         const metadata = (message.metadata ?? {});
-        if (message.messageType === 'file' && metadata.file?.sourcePath) {
-            this.fileStorageService.removeChatMessageFile(metadata.file.sourcePath);
+        if (message.messageType === 'file' && metadata.file?.path) {
+            this.fileStorageService.removeChatMessageFile(metadata.file.path);
         }
         await this.messageRepository.delete({ id: messageId, conversationId });
         await this.refreshConversationPreview(conversation);
@@ -666,8 +666,8 @@ let ChatService = class ChatService {
             throw new common_1.BadRequestException('系统消息不支持撤回');
         }
         const metadata = (message.metadata ?? {});
-        if (message.messageType === 'file' && metadata.file?.sourcePath) {
-            this.fileStorageService.removeChatMessageFile(metadata.file.sourcePath);
+        if (message.messageType === 'file' && metadata.file?.path) {
+            this.fileStorageService.removeChatMessageFile(metadata.file.path);
         }
         await this.messageRepository.update({ id: messageId, conversationId }, {
             content: '该消息已撤回',
