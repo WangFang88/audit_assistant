@@ -77,6 +77,7 @@ export class AuthService {
           subscriptionType: 'free',
         }));
     }
+    setImmediate(() => this.syncUsersToDatabase());
   }
 
   private readonly demoUsers: AuthUserRecord[] = [
