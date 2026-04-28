@@ -1700,6 +1700,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final rawTextController = TextEditingController();
     String libraryType = _isAdmin || _activeGroupId == null ? '公共库' : '私有库';
     PlatformFile? selectedFile;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -1736,14 +1737,14 @@ class _DashboardPageState extends State<DashboardPage> {
                         if (!mounted) {
                           return;
                         }
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        scaffoldMessenger.showSnackBar(
                           SnackBar(content: Text('选择文件失败：${error.message ?? '请检查当前运行环境的文件选择权限。'}')),
                         );
                       } catch (_) {
                         if (!mounted) {
                           return;
                         }
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        scaffoldMessenger.showSnackBar(
                           const SnackBar(content: Text('选择文件失败，请重试一次或重启预览环境。')),
                         );
                       }
@@ -2931,8 +2932,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                         ],
                                       );
                                     },
-                                  )
-                                  .toList(),
+                                  ),
                                 ..._pendingMessages.map(
                                   (pending) => Align(
                                     alignment: Alignment.centerRight,
