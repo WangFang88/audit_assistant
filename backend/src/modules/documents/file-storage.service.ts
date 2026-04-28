@@ -13,10 +13,14 @@ export class FileStorageService {
   private readonly allowedChatFileExtensions = new Set(['.pdf', '.docx', '.xlsx', '.png', '.jpg', '.jpeg']);
   private readonly allowedChatMimeTypes = new Set([
     'application/pdf',
+    'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/octet-stream',
     'image/png',
     'image/jpeg',
+    'image/jpg',
   ]);
 
   private getUploadRoot() {
@@ -62,7 +66,10 @@ export class FileStorageService {
   private assertAllowedChatFile(file: Express.Multer.File) {
     const extension = (extname(this.sanitizeFileName(file.originalname || 'upload.bin')) || '.bin').toLowerCase();
     const mimeType = (file.mimetype || '').toLowerCase();
-    if (!this.allowedChatFileExtensions.has(extension) || !this.allowedChatMimeTypes.has(mimeType)) {
+    if (!this.allowedChatFileExtensions.has(extension)) {
+      throw new BadRequestException('当前仅支持 PDF、DOCX、XLSX、PNG、JPG、JPEG 文件');
+    }
+    if (mimeType.length > 0 && !this.allowedChatMimeTypes.has(mimeType)) {
       throw new BadRequestException('当前仅支持 PDF、DOCX、XLSX、PNG、JPG、JPEG 文件');
     }
   }
