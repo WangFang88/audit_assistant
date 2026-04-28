@@ -403,6 +403,8 @@ export class ChatService {
     }
 
     const currentUser = this.authService.me();
+    const myParticipations = await this.conversationParticipantRepository.findBy({ userId: currentUser.id });
+    const myConversationIds = new Set(myParticipations.map((p) => p.conversationId));
     const entities = await this.conversationRepository.find({
       where: { status: 'active' },
       order: { lastMessageAt: 'DESC', createdAt: 'ASC' },
@@ -411,7 +413,7 @@ export class ChatService {
     const visibleConversations = conversations
       .filter((conversation) => {
         if (conversation.type === 'direct') {
-          return true;
+          return myConversationIds.has(conversation.id);
         }
 
         return groupId != null && conversation.groupId === groupId;

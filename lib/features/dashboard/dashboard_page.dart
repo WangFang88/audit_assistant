@@ -586,12 +586,13 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       final conversation = await widget.apiService.createDirectConversation(targetUserId: member.userId);
       if (!mounted) return;
+      // 重新加载会话列表（包含私信会话）
+      final conversations = await widget.apiService.fetchConversations(groupId: _activeGroupId);
+      if (!mounted) return;
       setState(() {
-        if (!_conversations.any((c) => c.id == conversation.id)) {
-          _conversations = [conversation, ..._conversations];
-        }
+        _conversations = conversations;
         _selectedConversationId = conversation.id;
-        _selectedIndex = 1; // 切换到对话 tab
+        _selectedIndex = 1;
       });
       await _loadConversationMessages(conversation.id);
     } catch (e) {
