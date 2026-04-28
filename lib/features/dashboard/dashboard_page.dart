@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -57,6 +58,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Set<String> _mutedConversationIds = <String>{};
   String? _selectedConversationId;
   String? _selectedGroupId;
+  Timer? _chatPollingTimer;
 
   @override
   void initState() {
@@ -64,10 +66,52 @@ class _DashboardPageState extends State<DashboardPage> {
     _restorePinnedConversations();
     _restoreMutedConversations();
     _loadDashboard();
+    _startChatPolling();
+  }
+
+  void _startChatPolling() {
+    _chatPollingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted) return;
+      _pollChat();
+    });
+  }
+
+  Future<void> _pollChat() async {
+    try {
+      final groupId = _activeGroupId;
+      final conversations = widget.currentUser.role == 'admin'
+          ? const <ConversationSummary>[]
+          : await widget.apiService.fetchConversations(groupId: groupId);
+      if (!mounted) return;
+      setState(() {
+        _conversations = conversations;
+      });
+      final selectedId = _selectedConversationId;
+      if (selectedId != null && _selectedIndex == 1) {
+        final messages = await widget.apiService.fetchMessages(selectedId);
+        if (!mounted) return;
+        final hadMessages = _messages.length;
+        setState(() {
+          _messages = messages;
+        });
+        if (messages.length > hadMessages) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_messagesScrollController.hasClients) {
+              _messagesScrollController.animateTo(
+                _messagesScrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+              );
+            }
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   @override
   void dispose() {
+    _chatPollingTimer?.cancel();
     _questionController.dispose();
     _messageController.dispose();
     _messageSearchController.dispose();
