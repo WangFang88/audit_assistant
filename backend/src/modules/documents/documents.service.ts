@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { IsNull, In, Repository } from 'typeorm';
 import { DocumentChunkEntity } from '../../database/entities/document-chunk.entity';
 import { DocumentEntity } from '../../database/entities/document.entity';
 import { DocumentExtractionJobEntity } from '../../database/entities/document-extraction-job.entity';
@@ -448,6 +448,11 @@ export class DocumentsService {
 
       return groupId != null && document.groupId === groupId;
     });
+  }
+
+  async countPrivateDocuments(groupIds: string[]): Promise<number> {
+    if (groupIds.length === 0) return 0;
+    return this.persistedDocumentRepository.countBy({ libraryType: 'private', teamId: In(groupIds), deletedAt: IsNull() });
   }
 
   async listExtractionJobs(groupId?: string) {

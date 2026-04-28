@@ -137,7 +137,7 @@ export class OverviewService {
       documents: await this.documentsService.listDocuments(effectiveGroupId),
       extractJobs: await this.documentsService.listExtractionJobs(effectiveGroupId),
       libraryScope: await this.documentsService.getLibraryScopeSummary(effectiveGroupId),
-      subscription: this.subscriptionsService.getOverview(visibleGroups.length),
+      subscription: this.subscriptionsService.getOverview(visibleGroups.length, await this.documentsService.countPrivateDocuments(visibleGroups.map(g => g.id))),
       conversations: isAdmin ? [] : await this.chatService.listConversations(effectiveGroupId),
       activeTeamAgent:
         activeTeamAgent == null
