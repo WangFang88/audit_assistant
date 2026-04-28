@@ -593,7 +593,10 @@ export class ChatService {
       const conv = await this.conversationRepository.findOneBy({ id: p.conversationId, conversationType: 'direct' });
       if (!conv) continue;
       const peer = await this.conversationParticipantRepository.findOneBy({ conversationId: conv.id, userId: targetUserId });
-      if (peer) return this.toConversationRecord(conv);
+      if (!peer) continue;
+      // 确认只有这两个参与者（精确匹配，避免误判 seed 会话）
+      const allParticipants = await this.conversationParticipantRepository.findBy({ conversationId: conv.id });
+      if (allParticipants.length === 2) return this.toConversationRecord(conv);
     }
     const targetUser = this.authService.getUserById(targetUserId);
     const conv = this.conversationRepository.create({
