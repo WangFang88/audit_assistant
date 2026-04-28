@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
 const query_log_repository_1 = require("../../database/repositories/query-log.repository");
 const subscription_repository_1 = require("../../database/repositories/subscription.repository");
+const audit_service_1 = require("../audit/audit.service");
 const auth_service_1 = require("../auth/auth.service");
 const local_state_service_1 = require("./local-state.service");
 class CreateSubscriptionOrderDto {
@@ -27,13 +28,13 @@ __decorate([
     __metadata("design:type", String)
 ], CreateSubscriptionOrderDto.prototype, "planType", void 0);
 let SubscriptionsService = class SubscriptionsService {
-    constructor(localStateService, queryLogRepository, subscriptionRepository, authService) {
+    constructor(localStateService, queryLogRepository, subscriptionRepository, authService, auditService) {
         this.localStateService = localStateService;
         this.queryLogRepository = queryLogRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.authService = authService;
+        this.auditService = auditService;
         this.currentPlanId = 'free';
-        this.trialEndsAt = '2026-05-01';
         this.trialDays = 1;
         this.queryLogs = [];
         this.subscriptionOrders = [
@@ -73,9 +74,10 @@ let SubscriptionsService = class SubscriptionsService {
                 id: 'free',
                 name: '免费版',
                 priceLabel: '¥0 / 1天试用',
+                activationLabel: '免费试用',
                 limits: {
                     groupCount: 1,
-                    privateDocuments: 20,
+                    privateDocuments: 2,
                     dailyQueries: 10,
                     caseSearch: false,
                 },
@@ -84,6 +86,7 @@ let SubscriptionsService = class SubscriptionsService {
                 id: 'weekly',
                 name: '周订阅',
                 priceLabel: '¥70 / 周',
+                activationLabel: '模拟开通周订阅',
                 limits: {
                     groupCount: 5,
                     privateDocuments: 50,
@@ -95,6 +98,7 @@ let SubscriptionsService = class SubscriptionsService {
                 id: 'monthly',
                 name: '月订阅',
                 priceLabel: '¥200 / 月',
+                activationLabel: '模拟开通月订阅',
                 limits: {
                     groupCount: 20,
                     privateDocuments: 200,
@@ -106,6 +110,7 @@ let SubscriptionsService = class SubscriptionsService {
                 id: 'yearly',
                 name: '年订阅',
                 priceLabel: '¥2000 / 年',
+                activationLabel: '模拟开通年订阅',
                 limits: {
                     groupCount: 100,
                     privateDocuments: 1000,
@@ -138,8 +143,14 @@ let SubscriptionsService = class SubscriptionsService {
     isAdmin() {
         return this.authService.me().role === 'admin';
     }
+    getCurrentUserTrialEndsAt() {
+        return this.authService.me().trialEndsAt;
+    }
     getCurrentDateKey() {
         return new Date().toISOString().slice(0, 10);
+    }
+    buildTrialEndsAt(baseDate = new Date()) {
+        return this.addDays(baseDate, this.trialDays).toISOString().slice(0, 10);
     }
     persistQueryLogs() {
         this.localStateService.saveQueryLogs(this.queryLogs);
@@ -154,6 +165,19 @@ let SubscriptionsService = class SubscriptionsService {
     getLatestSubscriptionOrder() {
         const userOrders = this.getUserSubscriptionOrders();
         return userOrders[userOrders.length - 1] ?? null;
+    }
+    getActiveSubscriptionOrder() {
+        const activeOrders = this.getUserSubscriptionOrders().filter((order) => this.isOrderActive(order));
+        if (activeOrders.length === 0) {
+            return null;
+        }
+        return activeOrders.sort((a, b) => {
+            const rankDiff = this.getCurrentPlanRank(b.planType) - this.getCurrentPlanRank(a.planType);
+            if (rankDiff !== 0) {
+                return rankDiff;
+            }
+            return new Date(b.paidAt.replace(' ', 'T')).getTime() - new Date(a.paidAt.replace(' ', 'T')).getTime();
+        })[0];
     }
     formatDateTime(date) {
         return date.toISOString().slice(0, 16).replace('T', ' ');
@@ -176,20 +200,24 @@ let SubscriptionsService = class SubscriptionsService {
         if (this.isAdmin()) {
             return 'admin-preview';
         }
-        const latestOrder = this.getLatestSubscriptionOrder();
-        if (latestOrder) {
-            return this.isOrderActive(latestOrder) ? 'active' : 'expired';
+        const activeOrder = this.getActiveSubscriptionOrder();
+        if (activeOrder) {
+            return 'active';
         }
-        return 'trial';
+        const trialEndsAt = new Date(`${this.getCurrentUserTrialEndsAt()}T23:59:59.999Z`).getTime();
+        if (trialEndsAt >= Date.now()) {
+            return 'trial';
+        }
+        return 'expired';
     }
     getSubscriptionStatusLabel(status) {
         switch (status) {
             case 'trial':
                 return '试用中';
             case 'active':
-                return '生效中';
+                return '已开通';
             case 'expired':
-                return '已过期';
+                return '试用已结束';
             case 'admin-preview':
                 return '管理员预览';
         }
@@ -232,6 +260,7 @@ let SubscriptionsService = class SubscriptionsService {
                 id: 'admin-preview',
                 name: '管理员预览',
                 priceLabel: '¥0 / 管理员预览',
+                activationLabel: '管理员预览',
                 limits: {
                     groupCount: 999,
                     privateDocuments: 999,
@@ -240,9 +269,9 @@ let SubscriptionsService = class SubscriptionsService {
                 },
             };
         }
-        const latestOrder = this.getLatestSubscriptionOrder();
-        if (latestOrder) {
-            return this.plans.find((plan) => plan.id === latestOrder.planType) ?? this.plans[0];
+        const activeOrder = this.getActiveSubscriptionOrder();
+        if (activeOrder) {
+            return this.plans.find((plan) => plan.id === activeOrder.planType) ?? this.plans[0];
         }
         return this.plans.find((plan) => plan.id === this.currentPlanId) ?? this.plans[0];
     }
@@ -293,34 +322,54 @@ let SubscriptionsService = class SubscriptionsService {
         this.subscriptionOrders = nextOrders;
         this.persistSubscriptions();
     }
-    createSubscriptionOrder(dto) {
+    async createSubscriptionOrder(dto) {
         if (this.isAdmin()) {
-            throw new common_1.BadRequestException('管理员预览账号不支持创建订阅订单');
+            throw new common_1.BadRequestException('管理员预览账号不支持创建模拟订阅');
         }
         if (this.hasActiveHigherTierOrder(dto.planType)) {
             throw new common_1.BadRequestException('当前高等级订阅仍在有效期内，暂不支持降级为更低套餐');
         }
         const now = new Date();
         const expiredAt = this.addDays(now, this.planDurations[dto.planType]);
+        const user = this.authService.me();
         const order = {
             id: `order-${Date.now()}`,
-            userId: this.authService.me().id,
+            userId: user.id,
             planType: dto.planType,
             amount: this.planPrices[dto.planType],
             paidAt: this.formatDateTime(now),
             expiredAt: this.formatDateTime(expiredAt),
         };
         this.syncSubscriptionOrder(order);
-        return order;
+        await this.auditService.recordEvent({
+            eventType: 'subscription.activate',
+            actorUserId: user.id,
+            actorName: user.name,
+            targetType: 'subscription',
+            targetId: order.id,
+            summary: `模拟开通了${this.getPlanLabel(dto.planType)}`,
+            detail: {
+                planType: order.planType,
+                amount: order.amount,
+                expiredAt: order.expiredAt,
+                activationMode: 'simulation',
+            },
+        });
+        return {
+            ...order,
+            activationMode: 'simulation',
+            message: `${this.getPlanLabel(dto.planType)}已模拟开通。`,
+        };
     }
     getOverview(actualGroupCount, actualPrivateDocuments) {
         this.ensureDailyUsageIsCurrent();
         const plan = this.getCurrentPlan();
         const latestOrder = this.getLatestSubscriptionOrder();
+        const activeOrder = this.getActiveSubscriptionOrder();
         const status = this.getSubscriptionStatus();
         return {
-            currentPlanId: latestOrder?.planType ?? this.currentPlanId,
-            trialEndsAt: latestOrder?.expiredAt.slice(0, 10) ?? this.trialEndsAt,
+            currentPlanId: plan.id,
+            trialEndsAt: this.getCurrentUserTrialEndsAt(),
             trialDays: this.trialDays,
             status,
             statusLabel: this.getSubscriptionStatusLabel(status),
@@ -333,6 +382,16 @@ let SubscriptionsService = class SubscriptionsService {
                     amount: latestOrder.amount,
                     paidAt: latestOrder.paidAt,
                     expiredAt: latestOrder.expiredAt,
+                },
+            effectiveOrder: activeOrder == null
+                ? null
+                : {
+                    id: activeOrder.id,
+                    planType: activeOrder.planType,
+                    planLabel: this.getPlanLabel(activeOrder.planType),
+                    amount: activeOrder.amount,
+                    paidAt: activeOrder.paidAt,
+                    expiredAt: activeOrder.expiredAt,
                 },
             orderHistory: this.getUserSubscriptionOrders()
                 .map((order) => ({
@@ -358,10 +417,10 @@ let SubscriptionsService = class SubscriptionsService {
                 riskTablePreviewLimit: 10,
             },
             planHighlights: [
-                '免费版默认可创建 1 个项目组',
-                '私有库文件最多 2 个',
-                '每日 RAG 查询次数 10 次',
-                '案例查询能力需订阅后开启',
+                `免费版默认可创建 ${this.plans[0].limits.groupCount} 个项目组`,
+                `私有库文件最多 ${this.plans[0].limits.privateDocuments} 个`,
+                `每日 RAG 查询次数 ${this.plans[0].limits.dailyQueries} 次`,
+                this.plans[0].limits.caseSearch ? '案例查询能力已包含' : '案例查询能力需订阅后开启',
             ],
             plans: this.plans,
             pricing: {
@@ -379,6 +438,7 @@ exports.SubscriptionsService = SubscriptionsService = __decorate([
     __metadata("design:paramtypes", [local_state_service_1.LocalStateService,
         query_log_repository_1.QueryLogRepository,
         subscription_repository_1.SubscriptionRepository,
-        auth_service_1.AuthService])
+        auth_service_1.AuthService,
+        audit_service_1.AuditService])
 ], SubscriptionsService);
 //# sourceMappingURL=subscriptions.service.js.map

@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DatabaseSupportModule = void 0;
 const common_1 = require("@nestjs/common");
+const audit_event_repository_1 = require("./repositories/audit-event.repository");
 const auth_user_repository_1 = require("./repositories/auth-user.repository");
 const query_log_repository_1 = require("./repositories/query-log.repository");
 const subscription_repository_1 = require("./repositories/subscription.repository");
@@ -17,8 +18,8 @@ let DatabaseSupportModule = class DatabaseSupportModule {
 exports.DatabaseSupportModule = DatabaseSupportModule;
 exports.DatabaseSupportModule = DatabaseSupportModule = __decorate([
     (0, common_1.Module)({
-        providers: [auth_user_repository_1.AuthUserRepository, query_log_repository_1.QueryLogRepository, subscription_repository_1.SubscriptionRepository, team_repository_1.TeamRepository],
-        exports: [auth_user_repository_1.AuthUserRepository, query_log_repository_1.QueryLogRepository, subscription_repository_1.SubscriptionRepository, team_repository_1.TeamRepository],
+        providers: [audit_event_repository_1.AuditEventRepository, auth_user_repository_1.AuthUserRepository, query_log_repository_1.QueryLogRepository, subscription_repository_1.SubscriptionRepository, team_repository_1.TeamRepository],
+        exports: [audit_event_repository_1.AuditEventRepository, auth_user_repository_1.AuthUserRepository, query_log_repository_1.QueryLogRepository, subscription_repository_1.SubscriptionRepository, team_repository_1.TeamRepository],
     })
 ], DatabaseSupportModule);
 //# sourceMappingURL=database-support.module.js.map

@@ -1,3 +1,4 @@
+import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
 import { DocumentsService } from '../documents/documents.service';
@@ -13,7 +14,8 @@ export declare class OverviewService {
     private readonly chatService;
     private readonly subscriptionsService;
     private readonly teamAgentsService;
-    constructor(authService: AuthService, groupsService: GroupsService, documentsService: DocumentsService, queryService: QueryService, chatService: ChatService, subscriptionsService: SubscriptionsService, teamAgentsService: TeamAgentsService);
+    private readonly auditService;
+    constructor(authService: AuthService, groupsService: GroupsService, documentsService: DocumentsService, queryService: QueryService, chatService: ChatService, subscriptionsService: SubscriptionsService, teamAgentsService: TeamAgentsService, auditService: AuditService);
     getDashboard(groupId?: string): Promise<{
         user: {
             id: string;
@@ -60,7 +62,7 @@ export declare class OverviewService {
             userId: string;
             name: string;
             phone: string;
-            role: "leader" | "member";
+            role: "member" | "leader";
         }[];
         documents: {
             id: string;
@@ -98,15 +100,23 @@ export declare class OverviewService {
             privateDocumentCount: number;
         };
         subscription: {
-            currentPlanId: "free" | "weekly" | "monthly" | "yearly";
+            currentPlanId: string;
             trialEndsAt: string;
             trialDays: number;
-            status: "active" | "trial" | "expired" | "admin-preview";
+            status: "active" | "admin-preview" | "trial" | "expired";
             statusLabel: string;
             latestOrder: {
                 id: string;
                 planType: "free" | "weekly" | "monthly" | "yearly";
-                planLabel: string;
+                planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
+                amount: string;
+                paidAt: string;
+                expiredAt: string;
+            } | null;
+            effectiveOrder: {
+                id: string;
+                planType: "free" | "weekly" | "monthly" | "yearly";
+                planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
                 amount: string;
                 paidAt: string;
                 expiredAt: string;
@@ -114,7 +124,7 @@ export declare class OverviewService {
             orderHistory: {
                 id: string;
                 planType: "free" | "weekly" | "monthly" | "yearly";
-                planLabel: string;
+                planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
                 amount: string;
                 paidAt: string;
                 expiredAt: string;
@@ -141,23 +151,58 @@ export declare class OverviewService {
                 riskTablePreviewLimit: number;
             };
             planHighlights: string[];
-            plans: {
-                id: string;
-                name: string;
-                priceLabel: string;
-                limits: {
-                    groupCount: number;
-                    privateDocuments: number;
-                    dailyQueries: number;
-                    caseSearch: boolean;
+            plans: readonly [{
+                readonly id: "free";
+                readonly name: "免费版";
+                readonly priceLabel: "¥0 / 1天试用";
+                readonly activationLabel: "免费试用";
+                readonly limits: {
+                    readonly groupCount: 1;
+                    readonly privateDocuments: 2;
+                    readonly dailyQueries: 10;
+                    readonly caseSearch: false;
                 };
-            }[];
+            }, {
+                readonly id: "weekly";
+                readonly name: "周订阅";
+                readonly priceLabel: "¥70 / 周";
+                readonly activationLabel: "模拟开通周订阅";
+                readonly limits: {
+                    readonly groupCount: 5;
+                    readonly privateDocuments: 50;
+                    readonly dailyQueries: 200;
+                    readonly caseSearch: true;
+                };
+            }, {
+                readonly id: "monthly";
+                readonly name: "月订阅";
+                readonly priceLabel: "¥200 / 月";
+                readonly activationLabel: "模拟开通月订阅";
+                readonly limits: {
+                    readonly groupCount: 20;
+                    readonly privateDocuments: 200;
+                    readonly dailyQueries: 1000;
+                    readonly caseSearch: true;
+                };
+            }, {
+                readonly id: "yearly";
+                readonly name: "年订阅";
+                readonly priceLabel: "¥2000 / 年";
+                readonly activationLabel: "模拟开通年订阅";
+                readonly limits: {
+                    readonly groupCount: 100;
+                    readonly privateDocuments: 1000;
+                    readonly dailyQueries: 5000;
+                    readonly caseSearch: true;
+                };
+            }];
             pricing: {
                 weekly: string;
                 monthly: string;
                 yearly: string;
             };
         };
+        recentAuditEvents: import("../../database/repositories/audit-event.repository").AuditEventSnapshot[];
         conversations: {
             id: string;
             type: "group" | "direct" | "agent";

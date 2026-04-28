@@ -2,7 +2,7 @@ import { AuthService, LoginDto, RefreshTokenDto, RegisterDto, UpdateProfileDto }
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
-    login(dto: LoginDto): {
+    login(dto: LoginDto): Promise<{
         accessToken: string;
         refreshToken: string;
         user: {
@@ -12,7 +12,7 @@ export declare class AuthController {
             role: "admin" | "member";
             trialEndsAt: string;
         };
-    };
+    }>;
     refresh(dto: RefreshTokenDto): {
         accessToken: string;
         refreshToken: string;
@@ -24,7 +24,7 @@ export declare class AuthController {
             trialEndsAt: string;
         };
     };
-    register(dto: RegisterDto): {
+    register(dto: RegisterDto): Promise<{
         accessToken: string;
         refreshToken: string;
         user: {
@@ -34,7 +34,7 @@ export declare class AuthController {
             role: "admin" | "member";
             trialEndsAt: string;
         };
-    };
+    }>;
     me(): {
         id: string;
         name: string;

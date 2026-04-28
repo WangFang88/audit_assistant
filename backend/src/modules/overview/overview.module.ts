@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { ChatModule } from '../chat/chat.module';
 import { DocumentsModule } from '../documents/documents.module';
@@ -12,6 +13,7 @@ import { OverviewService } from './overview.service';
 @Module({
   imports: [
     AuthModule,
+    AuditModule,
     GroupsModule,
     DocumentsModule,
     QueryModule,

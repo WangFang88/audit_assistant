@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DatabaseModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
+const audit_event_entity_1 = require("./entities/audit-event.entity");
 const conversation_participant_entity_1 = require("./entities/conversation-participant.entity");
 const conversation_entity_1 = require("./entities/conversation.entity");
 const document_chunk_entity_1 = require("./entities/document-chunk.entity");
@@ -23,6 +24,7 @@ const team_entity_1 = require("./entities/team.entity");
 const user_entity_1 = require("./entities/user.entity");
 const entities = [
     user_entity_1.UserEntity,
+    audit_event_entity_1.AuditEventEntity,
     team_entity_1.TeamEntity,
     team_member_entity_1.TeamMemberEntity,
     team_agent_entity_1.TeamAgentEntity,

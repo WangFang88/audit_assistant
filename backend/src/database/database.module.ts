@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuditEventEntity } from './entities/audit-event.entity';
 import { ConversationParticipantEntity } from './entities/conversation-participant.entity';
 import { ConversationEntity } from './entities/conversation.entity';
 import { DocumentChunkEntity } from './entities/document-chunk.entity';
@@ -15,6 +16,7 @@ import { UserEntity } from './entities/user.entity';
 
 const entities = [
   UserEntity,
+  AuditEventEntity,
   TeamEntity,
   TeamMemberEntity,
   TeamAgentEntity,

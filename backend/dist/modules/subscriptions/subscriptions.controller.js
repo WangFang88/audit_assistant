@@ -30,7 +30,7 @@ let SubscriptionsController = class SubscriptionsController {
         const memberships = await this.teamMemberRepository.findBy({ userId: currentUser.id, role: 'leader' });
         return this.subscriptionsService.getOverview(memberships.length);
     }
-    createOrder(dto) {
+    async createOrder(dto) {
         return this.subscriptionsService.createSubscriptionOrder(dto);
     }
 };
@@ -46,7 +46,7 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [subscriptions_service_1.CreateSubscriptionOrderDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], SubscriptionsController.prototype, "createOrder", null);
 exports.SubscriptionsController = SubscriptionsController = __decorate([
     (0, common_1.Controller)('subscriptions'),

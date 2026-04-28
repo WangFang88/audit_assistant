@@ -5,6 +5,7 @@ import { DocumentChunkEntity } from '../../database/entities/document-chunk.enti
 import { DocumentEntity } from '../../database/entities/document.entity';
 import { DocumentExtractionJobEntity } from '../../database/entities/document-extraction-job.entity';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
@@ -84,6 +85,7 @@ export class DocumentsService {
     private readonly persistedChunkRepository: Repository<DocumentChunkEntity>,
     @InjectRepository(DocumentExtractionJobEntity)
     private readonly persistedExtractionJobRepository: Repository<DocumentExtractionJobEntity>,
+    private readonly auditService: AuditService,
     private readonly authService: AuthService,
     @Inject(forwardRef(() => GroupsService))
     private readonly groupsService: GroupsService,
@@ -455,6 +457,15 @@ export class DocumentsService {
     return this.persistedDocumentRepository.countBy({ libraryType: 'private', teamId: In(groupIds), deletedAt: IsNull() });
   }
 
+  async countVisiblePrivateDocuments(): Promise<number> {
+    if (this.authService.isAdmin()) {
+      return 0;
+    }
+
+    const groups = await this.groupsService.listGroups();
+    return this.countPrivateDocuments(groups.map((group) => group.id));
+  }
+
   async listExtractionJobs(groupId?: string) {
     this.assertAdminPublicLibraryOnly(groupId);
     if (!this.authService.isAdmin() && groupId != null) {
@@ -810,9 +821,7 @@ export class DocumentsService {
         throw new BadRequestException('私有库导入必须指定项目组');
       }
       await this.groupsService.assertIsLeader(dto.groupId);
-      const currentPrivateDocuments = await this.persistedDocumentRepository.count({
-        where: { libraryType: 'private', deletedAt: IsNull() },
-      });
+      const currentPrivateDocuments = await this.countVisiblePrivateDocuments();
       this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
     }
 
@@ -820,7 +829,8 @@ export class DocumentsService {
     const storedFile = this.saveUploadedFile(file, dto.libraryType, documentId, dto.groupId);
     const classification = this.classifyUploadedFile(storedFile.originalName);
     const hasRawText = dto.rawText != null && dto.rawText.trim().length > 0;
-    const uploadedBy = this.authService.me().id;
+    const user = this.authService.me();
+    const uploadedBy = user.id;
 
     const document: DocumentRecord = {
       id: documentId,
@@ -872,11 +882,25 @@ export class DocumentsService {
     }
 
     if (document.libraryType === 'private') {
-      const privateDocumentCount = await this.persistedDocumentRepository.count({
-        where: { libraryType: 'private', deletedAt: IsNull() },
-      });
+      const privateDocumentCount = await this.countVisiblePrivateDocuments();
       this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
     }
+
+    await this.auditService.recordEvent({
+      eventType: 'document.import',
+      actorUserId: user.id,
+      actorName: user.name,
+      targetType: 'document',
+      targetId: document.id,
+      groupId: document.groupId,
+      summary: document.libraryType === 'public' ? '导入了公共库文档' : '导入了项目组私有文档',
+      detail: {
+        title: document.title,
+        libraryType: document.libraryType,
+        fileName: document.fileName,
+        chunkCount: document.chunkCount,
+      },
+    });
 
     return {
       ...document,
@@ -915,9 +939,7 @@ export class DocumentsService {
     await this.persistedExtractionJobRepository.delete(documentIds.map((documentId) => ({ documentId })));
     await this.persistedDocumentRepository.delete(documentIds.map((id) => ({ id })));
 
-    const privateDocumentCount = await this.persistedDocumentRepository.count({
-      where: { libraryType: 'private', deletedAt: IsNull() },
-    });
+    const privateDocumentCount = await this.countVisiblePrivateDocuments();
     this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
   }
 

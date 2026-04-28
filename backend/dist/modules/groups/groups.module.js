@@ -14,6 +14,7 @@ const team_entity_1 = require("../../database/entities/team.entity");
 const user_entity_1 = require("../../database/entities/user.entity");
 const database_support_module_1 = require("../../database/database-support.module");
 const auth_module_1 = require("../auth/auth.module");
+const audit_module_1 = require("../audit/audit.module");
 const chat_module_1 = require("../chat/chat.module");
 const documents_module_1 = require("../documents/documents.module");
 const subscriptions_module_1 = require("../subscriptions/subscriptions.module");
@@ -29,6 +30,7 @@ exports.GroupsModule = GroupsModule = __decorate([
             typeorm_1.TypeOrmModule.forFeature([team_entity_1.TeamEntity, team_member_entity_1.TeamMemberEntity, user_entity_1.UserEntity]),
             database_support_module_1.DatabaseSupportModule,
             auth_module_1.AuthModule,
+            audit_module_1.AuditModule,
             subscriptions_module_1.SubscriptionsModule,
             (0, common_1.forwardRef)(() => documents_module_1.DocumentsModule),
             (0, common_1.forwardRef)(() => chat_module_1.ChatModule),

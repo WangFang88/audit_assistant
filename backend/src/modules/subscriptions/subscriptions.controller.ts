@@ -22,7 +22,7 @@ export class SubscriptionsController {
   }
 
   @Post('orders')
-  createOrder(@Body() dto: CreateSubscriptionOrderDto) {
+  async createOrder(@Body() dto: CreateSubscriptionOrderDto) {
     return this.subscriptionsService.createSubscriptionOrder(dto);
   }
 }

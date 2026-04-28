@@ -20,7 +20,9 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const auth_user_repository_1 = require("../../database/repositories/auth-user.repository");
 const user_entity_1 = require("../../database/entities/user.entity");
+const audit_service_1 = require("../audit/audit.service");
 const local_state_service_1 = require("../subscriptions/local-state.service");
+const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 class LoginDto {
 }
 exports.LoginDto = LoginDto;
@@ -65,10 +67,12 @@ __decorate([
     __metadata("design:type", String)
 ], UpdateProfileDto.prototype, "name", void 0);
 let AuthService = class AuthService {
-    constructor(localStateService, authUserRepository, userRepository) {
+    constructor(localStateService, authUserRepository, userRepository, subscriptionsService, auditService) {
         this.localStateService = localStateService;
         this.authUserRepository = authUserRepository;
         this.userRepository = userRepository;
+        this.subscriptionsService = subscriptionsService;
+        this.auditService = auditService;
         this.demoUsers = [
             {
                 id: 'user-1',
@@ -84,7 +88,7 @@ let AuthService = class AuthService {
                 name: '审计组长',
                 phone: '13800138001',
                 role: 'member',
-                trialEndsAt: '2026-05-01',
+                trialEndsAt: this.buildTrialEndsAt(),
                 passwordHash: (0, crypto_1.createHash)('sha256').update('123456').digest('hex'),
                 subscriptionType: 'free',
             },
@@ -93,7 +97,7 @@ let AuthService = class AuthService {
                 name: '审计助理',
                 phone: '13800138002',
                 role: 'member',
-                trialEndsAt: '2026-05-01',
+                trialEndsAt: this.buildTrialEndsAt(),
                 passwordHash: (0, crypto_1.createHash)('sha256').update('123456').digest('hex'),
                 subscriptionType: 'free',
             },
@@ -102,7 +106,7 @@ let AuthService = class AuthService {
                 name: '法规顾问',
                 phone: '13800138003',
                 role: 'member',
-                trialEndsAt: '2026-05-01',
+                trialEndsAt: this.buildTrialEndsAt(),
                 passwordHash: (0, crypto_1.createHash)('sha256').update('123456').digest('hex'),
                 subscriptionType: 'free',
             },
@@ -168,7 +172,7 @@ let AuthService = class AuthService {
                 name: entity.nickname,
                 phone: entity.phone,
                 role: entity.role,
-                trialEndsAt: (entity.subscriptionExpiredAt ?? new Date('2026-05-01T00:00:00.000Z')).toISOString().slice(0, 10),
+                trialEndsAt: (entity.subscriptionExpiredAt ?? new Date(`${this.buildTrialEndsAt()}T00:00:00.000Z`)).toISOString().slice(0, 10),
                 passwordHash: entity.passwordHash,
             };
         }));
@@ -227,7 +231,10 @@ let AuthService = class AuthService {
     createUserName(phone) {
         return `新用户${phone.slice(-4)}`;
     }
-    login(dto) {
+    buildTrialEndsAt() {
+        return this.subscriptionsService.buildTrialEndsAt();
+    }
+    async login(dto) {
         const user = this.findUserByPhone(dto.phone);
         if (!user) {
             throw new common_1.UnauthorizedException('账号不存在，请先注册后再登录');
@@ -236,9 +243,19 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException('密码错误，请重新输入');
         }
         this.upgradeLegacyPassword(user);
-        return this.buildAuthResponse(user);
+        const response = this.buildAuthResponse(user);
+        await this.auditService.recordEvent({
+            eventType: 'auth.login',
+            actorUserId: user.id,
+            actorName: user.name,
+            targetType: 'user',
+            targetId: user.id,
+            summary: '登录了系统',
+            detail: { role: user.role },
+        });
+        return response;
     }
-    register(dto) {
+    async register(dto) {
         const phone = this.normalizePhone(dto.phone);
         const passwordHash = this.hashPassword(dto.password.trim());
         if (phone === 'admin') {
@@ -252,13 +269,23 @@ let AuthService = class AuthService {
             name: this.createUserName(phone),
             phone,
             role: 'member',
-            trialEndsAt: '2026-05-01',
+            trialEndsAt: this.buildTrialEndsAt(),
             passwordHash,
             subscriptionType: 'free',
         };
         this.registeredUsers = [...this.registeredUsers, user];
         this.persistUsers();
-        return this.buildAuthResponse(user);
+        const response = this.buildAuthResponse(user);
+        await this.auditService.recordEvent({
+            eventType: 'auth.register',
+            actorUserId: user.id,
+            actorName: user.name,
+            targetType: 'user',
+            targetId: user.id,
+            summary: '注册并开通了试用账号',
+            detail: { phone: user.phone, trialEndsAt: user.trialEndsAt },
+        });
+        return response;
     }
     refresh(dto) {
         const user = this.findUserByToken(dto.refreshToken, 'demo-refresh-token-');
@@ -307,8 +334,11 @@ exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __param(2, (0, typeorm_1.InjectRepository)(user_entity_1.UserEntity)),
+    __param(3, (0, common_1.Inject)((0, common_1.forwardRef)(() => subscriptions_service_1.SubscriptionsService))),
     __metadata("design:paramtypes", [local_state_service_1.LocalStateService,
         auth_user_repository_1.AuthUserRepository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        subscriptions_service_1.SubscriptionsService,
+        audit_service_1.AuditService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

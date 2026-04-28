@@ -1,5 +1,6 @@
 import { QueryLogRepository, QueryLogSnapshot } from '../../database/repositories/query-log.repository';
 import { SubscriptionOrderSnapshot, SubscriptionRepository } from '../../database/repositories/subscription.repository';
+import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { LocalStateService } from './local-state.service';
 declare class CreateSubscriptionOrderDto {
@@ -17,9 +18,9 @@ export declare class SubscriptionsService {
     private readonly queryLogRepository;
     private readonly subscriptionRepository;
     private readonly authService;
-    constructor(localStateService: LocalStateService, queryLogRepository: QueryLogRepository, subscriptionRepository: SubscriptionRepository, authService: AuthService);
+    private readonly auditService;
+    constructor(localStateService: LocalStateService, queryLogRepository: QueryLogRepository, subscriptionRepository: SubscriptionRepository, authService: AuthService, auditService: AuditService);
     private readonly currentPlanId;
-    private readonly trialEndsAt;
     private readonly trialDays;
     private queryLogs;
     private subscriptionOrders;
@@ -29,11 +30,14 @@ export declare class SubscriptionsService {
     private readonly planRank;
     private readonly plans;
     private isAdmin;
+    private getCurrentUserTrialEndsAt;
     private getCurrentDateKey;
+    buildTrialEndsAt(baseDate?: Date): string;
     private persistQueryLogs;
     private persistSubscriptions;
     private getUserSubscriptionOrders;
     private getLatestSubscriptionOrder;
+    private getActiveSubscriptionOrder;
     private formatDateTime;
     private addDays;
     private getCurrentPlanRank;
@@ -45,9 +49,54 @@ export declare class SubscriptionsService {
     private rebuildDailyUsageFromLogs;
     private ensureDailyUsageIsCurrent;
     getCurrentPlan(): {
+        readonly id: "free";
+        readonly name: "免费版";
+        readonly priceLabel: "¥0 / 1天试用";
+        readonly activationLabel: "免费试用";
+        readonly limits: {
+            readonly groupCount: 1;
+            readonly privateDocuments: 2;
+            readonly dailyQueries: 10;
+            readonly caseSearch: false;
+        };
+    } | {
+        readonly id: "weekly";
+        readonly name: "周订阅";
+        readonly priceLabel: "¥70 / 周";
+        readonly activationLabel: "模拟开通周订阅";
+        readonly limits: {
+            readonly groupCount: 5;
+            readonly privateDocuments: 50;
+            readonly dailyQueries: 200;
+            readonly caseSearch: true;
+        };
+    } | {
+        readonly id: "monthly";
+        readonly name: "月订阅";
+        readonly priceLabel: "¥200 / 月";
+        readonly activationLabel: "模拟开通月订阅";
+        readonly limits: {
+            readonly groupCount: 20;
+            readonly privateDocuments: 200;
+            readonly dailyQueries: 1000;
+            readonly caseSearch: true;
+        };
+    } | {
+        readonly id: "yearly";
+        readonly name: "年订阅";
+        readonly priceLabel: "¥2000 / 年";
+        readonly activationLabel: "模拟开通年订阅";
+        readonly limits: {
+            readonly groupCount: 100;
+            readonly privateDocuments: 1000;
+            readonly dailyQueries: 5000;
+            readonly caseSearch: true;
+        };
+    } | {
         id: string;
         name: string;
         priceLabel: string;
+        activationLabel: string;
         limits: {
             groupCount: number;
             privateDocuments: number;
@@ -67,9 +116,18 @@ export declare class SubscriptionsService {
     assertCanRunQuery(currentDailyQueries: number): void;
     recordQueryLog(queryLog: QueryLogSnapshot): void;
     syncSubscriptionOrder(order: SubscriptionOrderSnapshot): void;
-    createSubscriptionOrder(dto: CreateSubscriptionOrderDto): SubscriptionOrderSnapshot;
+    createSubscriptionOrder(dto: CreateSubscriptionOrderDto): Promise<{
+        activationMode: string;
+        message: string;
+        id: string;
+        userId: string;
+        planType: "free" | "weekly" | "monthly" | "yearly";
+        amount: string;
+        paidAt: string;
+        expiredAt: string;
+    }>;
     getOverview(actualGroupCount?: number, actualPrivateDocuments?: number): {
-        currentPlanId: "free" | "weekly" | "monthly" | "yearly";
+        currentPlanId: string;
         trialEndsAt: string;
         trialDays: number;
         status: SubscriptionStatus;
@@ -77,7 +135,15 @@ export declare class SubscriptionsService {
         latestOrder: {
             id: string;
             planType: "free" | "weekly" | "monthly" | "yearly";
-            planLabel: string;
+            planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
+            amount: string;
+            paidAt: string;
+            expiredAt: string;
+        } | null;
+        effectiveOrder: {
+            id: string;
+            planType: "free" | "weekly" | "monthly" | "yearly";
+            planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
             amount: string;
             paidAt: string;
             expiredAt: string;
@@ -85,7 +151,7 @@ export declare class SubscriptionsService {
         orderHistory: {
             id: string;
             planType: "free" | "weekly" | "monthly" | "yearly";
-            planLabel: string;
+            planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
             amount: string;
             paidAt: string;
             expiredAt: string;
@@ -112,17 +178,51 @@ export declare class SubscriptionsService {
             riskTablePreviewLimit: number;
         };
         planHighlights: string[];
-        plans: {
-            id: string;
-            name: string;
-            priceLabel: string;
-            limits: {
-                groupCount: number;
-                privateDocuments: number;
-                dailyQueries: number;
-                caseSearch: boolean;
+        plans: readonly [{
+            readonly id: "free";
+            readonly name: "免费版";
+            readonly priceLabel: "¥0 / 1天试用";
+            readonly activationLabel: "免费试用";
+            readonly limits: {
+                readonly groupCount: 1;
+                readonly privateDocuments: 2;
+                readonly dailyQueries: 10;
+                readonly caseSearch: false;
             };
-        }[];
+        }, {
+            readonly id: "weekly";
+            readonly name: "周订阅";
+            readonly priceLabel: "¥70 / 周";
+            readonly activationLabel: "模拟开通周订阅";
+            readonly limits: {
+                readonly groupCount: 5;
+                readonly privateDocuments: 50;
+                readonly dailyQueries: 200;
+                readonly caseSearch: true;
+            };
+        }, {
+            readonly id: "monthly";
+            readonly name: "月订阅";
+            readonly priceLabel: "¥200 / 月";
+            readonly activationLabel: "模拟开通月订阅";
+            readonly limits: {
+                readonly groupCount: 20;
+                readonly privateDocuments: 200;
+                readonly dailyQueries: 1000;
+                readonly caseSearch: true;
+            };
+        }, {
+            readonly id: "yearly";
+            readonly name: "年订阅";
+            readonly priceLabel: "¥2000 / 年";
+            readonly activationLabel: "模拟开通年订阅";
+            readonly limits: {
+                readonly groupCount: 100;
+                readonly privateDocuments: 1000;
+                readonly dailyQueries: 5000;
+                readonly caseSearch: true;
+            };
+        }];
         pricing: {
             weekly: string;
             monthly: string;

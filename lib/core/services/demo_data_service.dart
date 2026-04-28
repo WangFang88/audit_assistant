@@ -197,6 +197,7 @@ class DemoDataService {
         '案例查询能力需订阅后开启',
       ],
       trialDays: 1,
+      trialEndsAt: '2026-05-01',
       weeklyPrice: '¥70 / 周',
       monthlyPrice: '¥200 / 月',
       yearlyPrice: '¥2000 / 年',
@@ -207,6 +208,7 @@ class DemoDataService {
       dailyQueriesUsed: 6,
       dailyQueriesLimit: 10,
       latestOrder: null,
+      effectiveOrder: null,
       orderHistory: [],
     );
   }

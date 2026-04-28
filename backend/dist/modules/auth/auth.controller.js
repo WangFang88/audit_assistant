@@ -20,13 +20,13 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    login(dto) {
+    async login(dto) {
         return this.authService.login(dto);
     }
     refresh(dto) {
         return this.authService.refresh(dto);
     }
-    register(dto) {
+    async register(dto) {
         return this.authService.register(dto);
     }
     me() {
@@ -43,7 +43,7 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [auth_service_1.LoginDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
     (0, public_decorator_1.Public)(),
@@ -59,7 +59,7 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [auth_service_1.RegisterDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
     (0, common_1.Get)('me'),

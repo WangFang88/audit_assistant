@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from './database/database.module';
+import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { DocumentsModule } from './modules/documents/documents.module';
@@ -12,6 +13,7 @@ import { TeamAgentsModule } from './modules/team-agents/team-agents.module';
 @Module({
   imports: [
     DatabaseModule,
+    AuditModule,
     AuthModule,
     GroupsModule,
     DocumentsModule,

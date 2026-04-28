@@ -8,15 +8,23 @@ export declare class SubscriptionsController {
     private readonly teamMemberRepository;
     constructor(subscriptionsService: SubscriptionsService, authService: AuthService, teamMemberRepository: Repository<TeamMemberEntity>);
     getOverview(): Promise<{
-        currentPlanId: "free" | "weekly" | "monthly" | "yearly";
+        currentPlanId: string;
         trialEndsAt: string;
         trialDays: number;
-        status: "admin-preview" | "active" | "trial" | "expired";
+        status: "active" | "admin-preview" | "trial" | "expired";
         statusLabel: string;
         latestOrder: {
             id: string;
             planType: "free" | "weekly" | "monthly" | "yearly";
-            planLabel: string;
+            planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
+            amount: string;
+            paidAt: string;
+            expiredAt: string;
+        } | null;
+        effectiveOrder: {
+            id: string;
+            planType: "free" | "weekly" | "monthly" | "yearly";
+            planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
             amount: string;
             paidAt: string;
             expiredAt: string;
@@ -24,7 +32,7 @@ export declare class SubscriptionsController {
         orderHistory: {
             id: string;
             planType: "free" | "weekly" | "monthly" | "yearly";
-            planLabel: string;
+            planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
             amount: string;
             paidAt: string;
             expiredAt: string;
@@ -51,22 +59,65 @@ export declare class SubscriptionsController {
             riskTablePreviewLimit: number;
         };
         planHighlights: string[];
-        plans: {
-            id: string;
-            name: string;
-            priceLabel: string;
-            limits: {
-                groupCount: number;
-                privateDocuments: number;
-                dailyQueries: number;
-                caseSearch: boolean;
+        plans: readonly [{
+            readonly id: "free";
+            readonly name: "免费版";
+            readonly priceLabel: "¥0 / 1天试用";
+            readonly activationLabel: "免费试用";
+            readonly limits: {
+                readonly groupCount: 1;
+                readonly privateDocuments: 2;
+                readonly dailyQueries: 10;
+                readonly caseSearch: false;
             };
-        }[];
+        }, {
+            readonly id: "weekly";
+            readonly name: "周订阅";
+            readonly priceLabel: "¥70 / 周";
+            readonly activationLabel: "模拟开通周订阅";
+            readonly limits: {
+                readonly groupCount: 5;
+                readonly privateDocuments: 50;
+                readonly dailyQueries: 200;
+                readonly caseSearch: true;
+            };
+        }, {
+            readonly id: "monthly";
+            readonly name: "月订阅";
+            readonly priceLabel: "¥200 / 月";
+            readonly activationLabel: "模拟开通月订阅";
+            readonly limits: {
+                readonly groupCount: 20;
+                readonly privateDocuments: 200;
+                readonly dailyQueries: 1000;
+                readonly caseSearch: true;
+            };
+        }, {
+            readonly id: "yearly";
+            readonly name: "年订阅";
+            readonly priceLabel: "¥2000 / 年";
+            readonly activationLabel: "模拟开通年订阅";
+            readonly limits: {
+                readonly groupCount: 100;
+                readonly privateDocuments: 1000;
+                readonly dailyQueries: 5000;
+                readonly caseSearch: true;
+            };
+        }];
         pricing: {
             weekly: string;
             monthly: string;
             yearly: string;
         };
     }>;
-    createOrder(dto: CreateSubscriptionOrderDto): import("../../database/repositories/subscription.repository").SubscriptionOrderSnapshot;
+    createOrder(dto: CreateSubscriptionOrderDto): Promise<{
+        activationMode: string;
+        message: string;
+        id: string;
+        userId: string;
+        planType: "free" | "weekly" | "monthly" | "yearly";
+        amount: string;
+        paidAt: string;
+        expiredAt: string;
+    }>;
 }

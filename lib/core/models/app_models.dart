@@ -530,6 +530,7 @@ class SubscriptionOverview {
     required this.queryUsage,
     required this.planHighlights,
     required this.trialDays,
+    required this.trialEndsAt,
     required this.weeklyPrice,
     required this.monthlyPrice,
     required this.yearlyPrice,
@@ -540,6 +541,7 @@ class SubscriptionOverview {
     required this.dailyQueriesUsed,
     required this.dailyQueriesLimit,
     required this.latestOrder,
+    required this.effectiveOrder,
     required this.orderHistory,
   });
 
@@ -553,6 +555,7 @@ class SubscriptionOverview {
   final String queryUsage;
   final List<String> planHighlights;
   final int trialDays;
+  final String trialEndsAt;
   final String weeklyPrice;
   final String monthlyPrice;
   final String yearlyPrice;
@@ -563,6 +566,7 @@ class SubscriptionOverview {
   final int dailyQueriesUsed;
   final int dailyQueriesLimit;
   final SubscriptionOrderSummary? latestOrder;
+  final SubscriptionOrderSummary? effectiveOrder;
   final List<SubscriptionOrderSummary> orderHistory;
 
   factory SubscriptionOverview.fromJson(Map<String, dynamic> json) {
@@ -592,12 +596,16 @@ class SubscriptionOverview {
           .map((item) => item.toString())
           .toList(),
       trialDays: json['trialDays'] as int? ?? 0,
+      trialEndsAt: json['trialEndsAt'] as String? ?? '',
       weeklyPrice: pricing['weekly'] as String? ?? '--',
       monthlyPrice: pricing['monthly'] as String? ?? '--',
       yearlyPrice: pricing['yearly'] as String? ?? '--',
       latestOrder: (json['latestOrder'] as Map<String, dynamic>?) == null
           ? null
           : SubscriptionOrderSummary.fromJson(json['latestOrder'] as Map<String, dynamic>),
+      effectiveOrder: (json['effectiveOrder'] as Map<String, dynamic>?) == null
+          ? null
+          : SubscriptionOrderSummary.fromJson(json['effectiveOrder'] as Map<String, dynamic>),
       orderHistory: (json['orderHistory'] as List<dynamic>? ?? const [])
           .whereType<Map<String, dynamic>>()
           .map(SubscriptionOrderSummary.fromJson)
@@ -654,6 +662,7 @@ class DashboardOverview {
     required this.roadmap,
     required this.architectureTargets,
     required this.activeTeamAgent,
+    required this.recentAuditEvents,
   });
 
   final AppUser user;
@@ -667,6 +676,7 @@ class DashboardOverview {
   final List<RoadmapItem> roadmap;
   final ArchitectureTargets architectureTargets;
   final TeamAgentSummary? activeTeamAgent;
+  final List<AuditEventSummary> recentAuditEvents;
 
   factory DashboardOverview.fromJson(Map<String, dynamic> json) {
     return DashboardOverview(
@@ -701,6 +711,39 @@ class DashboardOverview {
       activeTeamAgent: (json['activeTeamAgent'] as Map<String, dynamic>?) == null
           ? null
           : TeamAgentSummary.fromJson(json['activeTeamAgent'] as Map<String, dynamic>),
+      recentAuditEvents: (json['recentAuditEvents'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(AuditEventSummary.fromJson)
+          .toList(),
+    );
+  }
+}
+
+class AuditEventSummary {
+  const AuditEventSummary({
+    required this.id,
+    required this.eventType,
+    required this.actorName,
+    required this.summary,
+    required this.status,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String eventType;
+  final String actorName;
+  final String summary;
+  final String status;
+  final String createdAt;
+
+  factory AuditEventSummary.fromJson(Map<String, dynamic> json) {
+    return AuditEventSummary(
+      id: json['id'] as String? ?? '',
+      eventType: json['eventType'] as String? ?? '',
+      actorName: json['actorName'] as String? ?? '',
+      summary: json['summary'] as String? ?? '',
+      status: json['status'] as String? ?? '',
+      createdAt: json['createdAt'] as String? ?? '',
     );
   }
 }

@@ -1,7 +1,9 @@
 import { Repository } from 'typeorm';
 import { AuthUserRepository } from '../../database/repositories/auth-user.repository';
 import { UserEntity } from '../../database/entities/user.entity';
+import { AuditService } from '../audit/audit.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 declare class LoginDto {
     phone: string;
     password: string;
@@ -32,7 +34,9 @@ export declare class AuthService {
     private readonly localStateService;
     private readonly authUserRepository;
     private readonly userRepository;
-    constructor(localStateService: LocalStateService, authUserRepository: AuthUserRepository, userRepository: Repository<UserEntity>);
+    private readonly subscriptionsService;
+    private readonly auditService;
+    constructor(localStateService: LocalStateService, authUserRepository: AuthUserRepository, userRepository: Repository<UserEntity>, subscriptionsService: SubscriptionsService, auditService: AuditService);
     private readonly demoUsers;
     private registeredUsers;
     private currentUser;
@@ -52,16 +56,17 @@ export declare class AuthService {
     private setCurrentUser;
     private buildAuthResponse;
     private createUserName;
-    login(dto: LoginDto): {
+    private buildTrialEndsAt;
+    login(dto: LoginDto): Promise<{
         accessToken: string;
         refreshToken: string;
         user: DemoUser;
-    };
-    register(dto: RegisterDto): {
+    }>;
+    register(dto: RegisterDto): Promise<{
         accessToken: string;
         refreshToken: string;
         user: DemoUser;
-    };
+    }>;
     refresh(dto: RefreshTokenDto): {
         accessToken: string;
         refreshToken: string;

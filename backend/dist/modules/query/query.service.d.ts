@@ -1,3 +1,4 @@
+import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { DocumentsService } from '../documents/documents.service';
 import { EmbeddingService } from '../documents/embedding.service';
@@ -29,8 +30,11 @@ export declare class QueryService {
     private readonly subscriptionsService;
     private readonly teamAgentsService;
     private readonly qwenService;
-    constructor(authService: AuthService, documentsService: DocumentsService, embeddingService: EmbeddingService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, teamAgentsService: TeamAgentsService, qwenService: QwenService);
-    search(dto: QueryRequestDto): Promise<{
+    private readonly auditService;
+    constructor(authService: AuthService, documentsService: DocumentsService, embeddingService: EmbeddingService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, teamAgentsService: TeamAgentsService, qwenService: QwenService, auditService: AuditService);
+    search(dto: QueryRequestDto, options?: {
+        skipAccounting?: boolean;
+    }): Promise<{
         question: string;
         agentMode: boolean;
         agent: {

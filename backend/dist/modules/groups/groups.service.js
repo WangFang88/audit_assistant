@@ -20,6 +20,7 @@ const typeorm_2 = require("typeorm");
 const team_member_entity_1 = require("../../database/entities/team-member.entity");
 const team_entity_1 = require("../../database/entities/team.entity");
 const user_entity_1 = require("../../database/entities/user.entity");
+const audit_service_1 = require("../audit/audit.service");
 const auth_service_1 = require("../auth/auth.service");
 const chat_service_1 = require("../chat/chat.service");
 const documents_service_1 = require("../documents/documents.service");
@@ -64,9 +65,10 @@ __decorate([
     __metadata("design:type", String)
 ], UpdateMemberRoleDto.prototype, "role", void 0);
 let GroupsService = class GroupsService {
-    constructor(authService, subscriptionsService, teamRepository, teamMemberRepository, userRepository, documentsService, chatService, teamAgentsService) {
+    constructor(authService, subscriptionsService, auditService, teamRepository, teamMemberRepository, userRepository, documentsService, chatService, teamAgentsService) {
         this.authService = authService;
         this.subscriptionsService = subscriptionsService;
+        this.auditService = auditService;
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.userRepository = userRepository;
@@ -196,6 +198,16 @@ let GroupsService = class GroupsService {
         await this.chatService.syncGroupConversationParticipants(groupId, [currentUser.id]);
         await this.teamAgentsService.createForGroup(group, conversation.id);
         this.subscriptionsService.syncUsage({ groups: existingGroups.length + 1 });
+        await this.auditService.recordEvent({
+            eventType: 'group.create',
+            actorUserId: currentUser.id,
+            actorName: currentUser.name,
+            targetType: 'group',
+            targetId: group.id,
+            groupId: group.id,
+            summary: '创建了项目组',
+            detail: { groupName: group.name, organizationName: group.organizationName },
+        });
         return group;
     }
     async listMembers(groupId) {
@@ -245,7 +257,18 @@ let GroupsService = class GroupsService {
         }
         await this.teamMemberRepository.save(this.teamMemberRepository.create({ teamId: groupId, userId: targetUser.id, role: dto.role }));
         await this.chatService.syncGroupConversationParticipants(groupId, [targetUser.id]);
+        const currentUser = this.getCurrentUser();
         const members = await this.teamMemberRepository.findBy({ teamId: groupId });
+        await this.auditService.recordEvent({
+            eventType: 'group.invite_member',
+            actorUserId: currentUser.id,
+            actorName: currentUser.name,
+            targetType: 'group-member',
+            targetId: targetUser.id,
+            groupId,
+            summary: '邀请了项目组成员',
+            detail: { phone: dto.phone, role: dto.role, invitedUserId: targetUser.id },
+        });
         return {
             groupId,
             phone: dto.phone,
@@ -270,6 +293,16 @@ let GroupsService = class GroupsService {
         await this.teamMemberRepository.update({ teamId: groupId, userId: group.ownerUserId }, { role: 'member' });
         await this.teamMemberRepository.update({ teamId: groupId, userId: dto.targetUserId }, { role: 'leader' });
         await this.teamRepository.update({ id: groupId }, { ownerUserId: dto.targetUserId });
+        await this.auditService.recordEvent({
+            eventType: 'group.transfer_leader',
+            actorUserId: currentUser.id,
+            actorName: currentUser.name,
+            targetType: 'group',
+            targetId: groupId,
+            groupId,
+            summary: '移交了项目组组长权限',
+            detail: { previousLeaderId, newLeaderId: dto.targetUserId, groupName: group.name },
+        });
         return {
             groupId,
             groupName: group.name,
@@ -305,6 +338,16 @@ let GroupsService = class GroupsService {
         await this.teamMemberRepository.delete({ id: Number(memberId) });
         await this.chatService.removeUserFromGroupConversations(groupId, member.userId);
         const memberCount = await this.teamMemberRepository.countBy({ teamId: groupId });
+        await this.auditService.recordEvent({
+            eventType: isSelfExit ? 'group.quit' : 'group.remove_member',
+            actorUserId: currentUser.id,
+            actorName: currentUser.name,
+            targetType: 'group-member',
+            targetId: member.userId,
+            groupId,
+            summary: isSelfExit ? '退出了项目组' : '清退了项目组成员',
+            detail: { removedUserId: member.userId, removedRole: member.role, groupName: group.name },
+        });
         return {
             groupId,
             groupName: group.name,
@@ -331,6 +374,16 @@ let GroupsService = class GroupsService {
         await this.teamRepository.delete({ id: groupId });
         const remainingGroups = await this.listGroups();
         this.subscriptionsService.syncUsage({ groups: remainingGroups.length });
+        await this.auditService.recordEvent({
+            eventType: 'group.delete',
+            actorUserId: currentUser.id,
+            actorName: currentUser.name,
+            targetType: 'group',
+            targetId: group.id,
+            groupId: group.id,
+            summary: '删除了项目组',
+            detail: { groupName: group.name, remainingGroups: remainingGroups.length },
+        });
         return {
             deletedGroupId: group.id,
             deletedGroupName: group.name,
@@ -342,14 +395,15 @@ let GroupsService = class GroupsService {
 exports.GroupsService = GroupsService;
 exports.GroupsService = GroupsService = __decorate([
     (0, common_1.Injectable)(),
-    __param(2, (0, typeorm_1.InjectRepository)(team_entity_1.TeamEntity)),
-    __param(3, (0, typeorm_1.InjectRepository)(team_member_entity_1.TeamMemberEntity)),
-    __param(4, (0, typeorm_1.InjectRepository)(user_entity_1.UserEntity)),
-    __param(5, (0, common_1.Inject)((0, common_1.forwardRef)(() => documents_service_1.DocumentsService))),
-    __param(6, (0, common_1.Inject)((0, common_1.forwardRef)(() => chat_service_1.ChatService))),
-    __param(7, (0, common_1.Inject)((0, common_1.forwardRef)(() => team_agents_service_1.TeamAgentsService))),
+    __param(3, (0, typeorm_1.InjectRepository)(team_entity_1.TeamEntity)),
+    __param(4, (0, typeorm_1.InjectRepository)(team_member_entity_1.TeamMemberEntity)),
+    __param(5, (0, typeorm_1.InjectRepository)(user_entity_1.UserEntity)),
+    __param(6, (0, common_1.Inject)((0, common_1.forwardRef)(() => documents_service_1.DocumentsService))),
+    __param(7, (0, common_1.Inject)((0, common_1.forwardRef)(() => chat_service_1.ChatService))),
+    __param(8, (0, common_1.Inject)((0, common_1.forwardRef)(() => team_agents_service_1.TeamAgentsService))),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
         subscriptions_service_1.SubscriptionsService,
+        audit_service_1.AuditService,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

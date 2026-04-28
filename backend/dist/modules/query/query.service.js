@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.QueryRequestDto = exports.QueryService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const audit_service_1 = require("../audit/audit.service");
 const auth_service_1 = require("../auth/auth.service");
 const documents_service_1 = require("../documents/documents.service");
 const embedding_service_1 = require("../documents/embedding.service");
@@ -38,7 +39,7 @@ __decorate([
     __metadata("design:type", String)
 ], QueryRequestDto.prototype, "agentId", void 0);
 let QueryService = class QueryService {
-    constructor(authService, documentsService, embeddingService, groupsService, subscriptionsService, teamAgentsService, qwenService) {
+    constructor(authService, documentsService, embeddingService, groupsService, subscriptionsService, teamAgentsService, qwenService, auditService) {
         this.authService = authService;
         this.documentsService = documentsService;
         this.embeddingService = embeddingService;
@@ -46,8 +47,9 @@ let QueryService = class QueryService {
         this.subscriptionsService = subscriptionsService;
         this.teamAgentsService = teamAgentsService;
         this.qwenService = qwenService;
+        this.auditService = auditService;
     }
-    async search(dto) {
+    async search(dto, options) {
         if (this.authService.isAdmin() && (dto.groupId != null || dto.agentId != null)) {
             throw new common_1.ForbiddenException('\u7ba1\u7406\u5458\u4ec5\u53ef\u68c0\u7d22\u516c\u5171\u5e93\uff0c\u4e0d\u80fd\u6309\u9879\u76ee\u7ec4\u8303\u56f4\u68c0\u7d22');
         }
@@ -56,7 +58,9 @@ let QueryService = class QueryService {
             await this.groupsService.assertCanAccessGroup(resolvedGroupId);
         }
         const usage = this.subscriptionsService.getUsage();
-        this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
+        if (!options?.skipAccounting) {
+            this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
+        }
         const group = resolvedGroupId ? await this.groupsService.getGroupById(resolvedGroupId) : null;
         const teamAgent = resolvedGroupId ? await this.teamAgentsService.getVisibleAgentByGroupId(resolvedGroupId) : null;
         const readyChunks = await this.documentsService.getReadyChunks(resolvedGroupId);
@@ -112,14 +116,16 @@ let QueryService = class QueryService {
                 : '\u5173\u952e\u8bcd + \u8bed\u4e49\u878d\u5408';
         const publicHits = candidates.filter((c) => c.libraryType === 'public').length;
         const privateHits = candidates.filter((c) => c.libraryType === 'private').length;
-        this.subscriptionsService.recordQueryLog({
-            id: 'query-log-' + Date.now(),
-            userId: this.authService.me().id,
-            teamId: resolvedGroupId ?? null,
-            queryText: dto.question,
-            queriedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
-            consumedQuota: 1,
-        });
+        if (!options?.skipAccounting) {
+            this.subscriptionsService.recordQueryLog({
+                id: 'query-log-' + Date.now(),
+                userId: this.authService.me().id,
+                teamId: resolvedGroupId ?? null,
+                queryText: dto.question,
+                queriedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+                consumedQuota: 1,
+            });
+        }
         const fallbackAnswer = candidates.length === 0
             ? '\u5f53\u524d\u8303\u56f4\u5185\u5c1a\u672a\u547d\u4e2d\u53ef\u7528\u6761\u6b3e\uff0c\u8bf7\u5c1d\u8bd5\u8865\u5145\u66f4\u660e\u786e\u7684\u5173\u952e\u8bcd\u3001\u6761\u6b3e\u53f7\u6216\u5207\u6362\u9879\u76ee\u7ec4\u540e\u91cd\u8bd5\u3002'
             : null;
@@ -127,6 +133,23 @@ let QueryService = class QueryService {
             ? await this.qwenService.generate(dto.question, candidates.map((c) => c.matchedChunk))
             : null;
         const answer = fallbackAnswer ?? qwenAnswer ?? '\u68c0\u7d22\u5b8c\u6210\uff0c\u8bf7\u67e5\u770b\u4e0b\u65b9\u5f15\u7528\u6761\u6b3e\u3002';
+        if (!options?.skipAccounting) {
+            const user = this.authService.me();
+            await this.auditService.recordEvent({
+                eventType: 'query.search',
+                actorUserId: user.id,
+                actorName: user.name,
+                targetType: 'query',
+                groupId: resolvedGroupId ?? null,
+                summary: resolvedGroupId == null ? '发起了公共库制度检索' : '发起了项目组制度检索',
+                detail: {
+                    question: dto.question,
+                    agentId: dto.agentId ?? null,
+                    returnedCitations: candidates.length,
+                    queryMode,
+                },
+            });
+        }
         return {
             question: dto.question,
             agentMode: dto.agentId != null,
@@ -187,6 +210,7 @@ exports.QueryService = QueryService = __decorate([
         groups_service_1.GroupsService,
         subscriptions_service_1.SubscriptionsService,
         team_agents_service_1.TeamAgentsService,
-        qwen_service_1.QwenService])
+        qwen_service_1.QwenService,
+        audit_service_1.AuditService])
 ], QueryService);
 //# sourceMappingURL=query.service.js.map

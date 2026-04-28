@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { TeamMemberEntity } from '../../database/entities/team-member.entity';
 import { TeamEntity } from '../../database/entities/team.entity';
 import { UserEntity } from '../../database/entities/user.entity';
+import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
 import { DocumentsService } from '../documents/documents.service';
@@ -63,6 +64,7 @@ export class GroupsService {
   constructor(
     private readonly authService: AuthService,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly auditService: AuditService,
     @InjectRepository(TeamEntity)
     private readonly teamRepository: Repository<TeamEntity>,
     @InjectRepository(TeamMemberEntity)
@@ -230,6 +232,16 @@ export class GroupsService {
     await this.chatService.syncGroupConversationParticipants(groupId, [currentUser.id]);
     await this.teamAgentsService.createForGroup(group, conversation.id);
     this.subscriptionsService.syncUsage({ groups: existingGroups.length + 1 });
+    await this.auditService.recordEvent({
+      eventType: 'group.create',
+      actorUserId: currentUser.id,
+      actorName: currentUser.name,
+      targetType: 'group',
+      targetId: group.id,
+      groupId: group.id,
+      summary: '创建了项目组',
+      detail: { groupName: group.name, organizationName: group.organizationName },
+    });
 
     return group;
   }
@@ -292,7 +304,18 @@ export class GroupsService {
     );
     await this.chatService.syncGroupConversationParticipants(groupId, [targetUser.id]);
 
+    const currentUser = this.getCurrentUser();
     const members = await this.teamMemberRepository.findBy({ teamId: groupId });
+    await this.auditService.recordEvent({
+      eventType: 'group.invite_member',
+      actorUserId: currentUser.id,
+      actorName: currentUser.name,
+      targetType: 'group-member',
+      targetId: targetUser.id,
+      groupId,
+      summary: '邀请了项目组成员',
+      detail: { phone: dto.phone, role: dto.role, invitedUserId: targetUser.id },
+    });
     return {
       groupId,
       phone: dto.phone,
@@ -322,6 +345,16 @@ export class GroupsService {
     await this.teamMemberRepository.update({ teamId: groupId, userId: group.ownerUserId }, { role: 'member' });
     await this.teamMemberRepository.update({ teamId: groupId, userId: dto.targetUserId }, { role: 'leader' });
     await this.teamRepository.update({ id: groupId }, { ownerUserId: dto.targetUserId });
+    await this.auditService.recordEvent({
+      eventType: 'group.transfer_leader',
+      actorUserId: currentUser.id,
+      actorName: currentUser.name,
+      targetType: 'group',
+      targetId: groupId,
+      groupId,
+      summary: '移交了项目组组长权限',
+      detail: { previousLeaderId, newLeaderId: dto.targetUserId, groupName: group.name },
+    });
 
     return {
       groupId,
@@ -361,6 +394,16 @@ export class GroupsService {
     await this.teamMemberRepository.delete({ id: Number(memberId) });
     await this.chatService.removeUserFromGroupConversations(groupId, member.userId);
     const memberCount = await this.teamMemberRepository.countBy({ teamId: groupId });
+    await this.auditService.recordEvent({
+      eventType: isSelfExit ? 'group.quit' : 'group.remove_member',
+      actorUserId: currentUser.id,
+      actorName: currentUser.name,
+      targetType: 'group-member',
+      targetId: member.userId,
+      groupId,
+      summary: isSelfExit ? '退出了项目组' : '清退了项目组成员',
+      detail: { removedUserId: member.userId, removedRole: member.role, groupName: group.name },
+    });
 
     return {
       groupId,
@@ -393,6 +436,16 @@ export class GroupsService {
 
     const remainingGroups = await this.listGroups();
     this.subscriptionsService.syncUsage({ groups: remainingGroups.length });
+    await this.auditService.recordEvent({
+      eventType: 'group.delete',
+      actorUserId: currentUser.id,
+      actorName: currentUser.name,
+      targetType: 'group',
+      targetId: group.id,
+      groupId: group.id,
+      summary: '删除了项目组',
+      detail: { groupName: group.name, remainingGroups: remainingGroups.length },
+    });
 
     return {
       deletedGroupId: group.id,

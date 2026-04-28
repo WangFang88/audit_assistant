@@ -5,6 +5,7 @@ import { TeamEntity } from '../../database/entities/team.entity';
 import { UserEntity } from '../../database/entities/user.entity';
 import { DatabaseSupportModule } from '../../database/database-support.module';
 import { AuthModule } from '../auth/auth.module';
+import { AuditModule } from '../audit/audit.module';
 import { ChatModule } from '../chat/chat.module';
 import { DocumentsModule } from '../documents/documents.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
@@ -17,6 +18,7 @@ import { GroupsService } from './groups.service';
     TypeOrmModule.forFeature([TeamEntity, TeamMemberEntity, UserEntity]),
     DatabaseSupportModule,
     AuthModule,
+    AuditModule,
     SubscriptionsModule,
     forwardRef(() => DocumentsModule),
     forwardRef(() => ChatModule),

@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OverviewService = void 0;
 const common_1 = require("@nestjs/common");
+const audit_service_1 = require("../audit/audit.service");
 const auth_service_1 = require("../auth/auth.service");
 const chat_service_1 = require("../chat/chat.service");
 const documents_service_1 = require("../documents/documents.service");
@@ -19,7 +20,7 @@ const query_service_1 = require("../query/query.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 const team_agents_service_1 = require("../team-agents/team-agents.service");
 let OverviewService = class OverviewService {
-    constructor(authService, groupsService, documentsService, queryService, chatService, subscriptionsService, teamAgentsService) {
+    constructor(authService, groupsService, documentsService, queryService, chatService, subscriptionsService, teamAgentsService, auditService) {
         this.authService = authService;
         this.groupsService = groupsService;
         this.documentsService = documentsService;
@@ -27,6 +28,7 @@ let OverviewService = class OverviewService {
         this.chatService = chatService;
         this.subscriptionsService = subscriptionsService;
         this.teamAgentsService = teamAgentsService;
+        this.auditService = auditService;
     }
     async getDashboard(groupId) {
         const user = this.authService.me();
@@ -41,7 +43,7 @@ let OverviewService = class OverviewService {
                 question: '请检索与专项资金使用和采购审批相关的制度依据。',
                 groupId: effectiveGroupId,
                 agentId: activeTeamAgent?.id,
-            });
+            }, { skipAccounting: true });
         }
         catch (error) {
             if (!(error instanceof common_1.BadRequestException)) {
@@ -142,6 +144,7 @@ let OverviewService = class OverviewService {
             extractJobs: await this.documentsService.listExtractionJobs(effectiveGroupId),
             libraryScope: await this.documentsService.getLibraryScopeSummary(effectiveGroupId),
             subscription: this.subscriptionsService.getOverview(visibleGroups.length, await this.documentsService.countPrivateDocuments(visibleGroups.map(g => g.id))),
+            recentAuditEvents: await this.auditService.listRecentEvents(),
             conversations: isAdmin ? [] : await this.chatService.listConversations(effectiveGroupId),
             activeTeamAgent: activeTeamAgent == null
                 ? null
@@ -166,6 +169,7 @@ exports.OverviewService = OverviewService = __decorate([
         query_service_1.QueryService,
         chat_service_1.ChatService,
         subscriptions_service_1.SubscriptionsService,
-        team_agents_service_1.TeamAgentsService])
+        team_agents_service_1.TeamAgentsService,
+        audit_service_1.AuditService])
 ], OverviewService);
 //# sourceMappingURL=overview.service.js.map

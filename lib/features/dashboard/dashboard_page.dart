@@ -1133,7 +1133,7 @@ class _DashboardPageState extends State<DashboardPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('订阅已更新。')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('模拟订阅已开通。')));
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -1147,7 +1147,7 @@ class _DashboardPageState extends State<DashboardPage> {
         return;
       }
       setState(() {
-        _error = '订阅更新失败。';
+        _error = '模拟订阅开通失败。';
       });
     } finally {
       if (mounted) {
@@ -1963,7 +1963,7 @@ class _DashboardPageState extends State<DashboardPage> {
           Text(
             _isAdmin
                 ? '当前角色：管理员 · 当前视角：公共库管理'
-                : '当前角色：${user.role} · 试用到期：${user.trialEndsAt} · 全功能试用 ${subscription.trialDays} 天',
+                : '当前角色：${user.role} · 试用到期：${subscription.trialEndsAt} · 全功能试用 ${subscription.trialDays} 天',
           ),
           const SizedBox(height: 16),
           Row(
@@ -3201,6 +3201,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildAccount(AppUser user, SubscriptionOverview subscription) {
+    final recentAuditEvents = _overview?.recentAuditEvents ?? const <AuditEventSummary>[];
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
@@ -3273,26 +3274,28 @@ class _DashboardPageState extends State<DashboardPage> {
                     Text(subscription.documentUsage),
                     const SizedBox(height: 8),
                     Text(subscription.queryUsage),
+                    if (subscription.effectiveOrder != null) ...[
+                      const SizedBox(height: 8),
+                      Text('当前生效：${subscription.effectiveOrder!.planLabel}'),
+                      const SizedBox(height: 8),
+                      Text('模拟开通时间：${subscription.effectiveOrder!.paidAt}'),
+                      const SizedBox(height: 8),
+                      Text('权益到期时间：${subscription.effectiveOrder!.expiredAt}'),
+                    ],
                     if (subscription.latestOrder != null) ...[
                       const SizedBox(height: 8),
-                      Text('最近订单：${subscription.latestOrder!.id}'),
+                      Text('最近记录：${subscription.latestOrder!.id}'),
                       const SizedBox(height: 8),
-                      Text('套餐类型：${subscription.latestOrder!.planLabel}'),
-                      const SizedBox(height: 8),
-                      Text('支付金额：¥${subscription.latestOrder!.amount}'),
-                      const SizedBox(height: 8),
-                      Text('支付时间：${subscription.latestOrder!.paidAt}'),
-                      const SizedBox(height: 8),
-                      Text('到期时间：${subscription.latestOrder!.expiredAt}'),
+                      Text('最近套餐：${subscription.latestOrder!.planLabel}'),
                     ],
                     if (subscription.orderHistory.isNotEmpty) ...[
                       const SizedBox(height: 16),
-                      Text('订单历史', style: Theme.of(context).textTheme.titleMedium),
+                      Text('模拟开通记录', style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 8),
                       ...subscription.orderHistory.map(
                         (order) => Padding(
                           padding: const EdgeInsets.only(bottom: 8),
-                          child: Text('${order.planLabel} · ¥${order.amount} · ${order.paidAt} → ${order.expiredAt}'),
+                          child: Text('${order.planLabel} · 模拟开通金额 ¥${order.amount} · ${order.paidAt} → ${order.expiredAt}'),
                         ),
                       ),
                     ],
@@ -3305,20 +3308,39 @@ class _DashboardPageState extends State<DashboardPage> {
                           onPressed: _subscribing || _isCurrentPlan('weekly') ? null : () => _subscribe('weekly'),
                           child: _subscribing && !_isCurrentPlan('monthly') && !_isCurrentPlan('yearly')
                               ? const Text('处理中...')
-                              : Text(_isCurrentPlan('weekly') ? '当前为周订阅' : '开通周订阅'),
+                              : Text(_isCurrentPlan('weekly') ? '当前为周订阅' : '模拟开通周订阅'),
                         ),
                         FilledButton.tonal(
                           onPressed: _subscribing || _isCurrentPlan('monthly') ? null : () => _subscribe('monthly'),
-                          child: Text(_isCurrentPlan('monthly') ? '当前为月订阅' : '开通月订阅'),
+                          child: Text(_isCurrentPlan('monthly') ? '当前为月订阅' : '模拟开通月订阅'),
                         ),
                         FilledButton(
                           onPressed: _subscribing || _isCurrentPlan('yearly') ? null : () => _subscribe('yearly'),
-                          child: Text(_isCurrentPlan('yearly') ? '当前为年订阅' : '开通年订阅'),
+                          child: Text(_isCurrentPlan('yearly') ? '当前为年订阅' : '模拟开通年订阅'),
                         ),
                       ],
                     ),
                   ],
           ),
+        ),
+        const SizedBox(height: 16),
+        SectionCard(
+          title: '最近操作',
+          child: recentAuditEvents.isEmpty
+              ? const Text('暂无最近操作记录。')
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: recentAuditEvents
+                      .map(
+                        (event) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Text(
+                            '${event.createdAt} · ${event.actorName} · ${event.summary}${event.status == 'failed' ? '（失败）' : ''}',
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
         ),
       ],
     );

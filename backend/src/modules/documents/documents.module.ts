@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DocumentChunkEntity } from '../../database/entities/document-chunk.entity';
 import { DocumentEntity } from '../../database/entities/document.entity';
 import { DocumentExtractionJobEntity } from '../../database/entities/document-extraction-job.entity';
+import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { GroupsModule } from '../groups/groups.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
@@ -13,7 +14,7 @@ import { TextExtractionService } from './text-extraction.service';
 import { EmbeddingService } from './embedding.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([DocumentEntity, DocumentChunkEntity, DocumentExtractionJobEntity]), AuthModule, forwardRef(() => GroupsModule), SubscriptionsModule],
+  imports: [TypeOrmModule.forFeature([DocumentEntity, DocumentChunkEntity, DocumentExtractionJobEntity]), AuditModule, AuthModule, forwardRef(() => GroupsModule), SubscriptionsModule],
   controllers: [DocumentsController],
   providers: [DocumentsService, FileStorageService, TextExtractionService, EmbeddingService],
   exports: [DocumentsService, EmbeddingService, FileStorageService],

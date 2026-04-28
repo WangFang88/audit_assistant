@@ -20,6 +20,7 @@ const document_chunk_entity_1 = require("../../database/entities/document-chunk.
 const document_entity_1 = require("../../database/entities/document.entity");
 const document_extraction_job_entity_1 = require("../../database/entities/document-extraction-job.entity");
 const class_validator_1 = require("class-validator");
+const audit_service_1 = require("../audit/audit.service");
 const auth_service_1 = require("../auth/auth.service");
 const groups_service_1 = require("../groups/groups.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
@@ -50,10 +51,11 @@ __decorate([
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "groupId", void 0);
 let DocumentsService = class DocumentsService {
-    constructor(persistedDocumentRepository, persistedChunkRepository, persistedExtractionJobRepository, authService, groupsService, subscriptionsService, fileStorageService, textExtractionService, embeddingService) {
+    constructor(persistedDocumentRepository, persistedChunkRepository, persistedExtractionJobRepository, auditService, authService, groupsService, subscriptionsService, fileStorageService, textExtractionService, embeddingService) {
         this.persistedDocumentRepository = persistedDocumentRepository;
         this.persistedChunkRepository = persistedChunkRepository;
         this.persistedExtractionJobRepository = persistedExtractionJobRepository;
+        this.auditService = auditService;
         this.authService = authService;
         this.groupsService = groupsService;
         this.subscriptionsService = subscriptionsService;
@@ -391,6 +393,13 @@ let DocumentsService = class DocumentsService {
             return 0;
         return this.persistedDocumentRepository.countBy({ libraryType: 'private', teamId: (0, typeorm_2.In)(groupIds), deletedAt: (0, typeorm_2.IsNull)() });
     }
+    async countVisiblePrivateDocuments() {
+        if (this.authService.isAdmin()) {
+            return 0;
+        }
+        const groups = await this.groupsService.listGroups();
+        return this.countPrivateDocuments(groups.map((group) => group.id));
+    }
     async listExtractionJobs(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
         if (!this.authService.isAdmin() && groupId != null) {
@@ -707,16 +716,15 @@ let DocumentsService = class DocumentsService {
                 throw new common_1.BadRequestException('私有库导入必须指定项目组');
             }
             await this.groupsService.assertIsLeader(dto.groupId);
-            const currentPrivateDocuments = await this.persistedDocumentRepository.count({
-                where: { libraryType: 'private', deletedAt: (0, typeorm_2.IsNull)() },
-            });
+            const currentPrivateDocuments = await this.countVisiblePrivateDocuments();
             this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
         }
         const documentId = `doc-${Date.now()}`;
         const storedFile = this.saveUploadedFile(file, dto.libraryType, documentId, dto.groupId);
         const classification = this.classifyUploadedFile(storedFile.originalName);
         const hasRawText = dto.rawText != null && dto.rawText.trim().length > 0;
-        const uploadedBy = this.authService.me().id;
+        const user = this.authService.me();
+        const uploadedBy = user.id;
         const document = {
             id: documentId,
             title: dto.title,
@@ -761,11 +769,24 @@ let DocumentsService = class DocumentsService {
             }));
         }
         if (document.libraryType === 'private') {
-            const privateDocumentCount = await this.persistedDocumentRepository.count({
-                where: { libraryType: 'private', deletedAt: (0, typeorm_2.IsNull)() },
-            });
+            const privateDocumentCount = await this.countVisiblePrivateDocuments();
             this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
         }
+        await this.auditService.recordEvent({
+            eventType: 'document.import',
+            actorUserId: user.id,
+            actorName: user.name,
+            targetType: 'document',
+            targetId: document.id,
+            groupId: document.groupId,
+            summary: document.libraryType === 'public' ? '导入了公共库文档' : '导入了项目组私有文档',
+            detail: {
+                title: document.title,
+                libraryType: document.libraryType,
+                fileName: document.fileName,
+                chunkCount: document.chunkCount,
+            },
+        });
         return {
             ...document,
             notes: '导入后会执行文字抽取、多模态拆解、结构化切分与向量化入库，查询阶段不直接扫描原文件。',
@@ -799,9 +820,7 @@ let DocumentsService = class DocumentsService {
         await this.persistedChunkRepository.delete(documentIds.map((documentId) => ({ documentId })));
         await this.persistedExtractionJobRepository.delete(documentIds.map((documentId) => ({ documentId })));
         await this.persistedDocumentRepository.delete(documentIds.map((id) => ({ id })));
-        const privateDocumentCount = await this.persistedDocumentRepository.count({
-            where: { libraryType: 'private', deletedAt: (0, typeorm_2.IsNull)() },
-        });
+        const privateDocumentCount = await this.countVisiblePrivateDocuments();
         this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
     }
     async getLibraryScopeSummary(groupId) {
@@ -825,10 +844,11 @@ exports.DocumentsService = DocumentsService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(document_entity_1.DocumentEntity)),
     __param(1, (0, typeorm_1.InjectRepository)(document_chunk_entity_1.DocumentChunkEntity)),
     __param(2, (0, typeorm_1.InjectRepository)(document_extraction_job_entity_1.DocumentExtractionJobEntity)),
-    __param(4, (0, common_1.Inject)((0, common_1.forwardRef)(() => groups_service_1.GroupsService))),
+    __param(5, (0, common_1.Inject)((0, common_1.forwardRef)(() => groups_service_1.GroupsService))),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
+        audit_service_1.AuditService,
         auth_service_1.AuthService,
         groups_service_1.GroupsService,
         subscriptions_service_1.SubscriptionsService,

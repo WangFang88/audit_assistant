@@ -12,6 +12,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const document_chunk_entity_1 = require("../../database/entities/document-chunk.entity");
 const document_entity_1 = require("../../database/entities/document.entity");
 const document_extraction_job_entity_1 = require("../../database/entities/document-extraction-job.entity");
+const audit_module_1 = require("../audit/audit.module");
 const auth_module_1 = require("../auth/auth.module");
 const groups_module_1 = require("../groups/groups.module");
 const subscriptions_module_1 = require("../subscriptions/subscriptions.module");
@@ -25,7 +26,7 @@ let DocumentsModule = class DocumentsModule {
 exports.DocumentsModule = DocumentsModule;
 exports.DocumentsModule = DocumentsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([document_entity_1.DocumentEntity, document_chunk_entity_1.DocumentChunkEntity, document_extraction_job_entity_1.DocumentExtractionJobEntity]), auth_module_1.AuthModule, (0, common_1.forwardRef)(() => groups_module_1.GroupsModule), subscriptions_module_1.SubscriptionsModule],
+        imports: [typeorm_1.TypeOrmModule.forFeature([document_entity_1.DocumentEntity, document_chunk_entity_1.DocumentChunkEntity, document_extraction_job_entity_1.DocumentExtractionJobEntity]), audit_module_1.AuditModule, auth_module_1.AuthModule, (0, common_1.forwardRef)(() => groups_module_1.GroupsModule), subscriptions_module_1.SubscriptionsModule],
         controllers: [documents_controller_1.DocumentsController],
         providers: [documents_service_1.DocumentsService, file_storage_service_1.FileStorageService, text_extraction_service_1.TextExtractionService, embedding_service_1.EmbeddingService],
         exports: [documents_service_1.DocumentsService, embedding_service_1.EmbeddingService, file_storage_service_1.FileStorageService],

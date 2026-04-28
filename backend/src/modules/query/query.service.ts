@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { IsOptional, IsString, MinLength } from 'class-validator';
+import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { DocumentsService } from '../documents/documents.service';
 import { EmbeddingService } from '../documents/embedding.service';
@@ -44,9 +45,10 @@ export class QueryService {
     private readonly subscriptionsService: SubscriptionsService,
     private readonly teamAgentsService: TeamAgentsService,
     private readonly qwenService: QwenService,
+    private readonly auditService: AuditService,
   ) {}
 
-  async search(dto: QueryRequestDto) {
+  async search(dto: QueryRequestDto, options?: { skipAccounting?: boolean }) {
     if (this.authService.isAdmin() && (dto.groupId != null || dto.agentId != null)) {
       throw new ForbiddenException('\u7ba1\u7406\u5458\u4ec5\u53ef\u68c0\u7d22\u516c\u5171\u5e93\uff0c\u4e0d\u80fd\u6309\u9879\u76ee\u7ec4\u8303\u56f4\u68c0\u7d22');
     }
@@ -57,7 +59,9 @@ export class QueryService {
     }
 
     const usage = this.subscriptionsService.getUsage();
-    this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
+    if (!options?.skipAccounting) {
+      this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
+    }
 
     const group = resolvedGroupId ? await this.groupsService.getGroupById(resolvedGroupId) : null;
     const teamAgent = resolvedGroupId ? await this.teamAgentsService.getVisibleAgentByGroupId(resolvedGroupId) : null;
@@ -125,14 +129,16 @@ export class QueryService {
     const publicHits = candidates.filter((c) => c.libraryType === 'public').length;
     const privateHits = candidates.filter((c) => c.libraryType === 'private').length;
 
-    this.subscriptionsService.recordQueryLog({
-      id: 'query-log-' + Date.now(),
-      userId: this.authService.me().id,
-      teamId: resolvedGroupId ?? null,
-      queryText: dto.question,
-      queriedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
-      consumedQuota: 1,
-    });
+    if (!options?.skipAccounting) {
+      this.subscriptionsService.recordQueryLog({
+        id: 'query-log-' + Date.now(),
+        userId: this.authService.me().id,
+        teamId: resolvedGroupId ?? null,
+        queryText: dto.question,
+        queriedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        consumedQuota: 1,
+      });
+    }
 
     const fallbackAnswer =
       candidates.length === 0
@@ -144,6 +150,24 @@ export class QueryService {
       : null;
 
     const answer = fallbackAnswer ?? qwenAnswer ?? '\u68c0\u7d22\u5b8c\u6210\uff0c\u8bf7\u67e5\u770b\u4e0b\u65b9\u5f15\u7528\u6761\u6b3e\u3002';
+
+    if (!options?.skipAccounting) {
+      const user = this.authService.me();
+      await this.auditService.recordEvent({
+        eventType: 'query.search',
+        actorUserId: user.id,
+        actorName: user.name,
+        targetType: 'query',
+        groupId: resolvedGroupId ?? null,
+        summary: resolvedGroupId == null ? '发起了公共库制度检索' : '发起了项目组制度检索',
+        detail: {
+          question: dto.question,
+          agentId: dto.agentId ?? null,
+          returnedCitations: candidates.length,
+          queryMode,
+        },
+      });
+    }
 
     return {
       question: dto.question,

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
 import { DocumentsService } from '../documents/documents.service';
@@ -17,6 +18,7 @@ export class OverviewService {
     private readonly chatService: ChatService,
     private readonly subscriptionsService: SubscriptionsService,
     private readonly teamAgentsService: TeamAgentsService,
+    private readonly auditService: AuditService,
   ) {}
 
   async getDashboard(groupId?: string) {
@@ -29,11 +31,14 @@ export class OverviewService {
     let featuredQuery;
 
     try {
-      featuredQuery = await this.queryService.search({
-        question: '请检索与专项资金使用和采购审批相关的制度依据。',
-        groupId: effectiveGroupId,
-        agentId: activeTeamAgent?.id,
-      });
+      featuredQuery = await this.queryService.search(
+        {
+          question: '请检索与专项资金使用和采购审批相关的制度依据。',
+          groupId: effectiveGroupId,
+          agentId: activeTeamAgent?.id,
+        },
+        { skipAccounting: true },
+      );
     } catch (error) {
       if (!(error instanceof BadRequestException)) {
         throw error;
@@ -138,6 +143,7 @@ export class OverviewService {
       extractJobs: await this.documentsService.listExtractionJobs(effectiveGroupId),
       libraryScope: await this.documentsService.getLibraryScopeSummary(effectiveGroupId),
       subscription: this.subscriptionsService.getOverview(visibleGroups.length, await this.documentsService.countPrivateDocuments(visibleGroups.map(g => g.id))),
+      recentAuditEvents: await this.auditService.listRecentEvents(),
       conversations: isAdmin ? [] : await this.chatService.listConversations(effectiveGroupId),
       activeTeamAgent:
         activeTeamAgent == null
