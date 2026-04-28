@@ -446,7 +446,16 @@ let ChatService = class ChatService {
                 this.getConversationMessages(conversation.id, conversation),
                 this.getUnreadCount(conversation.id, currentUser.id),
             ]);
-            return this.toPublicConversation(conversation, messages, unreadCount);
+            let resolvedConversation = conversation;
+            if (conversation.type === 'direct') {
+                const participants = await this.conversationParticipantRepository.findBy({ conversationId: conversation.id });
+                const peerParticipant = participants.find((p) => p.userId !== currentUser.id);
+                if (peerParticipant) {
+                    const peerUser = this.authService.getUserById(peerParticipant.userId);
+                    resolvedConversation = { ...conversation, title: peerUser?.name ?? peerParticipant.userId };
+                }
+            }
+            return this.toPublicConversation(resolvedConversation, messages, unreadCount);
         }));
         return items;
     }
