@@ -79,6 +79,24 @@ class _DashboardPageState extends State<DashboardPage> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB';
   }
 
+  bool _shouldShowSender(int index) {
+    if (index == 0) {
+      return true;
+    }
+    final previous = _messages[index - 1];
+    final current = _messages[index];
+    return previous.senderName != current.senderName;
+  }
+
+  bool _shouldShowTimestamp(int index) {
+    if (index == _messages.length - 1) {
+      return true;
+    }
+    final current = _messages[index];
+    final next = _messages[index + 1];
+    return current.sentAt != next.sentAt;
+  }
+
   bool _isImageAttachment(String extension, String mimeType) {
     final normalizedExtension = extension.toLowerCase();
     final normalizedMimeType = mimeType.toLowerCase();
@@ -101,6 +119,42 @@ class _DashboardPageState extends State<DashboardPage> {
       return Icons.table_chart_outlined;
     }
     return Icons.attach_file;
+  }
+
+  Color _attachmentAccentColor(String extension, String mimeType) {
+    final normalizedExtension = extension.toLowerCase();
+    final normalizedMimeType = mimeType.toLowerCase();
+    if (_isImageAttachment(normalizedExtension, normalizedMimeType)) {
+      return const Color(0xFF1D4ED8);
+    }
+    if (normalizedExtension == 'pdf') {
+      return const Color(0xFFDC2626);
+    }
+    if (const {'doc', 'docx'}.contains(normalizedExtension)) {
+      return const Color(0xFF2563EB);
+    }
+    if (const {'xls', 'xlsx', 'csv'}.contains(normalizedExtension)) {
+      return const Color(0xFF15803D);
+    }
+    return const Color(0xFF667085);
+  }
+
+  String _attachmentTypeLabel(String extension, String mimeType) {
+    final normalizedExtension = extension.toLowerCase();
+    final normalizedMimeType = mimeType.toLowerCase();
+    if (_isImageAttachment(normalizedExtension, normalizedMimeType)) {
+      return '图片';
+    }
+    if (normalizedExtension == 'pdf') {
+      return 'PDF';
+    }
+    if (const {'doc', 'docx'}.contains(normalizedExtension)) {
+      return 'Word';
+    }
+    if (const {'xls', 'xlsx', 'csv'}.contains(normalizedExtension)) {
+      return '表格';
+    }
+    return '文件';
   }
 
   bool get _isAdmin {
@@ -479,63 +533,26 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  List<ChatAttachment> get _imageAttachments {
+    return _messages
+        .where((message) => message.messageType == 'file' && message.file != null)
+        .map((message) => message.file!)
+        .where((file) => _isImageAttachment(file.extension, file.mimeType))
+        .toList();
+  }
+
   void _previewImageAttachment(ChatAttachment attachment) {
+    final imageAttachments = _imageAttachments;
+    final initialIndex = imageAttachments.indexWhere((item) => item.path == attachment.path);
     showDialog<void>(
       context: context,
       builder: (context) {
-        final imageUrl = widget.apiService.buildFileUri(attachment.path).toString();
-        return Dialog(
-          insetPadding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Color(0xFFE0E3EA))),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        attachment.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => _downloadChatAttachment(attachment),
-                      child: const Text('下载'),
-                    ),
-                    TextButton(
-                      onPressed: () => _openChatAttachment(attachment),
-                      child: const Text('打开原图'),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-              ),
-              Flexible(
-                child: InteractiveViewer(
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text('图片预览加载失败，请使用“打开原图”。'),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
+        return _ImagePreviewDialog(
+          attachments: imageAttachments,
+          initialIndex: initialIndex < 0 ? 0 : initialIndex,
+          buildImageUrl: (path) => widget.apiService.buildFileUri(path).toString(),
+          onDownload: _downloadChatAttachment,
+          onOpenOriginal: _openChatAttachment,
         );
       },
     );
@@ -2070,9 +2087,15 @@ class _DashboardPageState extends State<DashboardPage> {
                           : ListView(
                               controller: _messagesScrollController,
                               children: _messages
+                                  .asMap()
+                                  .entries
                                   .map(
-                                    (message) {
+                                    (entry) {
+                                      final index = entry.key;
+                                      final message = entry.value;
                                       final isCurrentUser = message.senderName == widget.currentUser.name;
+                                      final showSender = _shouldShowSender(index);
+                                      final showTimestamp = _shouldShowTimestamp(index);
                                       return Align(
                                         alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
                                         child: Container(
@@ -2088,8 +2111,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(message.senderName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                              const SizedBox(height: 6),
+                                              if (showSender) ...[
+                                                Text(message.senderName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                                const SizedBox(height: 6),
+                                              ],
                                               if (message.messageType == 'file' && message.file != null) ...[
                                                 InkWell(
                                                   onTap: () => _handleAttachmentTap(message.file!),
@@ -2100,7 +2125,9 @@ class _DashboardPageState extends State<DashboardPage> {
                                                     decoration: BoxDecoration(
                                                       color: Colors.white.withValues(alpha: 0.72),
                                                       borderRadius: BorderRadius.circular(10),
-                                                      border: Border.all(color: const Color(0xFFD9E2F2)),
+                                                      border: Border.all(
+                                                        color: _attachmentAccentColor(message.file!.extension, message.file!.mimeType).withValues(alpha: 0.28),
+                                                      ),
                                                     ),
                                                     child: Column(
                                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2127,15 +2154,54 @@ class _DashboardPageState extends State<DashboardPage> {
                                                         ],
                                                         Row(
                                                           children: [
-                                                            Icon(
-                                                              _attachmentIcon(message.file!.extension, message.file!.mimeType),
-                                                              size: 18,
+                                                            Container(
+                                                              padding: const EdgeInsets.all(8),
+                                                              decoration: BoxDecoration(
+                                                                color: _attachmentAccentColor(message.file!.extension, message.file!.mimeType).withValues(alpha: 0.12),
+                                                                borderRadius: BorderRadius.circular(10),
+                                                              ),
+                                                              child: Icon(
+                                                                _attachmentIcon(message.file!.extension, message.file!.mimeType),
+                                                                size: 18,
+                                                                color: _attachmentAccentColor(message.file!.extension, message.file!.mimeType),
+                                                              ),
                                                             ),
-                                                            const SizedBox(width: 6),
+                                                            const SizedBox(width: 8),
                                                             Expanded(
-                                                              child: Text(
-                                                                message.file!.name,
-                                                                style: const TextStyle(fontWeight: FontWeight.w600),
+                                                              child: Column(
+                                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                                children: [
+                                                                  Text(
+                                                                    message.file!.name,
+                                                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                                                  ),
+                                                                  const SizedBox(height: 4),
+                                                                  Wrap(
+                                                                    spacing: 6,
+                                                                    runSpacing: 6,
+                                                                    children: [
+                                                                      Container(
+                                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                                        decoration: BoxDecoration(
+                                                                          color: _attachmentAccentColor(message.file!.extension, message.file!.mimeType).withValues(alpha: 0.12),
+                                                                          borderRadius: BorderRadius.circular(999),
+                                                                        ),
+                                                                        child: Text(
+                                                                          _attachmentTypeLabel(message.file!.extension, message.file!.mimeType),
+                                                                          style: TextStyle(
+                                                                            color: _attachmentAccentColor(message.file!.extension, message.file!.mimeType),
+                                                                            fontSize: 12,
+                                                                            fontWeight: FontWeight.w600,
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                      Text(
+                                                                        '${message.file!.extension.toUpperCase()} · ${_formatFileSize(message.file!.size)}',
+                                                                        style: Theme.of(context).textTheme.bodySmall,
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ],
                                                               ),
                                                             ),
                                                             const SizedBox(width: 8),
@@ -2144,12 +2210,13 @@ class _DashboardPageState extends State<DashboardPage> {
                                                                   ? Icons.zoom_in_outlined
                                                                   : Icons.open_in_new,
                                                               size: 16,
+                                                              color: _attachmentAccentColor(message.file!.extension, message.file!.mimeType),
                                                             ),
                                                           ],
                                                         ),
                                                         const SizedBox(height: 6),
                                                         Text(
-                                                          '${message.file!.extension.toUpperCase()} · ${_formatFileSize(message.file!.size)} · ${_isImageAttachment(message.file!.extension, message.file!.mimeType) ? '点击预览' : '点击打开'}',
+                                                          _isImageAttachment(message.file!.extension, message.file!.mimeType) ? '点击预览' : '点击打开',
                                                           style: Theme.of(context).textTheme.bodySmall,
                                                         ),
                                                         const SizedBox(height: 8),
@@ -2188,8 +2255,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                                 ],
                                               ] else
                                                 Text(message.content),
-                                              const SizedBox(height: 6),
-                                              Text(message.sentAt, style: Theme.of(context).textTheme.bodySmall),
+                                              if (showTimestamp) ...[
+                                                const SizedBox(height: 6),
+                                                Text(message.sentAt, style: Theme.of(context).textTheme.bodySmall),
+                                              ],
                                             ],
                                           ),
                                         ),
@@ -2609,6 +2678,154 @@ class _MetricTile extends StatelessWidget {
           const SizedBox(height: 6),
           Text(value, style: Theme.of(context).textTheme.titleMedium),
         ],
+      ),
+    );
+  }
+}
+
+class _ImagePreviewDialog extends StatefulWidget {
+  const _ImagePreviewDialog({
+    required this.attachments,
+    required this.initialIndex,
+    required this.buildImageUrl,
+    required this.onDownload,
+    required this.onOpenOriginal,
+  });
+
+  final List<ChatAttachment> attachments;
+  final int initialIndex;
+  final String Function(String path) buildImageUrl;
+  final Future<void> Function(ChatAttachment attachment) onDownload;
+  final Future<void> Function(ChatAttachment attachment) onOpenOriginal;
+
+  @override
+  State<_ImagePreviewDialog> createState() => _ImagePreviewDialogState();
+}
+
+class _ImagePreviewDialogState extends State<_ImagePreviewDialog> {
+  late final PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex.clamp(0, widget.attachments.length - 1);
+    _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final attachment = widget.attachments[_currentIndex];
+    return Dialog(
+      insetPadding: const EdgeInsets.all(24),
+      child: SizedBox(
+        width: 920,
+        height: 680,
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Color(0xFFE0E3EA))),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          attachment.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        if (widget.attachments.length > 1)
+                          Text(
+                            '${_currentIndex + 1} / ${widget.attachments.length}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => widget.onDownload(attachment),
+                    child: const Text('下载'),
+                  ),
+                  TextButton(
+                    onPressed: () => widget.onOpenOriginal(attachment),
+                    child: const Text('打开原图'),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: _currentIndex > 0
+                        ? () {
+                            _pageController.previousPage(
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOut,
+                            );
+                          }
+                        : null,
+                    icon: const Icon(Icons.chevron_left),
+                  ),
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: widget.attachments.length,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentIndex = index;
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        final item = widget.attachments[index];
+                        return InteractiveViewer(
+                          child: Image.network(
+                            widget.buildImageUrl(item.path),
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Padding(
+                                padding: EdgeInsets.all(24),
+                                child: Text('图片预览加载失败，请使用“打开原图”。'),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _currentIndex < widget.attachments.length - 1
+                        ? () {
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOut,
+                            );
+                          }
+                        : null,
+                    icon: const Icon(Icons.chevron_right),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
