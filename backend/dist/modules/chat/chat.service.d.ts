@@ -102,6 +102,11 @@ export declare class ChatService {
     clearConversationMessages(conversationId: string): Promise<{
         success: boolean;
     }>;
+    downloadMessageFile(conversationId: string, messageId: string): Promise<{
+        fileName: string;
+        mimeType: string;
+        buffer: NonSharedBuffer;
+    }>;
     removeMessage(conversationId: string, messageId: string): Promise<{
         success: boolean;
     }>;

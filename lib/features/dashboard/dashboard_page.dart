@@ -671,10 +671,18 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  Future<void> _downloadChatAttachment(ChatAttachment attachment) async {
+  Future<void> _downloadChatAttachment({
+    required String messageId,
+    required ChatAttachment attachment,
+  }) async {
     try {
-      final savedPath = await widget.apiService.downloadFile(
-        sourcePath: attachment.path,
+      final conversationId = _selectedConversationId;
+      if (conversationId == null) {
+        return;
+      }
+      final savedPath = await widget.apiService.downloadChatMessageFile(
+        conversationId: conversationId,
+        messageId: messageId,
         fileName: attachment.name,
       );
       if (!mounted) {
@@ -716,7 +724,6 @@ class _DashboardPageState extends State<DashboardPage> {
           attachments: imageAttachments,
           initialIndex: initialIndex < 0 ? 0 : initialIndex,
           buildImageUrl: (path) => widget.apiService.buildFileUri(path).toString(),
-          onDownload: _downloadChatAttachment,
           onOpenOriginal: _openChatAttachment,
         );
       },
@@ -2789,7 +2796,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                                 children: [
                                                                   InkWell(
-                                                                    onTap: () => _downloadChatAttachment(message.file!),
+                                                                    onTap: () => _downloadChatAttachment(messageId: message.id, attachment: message.file!),
                                                                     child: Text(
                                                                       message.file!.name,
                                                                       style: const TextStyle(fontWeight: FontWeight.w600),
@@ -3392,14 +3399,12 @@ class _ImagePreviewDialog extends StatefulWidget {
     required this.attachments,
     required this.initialIndex,
     required this.buildImageUrl,
-    required this.onDownload,
     required this.onOpenOriginal,
   });
 
   final List<ChatAttachment> attachments;
   final int initialIndex;
   final String Function(String path) buildImageUrl;
-  final Future<void> Function(ChatAttachment attachment) onDownload;
   final Future<void> Function(ChatAttachment attachment) onOpenOriginal;
 
   @override
@@ -3458,10 +3463,6 @@ class _ImagePreviewDialogState extends State<_ImagePreviewDialog> {
                           ),
                       ],
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () => widget.onDownload(attachment),
-                    child: const Text('下载'),
                   ),
                   TextButton(
                     onPressed: () => widget.onOpenOriginal(attachment),

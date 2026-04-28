@@ -29,6 +29,12 @@ let ChatController = class ChatController {
     async clearMessages(conversationId) {
         return this.chatService.clearConversationMessages(conversationId);
     }
+    async downloadMessageFile(conversationId, messageId, res) {
+        const result = await this.chatService.downloadMessageFile(conversationId, messageId);
+        res.setHeader('Content-Type', result.mimeType);
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(result.fileName)}`);
+        return result.buffer;
+    }
     async removeMessage(conversationId, messageId) {
         return this.chatService.removeMessage(conversationId, messageId);
     }
@@ -67,6 +73,15 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "clearMessages", null);
+__decorate([
+    (0, common_1.Get)('conversations/:conversationId/messages/:messageId/file'),
+    __param(0, (0, common_1.Param)('conversationId')),
+    __param(1, (0, common_1.Param)('messageId')),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "downloadMessageFile", null);
 __decorate([
     (0, common_1.Delete)('conversations/:conversationId/messages/:messageId'),
     __param(0, (0, common_1.Param)('conversationId')),

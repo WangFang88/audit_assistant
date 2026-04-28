@@ -1,11 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { existsSync, mkdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
 export type SavedFileRecord = {
   sourcePath: string;
   originalName: string;
   extension: string;
+  mimeType: string;
 };
 
 @Injectable()
@@ -65,6 +66,7 @@ export class FileStorageService {
       sourcePath: logicalPath.replace(/\\/g, '/'),
       originalName: normalizedFileName,
       extension,
+      mimeType: file.mimetype || 'application/octet-stream',
     };
   }
 
@@ -111,9 +113,21 @@ export class FileStorageService {
     return this.writeStoredFile(folder, options.file, logicalPath);
   }
 
-  removeChatMessageFile(sourcePath: string) {
+  private resolveStoredFilePath(sourcePath: string) {
     const normalizedPath = sourcePath.replace(/^\/files\//, '').replace(/\//g, '\\');
-    const filePath = join(this.getUploadRoot(), normalizedPath);
+    return join(this.getUploadRoot(), normalizedPath);
+  }
+
+  readStoredFile(sourcePath: string) {
+    const filePath = this.resolveStoredFilePath(sourcePath);
+    if (!existsSync(filePath)) {
+      throw new BadRequestException('文件不存在或已被删除');
+    }
+    return readFileSync(filePath);
+  }
+
+  removeChatMessageFile(sourcePath: string) {
+    const filePath = this.resolveStoredFilePath(sourcePath);
     if (existsSync(filePath)) {
       unlinkSync(filePath);
     }

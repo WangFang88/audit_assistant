@@ -337,12 +337,17 @@ class ApiService {
     }
   }
 
-  Future<String> downloadFile({
-    required String sourcePath,
+  Future<String> downloadChatMessageFile({
+    required String conversationId,
+    required String messageId,
     required String fileName,
   }) async {
-    final uri = buildFileUri(sourcePath);
-    final response = await _client.get(uri);
+    final response = await _requestWithRefresh(
+      (headers) => _client.get(
+        Uri.parse('$_baseUrl/chat/conversations/$conversationId/messages/$messageId/file'),
+        headers: headers,
+      ),
+    );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException('文件下载失败：$fileName (${response.statusCode})');
     }

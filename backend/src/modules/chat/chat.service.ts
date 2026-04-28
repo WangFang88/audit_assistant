@@ -738,6 +738,25 @@ export class ChatService {
     return { success: true };
   }
 
+  async downloadMessageFile(conversationId: string, messageId: string) {
+    this.assertAdminCannotUseChat();
+    const conversation = await this.getConversationById(conversationId);
+    await this.assertCanAccessConversation(conversation);
+    const message = await this.messageRepository.findOneBy({ id: messageId, conversationId });
+    if (!message) {
+      throw new NotFoundException('消息不存在');
+    }
+    const metadata = (message.metadata ?? {}) as { file?: SavedFileRecord };
+    if (message.messageType !== 'file' || metadata.file?.sourcePath == null) {
+      throw new BadRequestException('当前消息不包含可下载附件');
+    }
+    return {
+      fileName: metadata.file.originalName,
+      mimeType: (metadata.file as SavedFileRecord & { mimeType?: string }).mimeType ?? 'application/octet-stream',
+      buffer: this.fileStorageService.readStoredFile(metadata.file.sourcePath),
+    };
+  }
+
   async removeMessage(conversationId: string, messageId: string) {
     this.assertAdminCannotUseChat();
     const conversation = await this.getConversationById(conversationId);

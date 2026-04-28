@@ -62,6 +62,7 @@ let FileStorageService = class FileStorageService {
             sourcePath: logicalPath.replace(/\\/g, '/'),
             originalName: normalizedFileName,
             extension,
+            mimeType: file.mimetype || 'application/octet-stream',
         };
     }
     saveFile(options) {
@@ -92,9 +93,19 @@ let FileStorageService = class FileStorageService {
         const logicalPath = `/files/chat/${channel}/${options.conversationId}/${options.messageId}/original${extension}`;
         return this.writeStoredFile(folder, options.file, logicalPath);
     }
-    removeChatMessageFile(sourcePath) {
+    resolveStoredFilePath(sourcePath) {
         const normalizedPath = sourcePath.replace(/^\/files\//, '').replace(/\//g, '\\');
-        const filePath = (0, node_path_1.join)(this.getUploadRoot(), normalizedPath);
+        return (0, node_path_1.join)(this.getUploadRoot(), normalizedPath);
+    }
+    readStoredFile(sourcePath) {
+        const filePath = this.resolveStoredFilePath(sourcePath);
+        if (!(0, node_fs_1.existsSync)(filePath)) {
+            throw new common_1.BadRequestException('文件不存在或已被删除');
+        }
+        return (0, node_fs_1.readFileSync)(filePath);
+    }
+    removeChatMessageFile(sourcePath) {
+        const filePath = this.resolveStoredFilePath(sourcePath);
         if ((0, node_fs_1.existsSync)(filePath)) {
             (0, node_fs_1.unlinkSync)(filePath);
         }

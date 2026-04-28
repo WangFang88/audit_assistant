@@ -612,6 +612,24 @@ let ChatService = class ChatService {
         }
         return { success: true };
     }
+    async downloadMessageFile(conversationId, messageId) {
+        this.assertAdminCannotUseChat();
+        const conversation = await this.getConversationById(conversationId);
+        await this.assertCanAccessConversation(conversation);
+        const message = await this.messageRepository.findOneBy({ id: messageId, conversationId });
+        if (!message) {
+            throw new common_1.NotFoundException('消息不存在');
+        }
+        const metadata = (message.metadata ?? {});
+        if (message.messageType !== 'file' || metadata.file?.sourcePath == null) {
+            throw new common_1.BadRequestException('当前消息不包含可下载附件');
+        }
+        return {
+            fileName: metadata.file.originalName,
+            mimeType: metadata.file.mimeType ?? 'application/octet-stream',
+            buffer: this.fileStorageService.readStoredFile(metadata.file.sourcePath),
+        };
+    }
     async removeMessage(conversationId, messageId) {
         this.assertAdminCannotUseChat();
         const conversation = await this.getConversationById(conversationId);

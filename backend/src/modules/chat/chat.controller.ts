@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ChatService, SendMessageDto } from './chat.service';
 
@@ -19,6 +19,18 @@ export class ChatController {
   @Delete('conversations/:conversationId/messages')
   async clearMessages(@Param('conversationId') conversationId: string) {
     return this.chatService.clearConversationMessages(conversationId);
+  }
+
+  @Get('conversations/:conversationId/messages/:messageId/file')
+  async downloadMessageFile(
+    @Param('conversationId') conversationId: string,
+    @Param('messageId') messageId: string,
+    @Res({ passthrough: true }) res: any,
+  ) {
+    const result = await this.chatService.downloadMessageFile(conversationId, messageId);
+    res.setHeader('Content-Type', result.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(result.fileName)}`);
+    return result.buffer;
   }
 
   @Delete('conversations/:conversationId/messages/:messageId')

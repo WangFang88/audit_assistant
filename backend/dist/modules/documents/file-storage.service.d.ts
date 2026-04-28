@@ -2,6 +2,7 @@ export type SavedFileRecord = {
     sourcePath: string;
     originalName: string;
     extension: string;
+    mimeType: string;
 };
 export declare class FileStorageService {
     private readonly allowedChatFileExtensions;
@@ -23,6 +24,8 @@ export declare class FileStorageService {
         messageId: string;
         conversationType: 'group' | 'direct';
     }): SavedFileRecord;
+    private resolveStoredFilePath;
+    readStoredFile(sourcePath: string): NonSharedBuffer;
     removeChatMessageFile(sourcePath: string): void;
     removeChatConversationFiles(conversationType: 'group' | 'direct', conversationId: string): void;
 }
