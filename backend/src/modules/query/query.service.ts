@@ -146,7 +146,7 @@ export class QueryService {
         : null;
 
     const qwenAnswer = fallbackAnswer == null
-      ? await this.qwenService.generate(dto.question, candidates.map((c) => c.matchedChunk))
+      ? await this.qwenService.generate(dto.question, candidates.map((c) => `【${c.title}】${c.matchedChunk}`))
       : null;
 
     const answer = fallbackAnswer ?? qwenAnswer ?? '\u68c0\u7d22\u5b8c\u6210\uff0c\u8bf7\u67e5\u770b\u4e0b\u65b9\u5f15\u7528\u6761\u6b3e\u3002';
