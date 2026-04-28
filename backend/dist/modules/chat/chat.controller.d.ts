@@ -10,6 +10,7 @@ export declare class ChatController {
         isTeamAgent: boolean;
         unreadCount: number;
         lastMessage: string;
+        lastMessageAt: string;
     }[]>;
     listMessages(conversationId: string): Promise<{
         id: string;
@@ -27,6 +28,12 @@ export declare class ChatController {
         } | null;
     }[]>;
     clearMessages(conversationId: string): Promise<{
+        success: boolean;
+    }>;
+    removeMessage(conversationId: string, messageId: string): Promise<{
+        success: boolean;
+    }>;
+    recallMessage(conversationId: string, messageId: string): Promise<{
         success: boolean;
     }>;
     removeDirectConversation(conversationId: string): Promise<{

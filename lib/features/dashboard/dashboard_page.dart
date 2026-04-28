@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/models/app_models.dart';
 import '../../core/services/api_service.dart';
@@ -30,6 +31,7 @@ class _DashboardPageState extends State<DashboardPage> {
   final TextEditingController _messageSearchController = TextEditingController();
   final TextEditingController _conversationSearchController = TextEditingController();
   final ScrollController _messagesScrollController = ScrollController();
+  static const _pinnedConversationIdsKey = 'chat.pinnedConversationIds';
 
   int _selectedIndex = 0;
   bool _loading = true;
@@ -50,12 +52,14 @@ class _DashboardPageState extends State<DashboardPage> {
   List<ExtractionJob> _extractJobs = const [];
   PlatformFile? _selectedMessageFile;
   List<_PendingChatMessage> _pendingMessages = const [];
+  Set<String> _pinnedConversationIds = <String>{};
   String? _selectedConversationId;
   String? _selectedGroupId;
 
   @override
   void initState() {
     super.initState();
+    _restorePinnedConversations();
     _loadDashboard();
   }
 
@@ -81,12 +85,32 @@ class _DashboardPageState extends State<DashboardPage> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB';
   }
 
+  List<ConversationSummary> get _sortedConversations {
+    final items = [..._conversations];
+    items.sort((a, b) {
+      final aPinned = _pinnedConversationIds.contains(a.id);
+      final bPinned = _pinnedConversationIds.contains(b.id);
+      if (aPinned != bPinned) {
+        return aPinned ? -1 : 1;
+      }
+      if (a.unreadCount != b.unreadCount) {
+        return b.unreadCount.compareTo(a.unreadCount);
+      }
+      if (a.isTeamAgent != b.isTeamAgent) {
+        return a.isTeamAgent ? -1 : 1;
+      }
+      return b.lastMessageAt.compareTo(a.lastMessageAt);
+    });
+    return items;
+  }
+
   List<ConversationSummary> get _visibleConversations {
     final keyword = _conversationSearchController.text.trim().toLowerCase();
+    final source = _sortedConversations;
     if (keyword.isEmpty) {
-      return _conversations;
+      return source;
     }
-    return _conversations.where((conversation) {
+    return source.where((conversation) {
       return conversation.title.toLowerCase().contains(keyword) ||
           conversation.lastMessage.toLowerCase().contains(keyword);
     }).toList();
@@ -385,20 +409,61 @@ class _DashboardPageState extends State<DashboardPage> {
       return null;
     }
 
+    final sortedConversations = [...conversations]
+      ..sort((a, b) {
+        final aPinned = _pinnedConversationIds.contains(a.id);
+        final bPinned = _pinnedConversationIds.contains(b.id);
+        if (aPinned != bPinned) {
+          return aPinned ? -1 : 1;
+        }
+        if (a.unreadCount != b.unreadCount) {
+          return b.unreadCount.compareTo(a.unreadCount);
+        }
+        if (a.isTeamAgent != b.isTeamAgent) {
+          return a.isTeamAgent ? -1 : 1;
+        }
+        return b.lastMessageAt.compareTo(a.lastMessageAt);
+      });
+
     if (groupId != null) {
-      for (final conversation in conversations) {
+      for (final conversation in sortedConversations) {
         if (conversation.isTeamAgent && conversation.groupId == groupId) {
           return conversation.id;
         }
       }
-      for (final conversation in conversations) {
+      for (final conversation in sortedConversations) {
         if (conversation.type == '群聊' && conversation.groupId == groupId) {
           return conversation.id;
         }
       }
     }
 
-    return conversations.first.id;
+    return sortedConversations.first.id;
+  }
+
+  Future<void> _restorePinnedConversations() async {
+    final prefs = await SharedPreferences.getInstance();
+    final pinnedIds = prefs.getStringList(_pinnedConversationIdsKey) ?? const <String>[];
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _pinnedConversationIds = pinnedIds.toSet();
+    });
+  }
+
+  Future<void> _togglePinnedConversation(String conversationId) async {
+    final nextPinnedIds = _pinnedConversationIds.contains(conversationId)
+        ? (_pinnedConversationIds.toSet()..remove(conversationId))
+        : (_pinnedConversationIds.toSet()..add(conversationId));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_pinnedConversationIdsKey, nextPinnedIds.toList());
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _pinnedConversationIds = nextPinnedIds;
+    });
   }
 
   Future<void> _runSearch() async {
@@ -658,6 +723,96 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  Future<void> _deleteMessage(ChatMessage message) async {
+    if (_selectedConversationId == null) {
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认删除消息'),
+        content: const Text('删除后将无法恢复，是否继续？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('确认删除')),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      return;
+    }
+    try {
+      await widget.apiService.deleteMessage(
+        conversationId: _selectedConversationId!,
+        messageId: message.id,
+      );
+      await _loadConversationMessages(_selectedConversationId!);
+      if (!mounted) {
+        return;
+      }
+      await _loadDashboard(preferredGroupId: _activeGroupId);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('消息已删除。')));
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('删除消息失败。')));
+    }
+  }
+
+  Future<void> _recallMessage(ChatMessage message) async {
+    if (_selectedConversationId == null) {
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认撤回消息'),
+        content: const Text('撤回后会保留一条“该消息已撤回”的提示。是否继续？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('确认撤回')),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      return;
+    }
+    try {
+      await widget.apiService.recallMessage(
+        conversationId: _selectedConversationId!,
+        messageId: message.id,
+      );
+      await _loadConversationMessages(_selectedConversationId!);
+      if (!mounted) {
+        return;
+      }
+      await _loadDashboard(preferredGroupId: _activeGroupId);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('消息已撤回。')));
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('撤回消息失败。')));
+    }
+  }
+
   Future<void> _sendMessage() async {
     final content = _messageController.text.trim();
     final selectedFile = _selectedMessageFile;
@@ -680,6 +835,7 @@ class _DashboardPageState extends State<DashboardPage> {
       file: selectedFile,
       sentAt: DateTime.now().toIso8601String().replaceFirst('T', ' ').substring(0, 16),
       status: _PendingChatMessageStatus.sending,
+      progress: selectedFile == null ? 1 : 0,
     );
 
     setState(() {
@@ -698,6 +854,18 @@ class _DashboardPageState extends State<DashboardPage> {
         content: content.isEmpty ? null : content,
         file: selectedFile,
         groupId: _activeConversationType == 'group' ? _activeGroupId : null,
+        onSendProgress: selectedFile == null
+            ? null
+            : (progress) {
+                if (!mounted) {
+                  return;
+                }
+                setState(() {
+                  _pendingMessages = _pendingMessages
+                      .map((item) => item.id == pendingId ? item.copyWith(progress: progress) : item)
+                      .toList();
+                });
+              },
       );
       setState(() {
         _pendingMessages = _pendingMessages.where((item) => item.id != pendingId).toList();
@@ -2156,6 +2324,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                       title: Row(
                                         children: [
                                           Expanded(child: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                          if (_pinnedConversationIds.contains(item.id)) ...[
+                                            const SizedBox(width: 8),
+                                            const Icon(Icons.push_pin, size: 16, color: Color(0xFF1D4ED8)),
+                                          ],
                                           if (item.unreadCount > 0) ...[
                                             const SizedBox(width: 8),
                                             Container(
@@ -2170,6 +2342,16 @@ class _DashboardPageState extends State<DashboardPage> {
                                               ),
                                             ),
                                           ],
+                                          const SizedBox(width: 8),
+                                          IconButton(
+                                            tooltip: _pinnedConversationIds.contains(item.id) ? '取消置顶' : '置顶会话',
+                                            onPressed: () => _togglePinnedConversation(item.id),
+                                            icon: Icon(
+                                              _pinnedConversationIds.contains(item.id) ? Icons.push_pin : Icons.push_pin_outlined,
+                                              size: 18,
+                                              color: _pinnedConversationIds.contains(item.id) ? const Color(0xFF1D4ED8) : null,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                       subtitle: Text(
@@ -2262,6 +2444,22 @@ class _DashboardPageState extends State<DashboardPage> {
                                       final isCurrentUser = message.senderName == widget.currentUser.name;
                                       final showSender = _shouldShowSender(index);
                                       final showTimestamp = _shouldShowTimestamp(index);
+                                      if (message.messageType == 'system') {
+                                        return Center(
+                                          child: Container(
+                                            margin: const EdgeInsets.only(bottom: 12),
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF2F4F7),
+                                              borderRadius: BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              message.content,
+                                              style: Theme.of(context).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                        );
+                                      }
                                       return Align(
                                         alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
                                         child: Container(
@@ -2278,7 +2476,49 @@ class _DashboardPageState extends State<DashboardPage> {
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               if (showSender) ...[
-                                                Text(message.senderName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(message.senderName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                                    ),
+                                                    if (isCurrentUser)
+                                                      Wrap(
+                                                        spacing: 8,
+                                                        children: [
+                                                          TextButton.icon(
+                                                            onPressed: () => _recallMessage(message),
+                                                            icon: const Icon(Icons.undo_outlined, size: 16),
+                                                            label: const Text('撤回'),
+                                                          ),
+                                                          TextButton.icon(
+                                                            onPressed: () => _deleteMessage(message),
+                                                            icon: const Icon(Icons.delete_outline, size: 16),
+                                                            label: const Text('删除'),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 6),
+                                              ] else if (isCurrentUser) ...[
+                                                Align(
+                                                  alignment: Alignment.centerRight,
+                                                  child: Wrap(
+                                                    spacing: 8,
+                                                    children: [
+                                                      TextButton.icon(
+                                                        onPressed: () => _recallMessage(message),
+                                                        icon: const Icon(Icons.undo_outlined, size: 16),
+                                                        label: const Text('撤回'),
+                                                      ),
+                                                      TextButton.icon(
+                                                        onPressed: () => _deleteMessage(message),
+                                                        icon: const Icon(Icons.delete_outline, size: 16),
+                                                        label: const Text('删除'),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
                                                 const SizedBox(height: 6),
                                               ],
                                               if (message.messageType == 'file' && message.file != null) ...[
@@ -2512,13 +2752,19 @@ class _DashboardPageState extends State<DashboardPage> {
                                             const SizedBox(height: 8),
                                           if (pending.content.isNotEmpty) Text(pending.content),
                                           const SizedBox(height: 6),
+                                          if (pending.file != null && pending.status != _PendingChatMessageStatus.failed) ...[
+                                            LinearProgressIndicator(value: pending.progress <= 0 ? null : pending.progress),
+                                            const SizedBox(height: 6),
+                                          ],
                                           Row(
                                             children: [
                                               Expanded(
                                                 child: Text(
                                                   pending.status == _PendingChatMessageStatus.failed
                                                       ? (pending.error ?? '发送失败')
-                                                      : '发送中...',
+                                                      : pending.file == null
+                                                          ? '发送中...'
+                                                          : '上传中... ${(pending.progress * 100).clamp(0, 100).round()}%',
                                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                                         color: pending.status == _PendingChatMessageStatus.failed
                                                             ? const Color(0xFFB42318)
@@ -2945,6 +3191,7 @@ class _PendingChatMessage {
     required this.file,
     required this.sentAt,
     required this.status,
+    required this.progress,
     this.error,
   });
 
@@ -2953,6 +3200,7 @@ class _PendingChatMessage {
   final PlatformFile? file;
   final String sentAt;
   final _PendingChatMessageStatus status;
+  final double progress;
   final String? error;
 
   _PendingChatMessage copyWith({
@@ -2961,6 +3209,7 @@ class _PendingChatMessage {
     PlatformFile? file,
     String? sentAt,
     _PendingChatMessageStatus? status,
+    double? progress,
     String? error,
   }) {
     return _PendingChatMessage(
@@ -2969,6 +3218,7 @@ class _PendingChatMessage {
       file: file ?? this.file,
       sentAt: sentAt ?? this.sentAt,
       status: status ?? this.status,
+      progress: progress ?? this.progress,
       error: error ?? this.error,
     );
   }

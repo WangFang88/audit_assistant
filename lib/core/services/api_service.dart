@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -246,6 +247,30 @@ class ApiService {
     );
   }
 
+  Future<void> deleteMessage({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    await _requestWithRefresh(
+      (headers) => _client.delete(
+        Uri.parse('$_baseUrl/chat/conversations/$conversationId/messages/$messageId'),
+        headers: headers,
+      ),
+    );
+  }
+
+  Future<void> recallMessage({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    await _requestWithRefresh(
+      (headers) => _client.patch(
+        Uri.parse('$_baseUrl/chat/conversations/$conversationId/messages/$messageId/recall'),
+        headers: headers,
+      ),
+    );
+  }
+
   Future<void> deleteDirectConversation(String conversationId) async {
     await _requestWithRefresh(
       (headers) => _client.delete(
@@ -304,6 +329,7 @@ class ApiService {
     String? content,
     PlatformFile? file,
     String? groupId,
+    void Function(double progress)? onSendProgress,
   }) async {
     final response = await _multipartRequestWithRefresh((headers) async {
       final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/chat/messages'));
@@ -317,11 +343,12 @@ class ApiService {
         request.fields['groupId'] = groupId;
       }
       if (file != null) {
-        request.files.add(await _buildMultipartFile(file));
+        request.files.add(await _buildMultipartFile(file, onProgress: onSendProgress));
       }
       return request;
     });
 
+    onSendProgress?.call(1);
     final json = _decodeMap(response);
     return ChatMessage.fromJson(json);
   }
@@ -529,11 +556,19 @@ class ApiService {
     return body.whereType<Map<String, dynamic>>().toList();
   }
 
-  Future<http.MultipartFile> _buildMultipartFile(PlatformFile file) async {
+  Future<http.MultipartFile> _buildMultipartFile(
+    PlatformFile file, {
+    void Function(double progress)? onProgress,
+  }) async {
     final fileName = file.name.trim().isEmpty ? 'upload.bin' : file.name;
     final fileBytes = file.bytes;
     if (fileBytes != null) {
-      return http.MultipartFile.fromBytes('file', fileBytes, filename: fileName);
+      return http.MultipartFile(
+        'file',
+        _trackUploadProgress(Stream<List<int>>.value(fileBytes), fileBytes.length, onProgress),
+        fileBytes.length,
+        filename: fileName,
+      );
     }
 
     final filePath = file.path;
@@ -541,7 +576,31 @@ class ApiService {
       throw const ApiException('未获取到上传文件内容');
     }
 
-    return http.MultipartFile.fromPath('file', filePath, filename: fileName);
+    final ioFile = File(filePath);
+    final fileLength = await ioFile.length();
+    return http.MultipartFile(
+      'file',
+      _trackUploadProgress(ioFile.openRead(), fileLength, onProgress),
+      fileLength,
+      filename: fileName,
+    );
+  }
+
+  Stream<List<int>> _trackUploadProgress(
+    Stream<List<int>> source,
+    int totalBytes,
+    void Function(double progress)? onProgress,
+  ) async* {
+    if (onProgress == null || totalBytes <= 0) {
+      yield* source;
+      return;
+    }
+    var sentBytes = 0;
+    await for (final chunk in source) {
+      sentBytes += chunk.length;
+      onProgress((sentBytes / totalBytes).clamp(0, 1).toDouble());
+      yield chunk;
+    }
   }
 
   void _handleUnauthorized(int statusCode) {

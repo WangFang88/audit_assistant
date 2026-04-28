@@ -166,6 +166,7 @@ export declare class OverviewService {
             isTeamAgent: boolean;
             unreadCount: number;
             lastMessage: string;
+            lastMessageAt: string;
         }[];
         activeTeamAgent: {
             id: string;

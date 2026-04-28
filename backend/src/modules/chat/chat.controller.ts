@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ChatService, SendMessageDto } from './chat.service';
 
@@ -19,6 +19,16 @@ export class ChatController {
   @Delete('conversations/:conversationId/messages')
   async clearMessages(@Param('conversationId') conversationId: string) {
     return this.chatService.clearConversationMessages(conversationId);
+  }
+
+  @Delete('conversations/:conversationId/messages/:messageId')
+  async removeMessage(@Param('conversationId') conversationId: string, @Param('messageId') messageId: string) {
+    return this.chatService.removeMessage(conversationId, messageId);
+  }
+
+  @Patch('conversations/:conversationId/messages/:messageId/recall')
+  async recallMessage(@Param('conversationId') conversationId: string, @Param('messageId') messageId: string) {
+    return this.chatService.recallMessage(conversationId, messageId);
   }
 
   @Delete('direct-conversations/:conversationId')

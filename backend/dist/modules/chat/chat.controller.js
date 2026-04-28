@@ -29,6 +29,12 @@ let ChatController = class ChatController {
     async clearMessages(conversationId) {
         return this.chatService.clearConversationMessages(conversationId);
     }
+    async removeMessage(conversationId, messageId) {
+        return this.chatService.removeMessage(conversationId, messageId);
+    }
+    async recallMessage(conversationId, messageId) {
+        return this.chatService.recallMessage(conversationId, messageId);
+    }
     async removeDirectConversation(conversationId) {
         return this.chatService.removeDirectConversation(conversationId);
     }
@@ -61,6 +67,22 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "clearMessages", null);
+__decorate([
+    (0, common_1.Delete)('conversations/:conversationId/messages/:messageId'),
+    __param(0, (0, common_1.Param)('conversationId')),
+    __param(1, (0, common_1.Param)('messageId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "removeMessage", null);
+__decorate([
+    (0, common_1.Patch)('conversations/:conversationId/messages/:messageId/recall'),
+    __param(0, (0, common_1.Param)('conversationId')),
+    __param(1, (0, common_1.Param)('messageId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "recallMessage", null);
 __decorate([
     (0, common_1.Delete)('direct-conversations/:conversationId'),
     __param(0, (0, common_1.Param)('conversationId')),

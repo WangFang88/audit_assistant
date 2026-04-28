@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
 export type SavedFileRecord = {
@@ -80,6 +80,14 @@ export class FileStorageService {
     const logicalPath = `/files/chat/${channel}/${options.conversationId}/${options.messageId}/original${extension}`;
 
     return this.writeStoredFile(folder, options.file, logicalPath);
+  }
+
+  removeChatMessageFile(sourcePath: string) {
+    const normalizedPath = sourcePath.replace(/^\/files\//, '').replace(/\//g, '\\');
+    const filePath = join(this.getUploadRoot(), normalizedPath);
+    if (existsSync(filePath)) {
+      unlinkSync(filePath);
+    }
   }
 
   removeChatConversationFiles(conversationType: 'group' | 'direct', conversationId: string) {

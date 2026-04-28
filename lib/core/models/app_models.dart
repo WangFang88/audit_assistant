@@ -346,6 +346,7 @@ class ConversationSummary {
     required this.unreadCount,
     required this.groupId,
     required this.isTeamAgent,
+    required this.lastMessageAt,
   });
 
   final String id;
@@ -355,6 +356,7 @@ class ConversationSummary {
   final int unreadCount;
   final String? groupId;
   final bool isTeamAgent;
+  final String lastMessageAt;
 
   factory ConversationSummary.fromJson(Map<String, dynamic> json) {
     final rawType = json['type'] as String? ?? '';
@@ -366,6 +368,7 @@ class ConversationSummary {
       unreadCount: json['unreadCount'] as int? ?? 0,
       groupId: json['groupId'] as String?,
       isTeamAgent: json['isTeamAgent'] as bool? ?? rawType == 'agent',
+      lastMessageAt: json['lastMessageAt'] as String? ?? '',
     );
   }
 }

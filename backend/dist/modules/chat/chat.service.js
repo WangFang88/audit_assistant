@@ -320,6 +320,7 @@ let ChatService = class ChatService {
             isTeamAgent: conversation.type === 'agent',
             unreadCount,
             lastMessage: this.buildConversationPreview(messages[messages.length - 1]) ?? '',
+            lastMessageAt: messages.length == 0 ? '' : messages[messages.length - 1].sentAt,
         };
     }
     buildConversationPreview(message) {
@@ -391,6 +392,14 @@ let ChatService = class ChatService {
         await this.conversationRepository.update({ id: conversationId }, {
             lastMessage: content,
             lastMessageAt: sentAt,
+        });
+    }
+    async refreshConversationPreview(conversation) {
+        const messages = await this.getConversationMessages(conversation.id, conversation);
+        const latestMessage = messages.length == 0 ? undefined : messages[messages.length - 1];
+        await this.conversationRepository.update({ id: conversation.id }, {
+            lastMessage: latestMessage == null ? null : this.buildConversationPreview(latestMessage),
+            lastMessageAt: latestMessage == null ? null : new Date(latestMessage.sentAt.replace(' ', 'T')),
         });
     }
     async getDirectConversationPeerUserId(conversationId, currentUserId) {
@@ -600,6 +609,60 @@ let ChatService = class ChatService {
         if (conversation.type === 'direct') {
             this.fileStorageService.removeChatConversationFiles('direct', conversationId);
         }
+        return { success: true };
+    }
+    async removeMessage(conversationId, messageId) {
+        this.assertAdminCannotUseChat();
+        const conversation = await this.getConversationById(conversationId);
+        await this.assertCanAccessConversation(conversation);
+        const message = await this.messageRepository.findOneBy({ id: messageId, conversationId });
+        if (!message) {
+            throw new common_1.NotFoundException('消息不存在');
+        }
+        const currentUser = this.authService.me();
+        if (message.senderUserId !== currentUser.id) {
+            throw new common_1.ForbiddenException('仅支持删除自己发送的消息');
+        }
+        const metadata = (message.metadata ?? {});
+        if (message.messageType === 'file' && metadata.file?.sourcePath) {
+            this.fileStorageService.removeChatMessageFile(metadata.file.sourcePath);
+        }
+        await this.messageRepository.delete({ id: messageId, conversationId });
+        await this.refreshConversationPreview(conversation);
+        return { success: true };
+    }
+    async recallMessage(conversationId, messageId) {
+        this.assertAdminCannotUseChat();
+        const conversation = await this.getConversationById(conversationId);
+        await this.assertCanAccessConversation(conversation);
+        const message = await this.messageRepository.findOneBy({ id: messageId, conversationId });
+        if (!message) {
+            throw new common_1.NotFoundException('消息不存在');
+        }
+        const currentUser = this.authService.me();
+        if (message.senderUserId !== currentUser.id) {
+            throw new common_1.ForbiddenException('仅支持撤回自己发送的消息');
+        }
+        if (message.messageType === 'system') {
+            throw new common_1.BadRequestException('系统消息不支持撤回');
+        }
+        const metadata = (message.metadata ?? {});
+        if (message.messageType === 'file' && metadata.file?.sourcePath) {
+            this.fileStorageService.removeChatMessageFile(metadata.file.sourcePath);
+        }
+        await this.messageRepository.update({ id: messageId, conversationId }, {
+            content: '该消息已撤回',
+            messageType: 'system',
+            metadata: {
+                senderName: currentUser.name,
+                readStatus: metadata.readStatus ?? true,
+                recalledByUserId: currentUser.id,
+                recalledAt: new Date().toISOString(),
+                originalMessageType: message.messageType,
+                ...(metadata.receiverUserId != null ? { receiverUserId: metadata.receiverUserId } : {}),
+            },
+        });
+        await this.refreshConversationPreview(conversation);
         return { success: true };
     }
     async removeDirectConversation(conversationId) {

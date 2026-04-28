@@ -155,6 +155,7 @@ class DemoDataService {
         unreadCount: 0,
         groupId: 'group-1',
         isTeamAgent: true,
+        lastMessageAt: '2026-04-25 16:55',
       ),
       ConversationSummary(
         id: 'conv-group-1',
@@ -164,6 +165,7 @@ class DemoDataService {
         unreadCount: 2,
         groupId: 'group-1',
         isTeamAgent: false,
+        lastMessageAt: '2026-04-25 16:40',
       ),
       ConversationSummary(
         id: 'conv-direct-1',
@@ -173,6 +175,7 @@ class DemoDataService {
         unreadCount: 0,
         groupId: null,
         isTeamAgent: false,
+        lastMessageAt: '2026-04-25 15:20',
       ),
     ];
   }

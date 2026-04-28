@@ -373,6 +373,7 @@ export class ChatService {
       isTeamAgent: conversation.type === 'agent',
       unreadCount,
       lastMessage: this.buildConversationPreview(messages[messages.length - 1]) ?? '',
+      lastMessageAt: messages.length == 0 ? '' : messages[messages.length - 1].sentAt,
     };
   }
 
@@ -463,6 +464,18 @@ export class ChatService {
       {
         lastMessage: content,
         lastMessageAt: sentAt,
+      },
+    );
+  }
+
+  private async refreshConversationPreview(conversation: ConversationRecord) {
+    const messages = await this.getConversationMessages(conversation.id, conversation);
+    const latestMessage = messages.length == 0 ? undefined : messages[messages.length - 1];
+    await this.conversationRepository.update(
+      { id: conversation.id },
+      {
+        lastMessage: latestMessage == null ? null : this.buildConversationPreview(latestMessage),
+        lastMessageAt: latestMessage == null ? null : new Date(latestMessage.sentAt.replace(' ', 'T')),
       },
     );
   }
@@ -721,6 +734,65 @@ export class ChatService {
     if (conversation.type === 'direct') {
       this.fileStorageService.removeChatConversationFiles('direct', conversationId);
     }
+    return { success: true };
+  }
+
+  async removeMessage(conversationId: string, messageId: string) {
+    this.assertAdminCannotUseChat();
+    const conversation = await this.getConversationById(conversationId);
+    await this.assertCanAccessConversation(conversation);
+    const message = await this.messageRepository.findOneBy({ id: messageId, conversationId });
+    if (!message) {
+      throw new NotFoundException('消息不存在');
+    }
+    const currentUser = this.authService.me();
+    if (message.senderUserId !== currentUser.id) {
+      throw new ForbiddenException('仅支持删除自己发送的消息');
+    }
+    const metadata = (message.metadata ?? {}) as { file?: SavedFileRecord };
+    if (message.messageType === 'file' && metadata.file?.sourcePath) {
+      this.fileStorageService.removeChatMessageFile(metadata.file.sourcePath);
+    }
+    await this.messageRepository.delete({ id: messageId, conversationId });
+    await this.refreshConversationPreview(conversation);
+    return { success: true };
+  }
+
+  async recallMessage(conversationId: string, messageId: string) {
+    this.assertAdminCannotUseChat();
+    const conversation = await this.getConversationById(conversationId);
+    await this.assertCanAccessConversation(conversation);
+    const message = await this.messageRepository.findOneBy({ id: messageId, conversationId });
+    if (!message) {
+      throw new NotFoundException('消息不存在');
+    }
+    const currentUser = this.authService.me();
+    if (message.senderUserId !== currentUser.id) {
+      throw new ForbiddenException('仅支持撤回自己发送的消息');
+    }
+    if (message.messageType === 'system') {
+      throw new BadRequestException('系统消息不支持撤回');
+    }
+    const metadata = (message.metadata ?? {}) as { file?: SavedFileRecord; senderName?: string; readStatus?: boolean; receiverUserId?: string | null };
+    if (message.messageType === 'file' && metadata.file?.sourcePath) {
+      this.fileStorageService.removeChatMessageFile(metadata.file.sourcePath);
+    }
+    await this.messageRepository.update(
+      { id: messageId, conversationId },
+      {
+        content: '该消息已撤回',
+        messageType: 'system',
+        metadata: {
+          senderName: currentUser.name,
+          readStatus: metadata.readStatus ?? true,
+          recalledByUserId: currentUser.id,
+          recalledAt: new Date().toISOString(),
+          originalMessageType: message.messageType,
+          ...(metadata.receiverUserId != null ? { receiverUserId: metadata.receiverUserId } : {}),
+        },
+      },
+    );
+    await this.refreshConversationPreview(conversation);
     return { success: true };
   }
 

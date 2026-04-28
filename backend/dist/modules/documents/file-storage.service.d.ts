@@ -22,5 +22,6 @@ export declare class FileStorageService {
         messageId: string;
         conversationType: 'group' | 'direct';
     }): SavedFileRecord;
+    removeChatMessageFile(sourcePath: string): void;
     removeChatConversationFiles(conversationType: 'group' | 'direct', conversationId: string): void;
 }

@@ -64,6 +64,13 @@ let FileStorageService = class FileStorageService {
         const logicalPath = `/files/chat/${channel}/${options.conversationId}/${options.messageId}/original${extension}`;
         return this.writeStoredFile(folder, options.file, logicalPath);
     }
+    removeChatMessageFile(sourcePath) {
+        const normalizedPath = sourcePath.replace(/^\/files\//, '').replace(/\//g, '\\');
+        const filePath = (0, node_path_1.join)(this.getUploadRoot(), normalizedPath);
+        if ((0, node_fs_1.existsSync)(filePath)) {
+            (0, node_fs_1.unlinkSync)(filePath);
+        }
+    }
     removeChatConversationFiles(conversationType, conversationId) {
         const channel = conversationType === 'group' ? 'groups' : 'direct';
         const folder = (0, node_path_1.join)(this.getUploadRoot(), 'chat', channel, conversationId);
