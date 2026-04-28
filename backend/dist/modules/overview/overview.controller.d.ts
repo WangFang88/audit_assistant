@@ -89,7 +89,7 @@ export declare class OverviewController {
             currentPlanId: "free" | "weekly" | "monthly" | "yearly";
             trialEndsAt: string;
             trialDays: number;
-            status: "active" | "trial" | "expired" | "admin-preview";
+            status: "admin-preview" | "active" | "trial" | "expired";
             statusLabel: string;
             latestOrder: {
                 id: string;

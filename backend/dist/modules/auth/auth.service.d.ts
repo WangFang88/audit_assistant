@@ -1,4 +1,6 @@
+import { Repository } from 'typeorm';
 import { AuthUserRepository } from '../../database/repositories/auth-user.repository';
+import { UserEntity } from '../../database/entities/user.entity';
 import { LocalStateService } from '../subscriptions/local-state.service';
 declare class LoginDto {
     phone: string;
@@ -29,7 +31,8 @@ type AuthUserRecord = DemoUser & {
 export declare class AuthService {
     private readonly localStateService;
     private readonly authUserRepository;
-    constructor(localStateService: LocalStateService, authUserRepository: AuthUserRepository);
+    private readonly userRepository;
+    constructor(localStateService: LocalStateService, authUserRepository: AuthUserRepository, userRepository: Repository<UserEntity>);
     private readonly demoUsers;
     private registeredUsers;
     private currentUser;
@@ -68,6 +71,7 @@ export declare class AuthService {
     me(): DemoUser;
     getUserByPhone(phone: string): AuthUserRecord | null;
     updateProfile(dto: UpdateProfileDto): DemoUser;
+    private syncUsersToDatabase;
     isAdmin(): boolean;
 }
 export { LoginDto, RefreshTokenDto, RegisterDto, UpdateProfileDto };

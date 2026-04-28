@@ -8,12 +8,18 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateProfileDto = exports.RegisterDto = exports.RefreshTokenDto = exports.LoginDto = exports.AuthService = void 0;
 const crypto_1 = require("crypto");
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
 const auth_user_repository_1 = require("../../database/repositories/auth-user.repository");
+const user_entity_1 = require("../../database/entities/user.entity");
 const local_state_service_1 = require("../subscriptions/local-state.service");
 class LoginDto {
 }
@@ -59,9 +65,10 @@ __decorate([
     __metadata("design:type", String)
 ], UpdateProfileDto.prototype, "name", void 0);
 let AuthService = class AuthService {
-    constructor(localStateService, authUserRepository) {
+    constructor(localStateService, authUserRepository, userRepository) {
         this.localStateService = localStateService;
         this.authUserRepository = authUserRepository;
+        this.userRepository = userRepository;
         this.demoUsers = [
             {
                 id: 'user-1',
@@ -117,6 +124,7 @@ let AuthService = class AuthService {
                 subscriptionType: 'free',
             }));
         }
+        setImmediate(() => this.syncUsersToDatabase());
     }
     get users() {
         return [...this.demoUsers, ...this.registeredUsers];
@@ -281,6 +289,11 @@ let AuthService = class AuthService {
         this.currentUser = { ...this.currentUser, name: dto.name };
         return this.currentUser;
     }
+    async syncUsersToDatabase() {
+        for (const user of this.users) {
+            await this.userRepository.upsert({ id: user.id, phone: user.phone, nickname: user.name, passwordHash: user.passwordHash ?? '', role: user.role }, ['id']).catch(() => { });
+        }
+    }
     isAdmin() {
         return this.currentUser.role === 'admin';
     }
@@ -288,7 +301,9 @@ let AuthService = class AuthService {
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
+    __param(2, (0, typeorm_1.InjectRepository)(user_entity_1.UserEntity)),
     __metadata("design:paramtypes", [local_state_service_1.LocalStateService,
-        auth_user_repository_1.AuthUserRepository])
+        auth_user_repository_1.AuthUserRepository,
+        typeorm_2.Repository])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map
