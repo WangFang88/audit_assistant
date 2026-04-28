@@ -68,7 +68,7 @@ export declare class SubscriptionsService {
     recordQueryLog(queryLog: QueryLogSnapshot): void;
     syncSubscriptionOrder(order: SubscriptionOrderSnapshot): void;
     createSubscriptionOrder(dto: CreateSubscriptionOrderDto): SubscriptionOrderSnapshot;
-    getOverview(actualGroupCount?: number): {
+    getOverview(actualGroupCount?: number, actualPrivateDocuments?: number): {
         currentPlanId: "free" | "weekly" | "monthly" | "yearly";
         trialEndsAt: string;
         trialDays: number;

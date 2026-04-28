@@ -386,6 +386,11 @@ let DocumentsService = class DocumentsService {
             return groupId != null && document.groupId === groupId;
         });
     }
+    async countPrivateDocuments(groupIds) {
+        if (groupIds.length === 0)
+            return 0;
+        return this.persistedDocumentRepository.countBy({ libraryType: 'private', teamId: (0, typeorm_2.In)(groupIds), deletedAt: (0, typeorm_2.IsNull)() });
+    }
     async listExtractionJobs(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
         if (!this.authService.isAdmin() && groupId != null) {

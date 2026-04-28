@@ -78,6 +78,7 @@ export declare class DocumentsService {
     private buildImportedChunkId;
     private ensurePersistedDocumentSeedData;
     listDocuments(groupId?: string): Promise<DocumentRecord[]>;
+    countPrivateDocuments(groupIds: string[]): Promise<number>;
     listExtractionJobs(groupId?: string): Promise<ExtractJobRecord[]>;
     getReadyChunks(groupId?: string): Promise<DocumentChunkRecord[]>;
     listDocumentChunks(documentId: string): Promise<DocumentChunkRecord[]>;
