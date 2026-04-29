@@ -587,9 +587,6 @@ export class ChatService {
       throw new BadRequestException('请输入消息内容后再发送');
     }
 
-    if (file != null && conversation.type === 'agent') {
-      throw new BadRequestException('当前仅支持私信和群聊发送文件');
-    }
 
     const currentUser = this.authService.me();
     const receiverUserId =

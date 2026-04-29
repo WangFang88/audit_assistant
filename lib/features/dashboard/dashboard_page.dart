@@ -3247,7 +3247,7 @@ String get _activeConversationType {
                             children: [
                               Expanded(
                                 child: OutlinedButton.icon(
-                                  onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage || _activeConversationType == 'agent'
+                                  onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage
                                       ? null
                                       : _pickChatFiles,
                                   icon: const Icon(Icons.attach_file),
@@ -3276,7 +3276,7 @@ String get _activeConversationType {
                         children: [
                           IconButton(
                             tooltip: '发送文件',
-                            onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage || _activeConversationType == 'agent'
+                            onPressed: _activeGroupId == null || _selectedConversationId == null || _sendingMessage
                                 ? null
                                 : _pickChatFiles,
                             icon: const Icon(Icons.attach_file),
@@ -3287,7 +3287,7 @@ String get _activeConversationType {
                               controller: _messageController,
                               enabled: _activeGroupId != null && _selectedConversationId != null && !_sendingMessage,
                               decoration: InputDecoration(
-                                labelText: _activeConversationType == 'agent' ? '输入消息（Agent 会话暂不支持文件）' : '输入消息或附言',
+                                labelText: '输入消息或附言',
                               ),
                             ),
                           ),
