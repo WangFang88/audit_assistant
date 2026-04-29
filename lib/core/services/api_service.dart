@@ -65,6 +65,13 @@ class ApiService {
       return null;
     }
 
+    final userJson = prefs.getString(_userKey);
+    if (userJson != null) {
+      try {
+        return AppUser.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
+      } catch (_) {}
+    }
+
     return fetchCurrentUser();
   }
 
