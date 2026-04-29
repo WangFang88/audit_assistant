@@ -27,7 +27,7 @@ async function bootstrap() {
     app.useStaticAssets(webDistPath, { index: false });
     const { Router } = require('express');
     const router = Router();
-    router.get('*', (_req: any, res: any) => res.sendFile(join(webDistPath, 'index.html')));
+    router.get('(.*)', (_req: any, res: any) => res.sendFile(join(webDistPath, 'index.html')));
     app.use(router);
   }
 
