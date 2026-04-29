@@ -130,7 +130,7 @@ let QueryService = class QueryService {
             ? '\u5f53\u524d\u8303\u56f4\u5185\u5c1a\u672a\u547d\u4e2d\u53ef\u7528\u6761\u6b3e\uff0c\u8bf7\u5c1d\u8bd5\u8865\u5145\u66f4\u660e\u786e\u7684\u5173\u952e\u8bcd\u3001\u6761\u6b3e\u53f7\u6216\u5207\u6362\u9879\u76ee\u7ec4\u540e\u91cd\u8bd5\u3002'
             : null;
         const qwenAnswer = fallbackAnswer == null
-            ? await this.qwenService.generate(dto.question, candidates.map((c) => c.matchedChunk))
+            ? await this.qwenService.generate(dto.question, candidates.map((c) => `【${c.title}】${c.matchedChunk}`))
             : null;
         const answer = fallbackAnswer ?? qwenAnswer ?? '\u68c0\u7d22\u5b8c\u6210\uff0c\u8bf7\u67e5\u770b\u4e0b\u65b9\u5f15\u7528\u6761\u6b3e\u3002';
         if (!options?.skipAccounting) {
