@@ -13,7 +13,7 @@ let QwenService = QwenService_1 = class QwenService {
     constructor() {
         this.logger = new common_1.Logger(QwenService_1.name);
         this.apiKey = process.env.QWEN_API_KEY ?? '';
-        this.model = process.env.QWEN_MODEL ?? 'qwen-plus';
+        this.model = process.env.QWEN_MODEL ?? 'qwen3-235b-a22b';
         this.endpoint = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
     }
     async generate(question, contextChunks) {

@@ -35,6 +35,9 @@ let DocumentsController = class DocumentsController {
     async reembedAll() {
         return this.documentsService.reembedAll();
     }
+    async deleteDocument(documentId) {
+        return this.documentsService.deleteDocument(documentId);
+    }
 };
 exports.DocumentsController = DocumentsController;
 __decorate([
@@ -73,6 +76,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], DocumentsController.prototype, "reembedAll", null);
+__decorate([
+    (0, common_1.Delete)(':documentId'),
+    __param(0, (0, common_1.Param)('documentId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], DocumentsController.prototype, "deleteDocument", null);
 exports.DocumentsController = DocumentsController = __decorate([
     (0, common_1.Controller)('documents'),
     __metadata("design:paramtypes", [documents_service_1.DocumentsService])

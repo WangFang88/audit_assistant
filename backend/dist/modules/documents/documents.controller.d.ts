@@ -67,4 +67,5 @@ export declare class DocumentsController {
     reembedAll(): Promise<{
         total: number;
     }>;
+    deleteDocument(documentId: string): Promise<void>;
 }

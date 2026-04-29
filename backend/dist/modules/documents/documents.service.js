@@ -810,6 +810,16 @@ let DocumentsService = class DocumentsService {
         });
         return { total: chunks.length };
     }
+    async deleteDocument(documentId) {
+        const document = await this.persistedDocumentRepository.findOne({ where: { id: documentId, deletedAt: (0, typeorm_2.IsNull)() } });
+        if (!document)
+            throw new Error('文件不存在');
+        await this.persistedChunkRepository.delete({ documentId });
+        await this.persistedExtractionJobRepository.delete({ documentId });
+        await this.persistedDocumentRepository.delete({ id: documentId });
+        const privateDocumentCount = await this.countVisiblePrivateDocuments();
+        this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
+    }
     async removeGroupDocuments(groupId) {
         await this.ensurePersistedDocumentSeedData();
         const documents = await this.persistedDocumentRepository.find({ where: { teamId: groupId, deletedAt: (0, typeorm_2.IsNull)() } });

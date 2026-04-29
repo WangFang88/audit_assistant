@@ -48,7 +48,7 @@ export declare class OverviewController {
             userId: string;
             name: string;
             phone: string;
-            role: "leader" | "member";
+            role: "member" | "leader";
         }[];
         documents: {
             id: string;

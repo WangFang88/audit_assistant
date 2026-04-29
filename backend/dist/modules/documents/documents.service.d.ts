@@ -117,6 +117,7 @@ export declare class DocumentsService {
     reembedAll(): Promise<{
         total: number;
     }>;
+    deleteDocument(documentId: string): Promise<void>;
     removeGroupDocuments(groupId: string): Promise<void>;
     getLibraryScopeSummary(groupId?: string): Promise<{
         scopeMode: string;

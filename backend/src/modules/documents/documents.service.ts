@@ -929,7 +929,15 @@ export class DocumentsService {
 
   async deleteDocument(documentId: string) {
     const document = await this.persistedDocumentRepository.findOne({ where: { id: documentId, deletedAt: IsNull() } });
-    if (!document) throw new Error('文件不存在');
+    if (!document) throw new NotFoundException('文件不存在');
+
+    if (document.libraryType === 'public') {
+      if (!this.authService.isAdmin()) throw new ForbiddenException('只有管理员才能删除公共库文件');
+    } else {
+      if (!document.teamId) throw new ForbiddenException('无法确认文件所属项目组');
+      await this.groupsService.assertIsLeader(document.teamId);
+    }
+
     await this.persistedChunkRepository.delete({ documentId });
     await this.persistedExtractionJobRepository.delete({ documentId });
     await this.persistedDocumentRepository.delete({ id: documentId });
