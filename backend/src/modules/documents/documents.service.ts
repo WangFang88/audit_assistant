@@ -862,7 +862,7 @@ export class DocumentsService {
       await this.persistedChunkRepository.save(generatedChunks.map((chunk, index) => this.toChunkEntity(chunk, index)));
       // 异步写入 embedding，不阻塞响应
       setImmediate(() => {
-        this.embedChunksAsync(generatedChunks.map((c) => c.id)).catch(() => {});
+        this.embedChunksAsync(generatedChunks.map((c) => c.id), `job-${document.id}`).catch(() => {});
       });
     }
     if (!hasRawText || classification.pipelineStage !== 'indexed') {
@@ -908,7 +908,7 @@ export class DocumentsService {
     };
   }
 
-  private async embedChunksAsync(chunkIds: string[]): Promise<void> {
+  private async embedChunksAsync(chunkIds: string[], jobId?: string): Promise<void> {
     for (const chunkId of chunkIds) {
       const entity = await this.persistedChunkRepository.findOne({ where: { id: chunkId } });
       if (!entity) continue;
@@ -916,6 +916,12 @@ export class DocumentsService {
       if (vector) {
         await this.persistedChunkRepository.update({ id: chunkId }, { embedding: vector });
       }
+    }
+    if (jobId) {
+      await this.persistedExtractionJobRepository.update(
+        { id: jobId },
+        { status: 'completed', progress: 100, finishedAt: new Date() },
+      );
     }
   }
 
