@@ -25,7 +25,7 @@ export class FileStorageService {
   ]);
 
   private getUploadRoot() {
-    return join(process.cwd(), '.data', 'uploads');
+    return process.env.UPLOAD_ROOT ?? join(process.cwd(), '.data', 'uploads');
   }
 
   private normalizeOriginalFileName(fileName: string) {
