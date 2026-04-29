@@ -26,7 +26,7 @@ let FileStorageService = class FileStorageService {
         ]);
     }
     getUploadRoot() {
-        return (0, node_path_1.join)(process.cwd(), '.data', 'uploads');
+        return process.env.UPLOAD_ROOT ?? (0, node_path_1.join)(process.cwd(), '.data', 'uploads');
     }
     normalizeOriginalFileName(fileName) {
         if (fileName.length === 0) {
