@@ -1445,6 +1445,14 @@
       "queryText": "报销单没有发票信息和领导签字",
       "queriedAt": "2026-04-28 20:13:02",
       "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777436863011",
+      "userId": "user-2",
+      "teamId": "group-1",
+      "queryText": "今天星期几",
+      "queriedAt": "2026-04-28 20:27:43",
+      "consumedQuota": 1
     }
   ],
   "subscriptions": [
@@ -1463,6 +1471,22 @@
       "amount": "70.00",
       "paidAt": "2026-04-28 20:26",
       "expiredAt": "2026-05-05 20:26"
+    },
+    {
+      "id": "order-1777441084239",
+      "userId": "user-2",
+      "planType": "weekly",
+      "amount": "70.00",
+      "paidAt": "2026-04-28 21:38",
+      "expiredAt": "2026-05-05 21:38"
+    },
+    {
+      "id": "order-1777441180366",
+      "userId": "user-4",
+      "planType": "weekly",
+      "amount": "70.00",
+      "paidAt": "2026-04-28 21:39",
+      "expiredAt": "2026-05-05 21:39"
     }
   ],
   "users": [

@@ -2018,7 +2018,14 @@ String get _activeConversationType {
           Text(
             _isAdmin
                 ? '当前角色：管理员 · 当前视角：公共库管理'
-                : '当前角色：${user.role} · 试用到期：${subscription.trialEndsAt} · 全功能试用 ${subscription.trialDays} 天',
+                : () {
+                    final s = subscription;
+                    final isActive = s.effectiveOrder != null;
+                    if (isActive) return '当前角色：${user.role} · ${s.effectiveOrder!.planLabel} · 到期：${s.effectiveOrder!.expiredAt}';
+                    final isExpired = s.planId == 'expired' || s.statusLabel.contains('已过期');
+                    if (isExpired) return '当前角色：${user.role} · 试用已结束，请订阅以继续使用';
+                    return '当前角色：${user.role} · 试用到期：${s.trialEndsAt} · 全功能试用 ${s.trialDays} 天';
+                  }(),
           ),
           const SizedBox(height: 16),
           Row(
