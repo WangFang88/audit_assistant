@@ -25,10 +25,10 @@ async function bootstrap() {
   const webDistPath = process.env.WEB_DIST_PATH ?? join(process.cwd(), '..', 'web');
   if (require('node:fs').existsSync(webDistPath)) {
     app.useStaticAssets(webDistPath, { index: false });
-    const { Router } = require('express');
-    const router = Router();
-    router.get('(.*)', (_req: any, res: any) => res.sendFile(join(webDistPath, 'index.html')));
-    app.use(router);
+    app.getHttpAdapter().getInstance().use((_req: any, res: any, next: any) => {
+      if (_req.path.startsWith('/api') || _req.path.startsWith('/files')) return next();
+      res.sendFile(join(webDistPath, 'index.html'));
+    });
   }
 
   await app.listen(process.env.PORT ? Number(process.env.PORT) : 3000);
