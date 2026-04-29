@@ -1423,64 +1423,7 @@
       "consumedQuota": 1
     }
   ],
-  "subscriptions": [
-    {
-      "id": "order-free-1",
-      "userId": "user-2",
-      "planType": "free",
-      "amount": "0.00",
-      "paidAt": "2026-04-24 09:00",
-      "expiredAt": "2026-04-30 00:00"
-    },
-    {
-      "id": "order-1777266405588",
-      "userId": "user-2",
-      "planType": "yearly",
-      "amount": "2000.00",
-      "paidAt": "2026-04-25 21:06",
-      "expiredAt": "2027-04-25 21:06"
-    },
-    {
-      "id": "order-1777294312811",
-      "userId": "user-3",
-      "planType": "weekly",
-      "amount": "70.00",
-      "paidAt": "2026-04-26 12:51",
-      "expiredAt": "2026-05-03 12:51"
-    },
-    {
-      "id": "order-1777346306376",
-      "userId": "user-1777267615647",
-      "planType": "weekly",
-      "amount": "70.00",
-      "paidAt": "2026-04-27 11:18",
-      "expiredAt": "2026-05-04 11:18"
-    },
-    {
-      "id": "order-1777346318731",
-      "userId": "user-1777267615647",
-      "planType": "monthly",
-      "amount": "200.00",
-      "paidAt": "2026-04-27 11:18",
-      "expiredAt": "2026-05-27 11:18"
-    },
-    {
-      "id": "order-1777346332482",
-      "userId": "user-1777267615647",
-      "planType": "yearly",
-      "amount": "2000.00",
-      "paidAt": "2026-04-27 11:18",
-      "expiredAt": "2027-04-27 11:18"
-    },
-    {
-      "id": "order-1777382976787",
-      "userId": "user-3",
-      "planType": "yearly",
-      "amount": "2000.00",
-      "paidAt": "2026-04-28 05:29",
-      "expiredAt": "2027-04-28 05:29"
-    }
-  ],
+  "subscriptions": [],
   "users": [
     {
       "id": "user-1777267615647",
