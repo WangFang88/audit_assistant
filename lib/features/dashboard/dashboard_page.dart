@@ -319,11 +319,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return subscription.dailyQueriesUsed >= subscription.dailyQueriesLimit;
   }
 
-  bool _isCurrentPlan(String planId) {
-    return _overview?.subscription.planId == planId;
-  }
-
-  String get _activeConversationType {
+String get _activeConversationType {
     final conversation = _selectedConversation;
     if (conversation?.isTeamAgent ?? false) {
       return 'agent';
@@ -1163,9 +1159,36 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _subscribe(String planType) async {
-    if (_isAdmin) {
-      return;
-    }
+    if (_isAdmin) return;
+
+    final subscription = _overview?.subscription;
+    final planLabels = {'weekly': '周订阅 ¥70/7天', 'monthly': '月订阅 ¥200/30天', 'yearly': '年订阅 ¥2000/365天'};
+    final label = planLabels[planType] ?? planType;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确认开通订阅'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('套餐：$label'),
+            const SizedBox(height: 8),
+            if (subscription != null && subscription.effectiveOrder != null)
+              Text('注意：当前已有生效订阅，新订阅将在到期后生效。', style: TextStyle(color: Colors.orange[700])),
+            const SizedBox(height: 8),
+            const Text('（演示模式：无需真实支付，点击确认即刻开通）', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('确认开通')),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
 
     setState(() {
       _subscribing = true;
@@ -1175,31 +1198,17 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       await widget.apiService.createSubscriptionOrder(planType: planType);
       await _loadDashboard(preferredGroupId: _activeGroupId);
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('模拟订阅已开通。')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$label 已开通。')));
     } on ApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _error = error.message;
-      });
+      if (!mounted) return;
+      setState(() => _error = error.message);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _error = '模拟订阅开通失败。';
-      });
+      if (!mounted) return;
+      setState(() => _error = '订阅开通失败。');
     } finally {
-      if (mounted) {
-        setState(() {
-          _subscribing = false;
-        });
-      }
+      if (mounted) setState(() => _subscribing = false);
     }
   }
 
@@ -3245,6 +3254,86 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  List<Widget> _buildSubscriptionContent(SubscriptionOverview s) {
+    final isExpired = s.planId == 'expired' || s.statusLabel.contains('已过期');
+    final isActive = s.effectiveOrder != null && !isExpired && s.planId != 'free';
+    final isTrial = s.planId == 'free' && !isExpired;
+
+    return [
+      // 状态横幅
+      if (isExpired)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(color: Colors.red[50], borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red[200]!)),
+          child: Row(children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red[700], size: 18),
+            const SizedBox(width: 8),
+            Expanded(child: Text('免费试用已到期，功能受限。请选择套餐继续使用。', style: TextStyle(color: Colors.red[700]))),
+          ]),
+        )
+      else if (isTrial && s.trialEndsAt.isNotEmpty)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue[200]!)),
+          child: Row(children: [
+            Icon(Icons.info_outline, color: Colors.blue[700], size: 18),
+            const SizedBox(width: 8),
+            Expanded(child: Text('免费试用中，到期时间：${s.trialEndsAt}', style: TextStyle(color: Colors.blue[700]))),
+          ]),
+        )
+      else if (isActive)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.green[200]!)),
+          child: Row(children: [
+            Icon(Icons.check_circle_outline, color: Colors.green[700], size: 18),
+            const SizedBox(width: 8),
+            Expanded(child: Text('${s.effectiveOrder!.planLabel} 生效中，到期：${s.effectiveOrder!.expiredAt}', style: TextStyle(color: Colors.green[700]))),
+          ]),
+        ),
+
+      // 用量
+      Wrap(spacing: 12, runSpacing: 12, children: [
+        _MetricTile(label: '项目组', value: s.groupUsage),
+        _MetricTile(label: '私有文件', value: s.documentUsage),
+        _MetricTile(label: '今日查询', value: s.queryUsage),
+      ]),
+      const SizedBox(height: 20),
+
+      // 套餐选择
+      Text('选择套餐', style: Theme.of(context).textTheme.titleSmall),
+      const SizedBox(height: 12),
+      _SubscriptionPlanRow(
+        plans: [
+          _PlanOption(id: 'weekly', label: '周订阅', price: s.weeklyPrice, duration: '7 天'),
+          _PlanOption(id: 'monthly', label: '月订阅', price: s.monthlyPrice, duration: '30 天'),
+          _PlanOption(id: 'yearly', label: '年订阅', price: s.yearlyPrice, duration: '365 天', recommended: true),
+        ],
+        currentPlanId: s.planId,
+        subscribing: _subscribing,
+        onSubscribe: _subscribe,
+      ),
+
+      // 历史记录
+      if (s.orderHistory.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        Text('开通记录', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        ...s.orderHistory.map((o) => Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text('${o.planLabel}  ¥${o.amount}  ${o.paidAt} → ${o.expiredAt}',
+              style: Theme.of(context).textTheme.bodySmall),
+        )),
+      ],
+    ];
+  }
+
   Widget _buildAccount(AppUser user, SubscriptionOverview subscription) {
     final recentAuditEvents = _overview?.recentAuditEvents ?? const <AuditEventSummary>[];
     return ListView(
@@ -3307,65 +3396,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       Text('• 项目组成员管理、群聊协作和私有库导入已从管理员视角隐藏。'),
                     ],
                   ]
-                : [
-                    Text(subscription.planName),
-                    const SizedBox(height: 8),
-                    Text(subscription.priceLabel),
-                    const SizedBox(height: 8),
-                    Text('当前状态：${subscription.statusLabel}'),
-                    const SizedBox(height: 8),
-                    Text(subscription.groupUsage),
-                    const SizedBox(height: 8),
-                    Text(subscription.documentUsage),
-                    const SizedBox(height: 8),
-                    Text(subscription.queryUsage),
-                    if (subscription.effectiveOrder != null) ...[
-                      const SizedBox(height: 8),
-                      Text('当前生效：${subscription.effectiveOrder!.planLabel}'),
-                      const SizedBox(height: 8),
-                      Text('模拟开通时间：${subscription.effectiveOrder!.paidAt}'),
-                      const SizedBox(height: 8),
-                      Text('权益到期时间：${subscription.effectiveOrder!.expiredAt}'),
-                    ],
-                    if (subscription.latestOrder != null) ...[
-                      const SizedBox(height: 8),
-                      Text('最近记录：${subscription.latestOrder!.id}'),
-                      const SizedBox(height: 8),
-                      Text('最近套餐：${subscription.latestOrder!.planLabel}'),
-                    ],
-                    if (subscription.orderHistory.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Text('模拟开通记录', style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 8),
-                      ...subscription.orderHistory.map(
-                        (order) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Text('${order.planLabel} · 模拟开通金额 ¥${order.amount} · ${order.paidAt} → ${order.expiredAt}'),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        FilledButton.tonal(
-                          onPressed: _subscribing || _isCurrentPlan('weekly') ? null : () => _subscribe('weekly'),
-                          child: _subscribing && !_isCurrentPlan('monthly') && !_isCurrentPlan('yearly')
-                              ? const Text('处理中...')
-                              : Text(_isCurrentPlan('weekly') ? '当前为周订阅' : '模拟开通周订阅'),
-                        ),
-                        FilledButton.tonal(
-                          onPressed: _subscribing || _isCurrentPlan('monthly') ? null : () => _subscribe('monthly'),
-                          child: Text(_isCurrentPlan('monthly') ? '当前为月订阅' : '模拟开通月订阅'),
-                        ),
-                        FilledButton(
-                          onPressed: _subscribing || _isCurrentPlan('yearly') ? null : () => _subscribe('yearly'),
-                          child: Text(_isCurrentPlan('yearly') ? '当前为年订阅' : '模拟开通年订阅'),
-                        ),
-                      ],
-                    ),
-                  ],
+                : _buildSubscriptionContent(subscription),
           ),
         ),
         const SizedBox(height: 16),
@@ -3652,6 +3683,79 @@ class _ImagePreviewDialogState extends State<_ImagePreviewDialog> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PlanOption {
+  const _PlanOption({required this.id, required this.label, required this.price, required this.duration, this.recommended = false});
+  final String id;
+  final String label;
+  final String price;
+  final String duration;
+  final bool recommended;
+}
+
+class _SubscriptionPlanRow extends StatelessWidget {
+  const _SubscriptionPlanRow({
+    required this.plans,
+    required this.currentPlanId,
+    required this.subscribing,
+    required this.onSubscribe,
+  });
+
+  final List<_PlanOption> plans;
+  final String currentPlanId;
+  final bool subscribing;
+  final void Function(String planType) onSubscribe;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: plans.map((plan) {
+        final isCurrent = currentPlanId == plan.id;
+        return SizedBox(
+          width: 140,
+          child: Card(
+            elevation: isCurrent ? 2 : 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(color: isCurrent ? Theme.of(context).colorScheme.primary : Colors.grey[300]!, width: isCurrent ? 2 : 1),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (plan.recommended)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      margin: const EdgeInsets.only(bottom: 6),
+                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(4)),
+                      child: Text('推荐', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 11)),
+                    ),
+                  Text(plan.label, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(plan.price, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(plan.duration, style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: isCurrent
+                        ? OutlinedButton(onPressed: null, child: const Text('当前套餐'))
+                        : FilledButton(
+                            onPressed: subscribing ? null : () => onSubscribe(plan.id),
+                            child: subscribing ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('开通'),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
