@@ -2159,13 +2159,15 @@ String get _activeConversationType {
               return Column(
                 children: [
                   if (!_isAdmin) ...[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(flex: 5, child: _buildQueryPanel(activeContext)),
-                        const SizedBox(width: 16),
-                        Expanded(flex: 6, child: _buildResultPanel(context, result)),
-                      ],
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(flex: 5, child: _buildQueryPanel(activeContext)),
+                          const SizedBox(width: 16),
+                          Expanded(flex: 6, child: _buildResultPanel(context, result)),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -2230,7 +2232,8 @@ String get _activeConversationType {
 
     return SectionCard(
       title: '检索结果',
-      child: Column(
+      child: SingleChildScrollView(
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Wrap(
@@ -2350,6 +2353,7 @@ String get _activeConversationType {
           ),
           // Text(result.explanation, style: theme.textTheme.bodySmall),
         ],
+      ),
       ),
     );
   }

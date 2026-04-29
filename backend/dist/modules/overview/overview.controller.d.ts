@@ -89,7 +89,7 @@ export declare class OverviewController {
             currentPlanId: string;
             trialEndsAt: string;
             trialDays: number;
-            status: "active" | "admin-preview" | "trial" | "expired";
+            status: "admin-preview" | "trial" | "active" | "expired";
             statusLabel: string;
             latestOrder: {
                 id: string;
@@ -207,54 +207,6 @@ export declare class OverviewController {
             defaultConversationId: string | null;
             retrievalScope: "public_plus_group_private";
         } | null;
-        featuredQuery: {
-            question: string;
-            agentMode: boolean;
-            agent: {
-                id: string;
-                name: string;
-                groupId: string;
-                capabilities: import("../team-agents/team-agents.service").TeamAgentCapability[];
-                defaultConversationId: string | null;
-                retrievalScope: "public_plus_group_private";
-            } | null;
-            scope: {
-                scopeMode: string;
-                label: string;
-                publicLibrary: boolean;
-                privateLibrary: boolean;
-                groupId: string | null;
-                groupName: string | null;
-                isolationNotice: string;
-            };
-            pipeline: string[];
-            retrievalStats: {
-                queryMode: string;
-                tokenCount: number;
-                candidateChunks: number;
-                returnedCitations: number;
-                publicLibraryHits: number;
-                privateLibraryHits: number;
-            };
-            ragMeta: {
-                retrievalMode: string;
-                generationProviderTarget: string;
-                prototypeMode: string;
-                answerTraceable: boolean;
-            };
-            answer: string;
-            citations: {
-                documentId: string;
-                title: string;
-                libraryType: "public" | "private";
-                score: number;
-                matchedChunk: string;
-                reason: string;
-                articleRef: string;
-                chapterTitle: string;
-                pageLabel: string;
-            }[];
-            explanation: string;
-        };
+        featuredQuery: null;
     }>;
 }
