@@ -2535,26 +2535,33 @@ String get _activeConversationType {
               padding: EdgeInsets.only(bottom: 12),
               child: LinearProgressIndicator(),
             ),
-          ...documents.map(
-            (document) => ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-              title: Text(document.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text('${document.uploadedAt} · ${document.libraryType == 'private' ? '私有库' : '公共库'}'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextButton(
-                    onPressed: () => _showDocumentChunksDialog(document),
-                    child: const Text('查看文本块'),
-                  ),
-                  if ((document.libraryType == '公共库' && _isAdmin) ||
-                      (document.libraryType == '私有库' && _isCurrentUserLeader))
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 20),
-                      tooltip: '删除',
-                      onPressed: () => _deleteDocument(document),
+          SizedBox(
+            height: 300,
+            child: SingleChildScrollView(
+              child: Column(
+                children: documents.map(
+                  (document) => ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                    title: Text(document.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text('${document.uploadedAt} · ${document.libraryType == 'private' ? '私有库' : '公共库'}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextButton(
+                          onPressed: () => _showDocumentChunksDialog(document),
+                          child: const Text('查看文本块'),
+                        ),
+                        if ((document.libraryType == '公共库' && _isAdmin) ||
+                            (document.libraryType == '私有库' && _isCurrentUserLeader))
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20),
+                            tooltip: '删除',
+                            onPressed: () => _deleteDocument(document),
+                          ),
+                      ],
                     ),
-                ],
+                  ),
+                ).toList(),
               ),
             ),
           ),
@@ -2566,16 +2573,23 @@ String get _activeConversationType {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
-          ...extractJobs.map(
-            (job) {
-              final doc = documents.where((d) => d.id == job.documentId).firstOrNull;
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(doc?.title ?? job.documentId),
-                subtitle: Text('${job.stage} · ${job.startedAt}'),
-                trailing: Text('${job.progress}%'),
-              );
-            },
+          SizedBox(
+            height: 200,
+            child: SingleChildScrollView(
+              child: Column(
+                children: extractJobs.map(
+                  (job) {
+                    final doc = documents.where((d) => d.id == job.documentId).firstOrNull;
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(doc?.title ?? job.documentId),
+                      subtitle: Text('${job.stage} · ${job.startedAt}'),
+                      trailing: Text('${job.progress}%'),
+                    );
+                  },
+                ).toList(),
+              ),
+            ),
           ),
         ],
       ),
