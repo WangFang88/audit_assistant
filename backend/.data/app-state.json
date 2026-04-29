@@ -1429,6 +1429,22 @@
       "queryText": "帮我查一下这个问题对应的条款“2023年12月4日召开的理事会实际为2024年3月3日召开。2023年度理事会召开次数只有1次。”",
       "queriedAt": "2026-04-28 19:48:37",
       "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777435669251",
+      "userId": "user-1777299160049",
+      "teamId": null,
+      "queryText": "报销单没有发票信息和领导审批",
+      "queriedAt": "2026-04-28 20:07:49",
+      "consumedQuota": 1
+    },
+    {
+      "id": "query-log-1777435982053",
+      "userId": "user-3",
+      "teamId": "group-1",
+      "queryText": "报销单没有发票信息和领导签字",
+      "queriedAt": "2026-04-28 20:13:02",
+      "consumedQuota": 1
     }
   ],
   "subscriptions": [
@@ -1439,6 +1455,14 @@
       "amount": "70.00",
       "paidAt": "2026-04-28 19:45",
       "expiredAt": "2026-05-05 19:45"
+    },
+    {
+      "id": "order-1777436762833",
+      "userId": "user-3",
+      "planType": "weekly",
+      "amount": "70.00",
+      "paidAt": "2026-04-28 20:26",
+      "expiredAt": "2026-05-05 20:26"
     }
   ],
   "users": [
