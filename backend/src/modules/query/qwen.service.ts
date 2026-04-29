@@ -4,7 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 export class QwenService {
   private readonly logger = new Logger(QwenService.name);
   private readonly apiKey = process.env.QWEN_API_KEY ?? '';
-  private readonly model = process.env.QWEN_MODEL ?? 'qwen-plus';
+  private readonly model = process.env.QWEN_MODEL ?? 'qwen3-235b-a22b';
   private readonly endpoint = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
 
   async generate(question: string, contextChunks: string[]): Promise<string | null> {
