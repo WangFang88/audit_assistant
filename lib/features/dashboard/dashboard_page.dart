@@ -2149,7 +2149,7 @@ String get _activeConversationType {
                     if (!_isAdmin) ...[
                       _buildQueryPanel(activeContext),
                       const SizedBox(height: 16),
-                      _buildResultPanel(context, result),
+                      SizedBox(height: 400, child: _buildResultPanel(context, result)),
                     ],
                     _buildDocumentPanel(documents, extractJobs),
                   ],

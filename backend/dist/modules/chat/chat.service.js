@@ -489,9 +489,6 @@ let ChatService = class ChatService {
         if (file == null && content.length === 0) {
             throw new common_1.BadRequestException('请输入消息内容后再发送');
         }
-        if (file != null && conversation.type === 'agent') {
-            throw new common_1.BadRequestException('当前仅支持私信和群聊发送文件');
-        }
         const currentUser = this.authService.me();
         const receiverUserId = conversation.type === 'direct'
             ? (await this.getDirectConversationPeerUserId(dto.conversationId, currentUser.id)) ?? currentUser.id
