@@ -2159,7 +2159,8 @@ String get _activeConversationType {
               return Column(
                 children: [
                   if (!_isAdmin) ...[
-                    IntrinsicHeight(
+                    SizedBox(
+                      height: 500,
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -2230,12 +2231,19 @@ String get _activeConversationType {
   Widget _buildResultPanel(BuildContext context, QueryResult result) {
     final theme = Theme.of(context);
 
-    return SectionCard(
-      title: '检索结果',
-      child: SingleChildScrollView(
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('检索结果', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
           // Wrap(
           //   spacing: 12,
           //   runSpacing: 12,
@@ -2353,7 +2361,11 @@ String get _activeConversationType {
           ),
           // Text(result.explanation, style: theme.textTheme.bodySmall),
         ],
-      ),
+              ),
+            ),
+          ),
+        ],
+        ),
       ),
     );
   }
