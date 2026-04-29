@@ -752,7 +752,7 @@ let DocumentsService = class DocumentsService {
         if (generatedChunks.length > 0) {
             await this.persistedChunkRepository.save(generatedChunks.map((chunk, index) => this.toChunkEntity(chunk, index)));
             setImmediate(() => {
-                this.embedChunksAsync(generatedChunks.map((c) => c.id)).catch(() => { });
+                this.embedChunksAsync(generatedChunks.map((c) => c.id), `job-${document.id}`).catch(() => { });
             });
         }
         if (!hasRawText || classification.pipelineStage !== 'indexed') {
@@ -792,7 +792,7 @@ let DocumentsService = class DocumentsService {
             notes: '导入后会执行文字抽取、多模态拆解、结构化切分与向量化入库，查询阶段不直接扫描原文件。',
         };
     }
-    async embedChunksAsync(chunkIds) {
+    async embedChunksAsync(chunkIds, jobId) {
         for (const chunkId of chunkIds) {
             const entity = await this.persistedChunkRepository.findOne({ where: { id: chunkId } });
             if (!entity)
@@ -801,6 +801,9 @@ let DocumentsService = class DocumentsService {
             if (vector) {
                 await this.persistedChunkRepository.update({ id: chunkId }, { embedding: vector });
             }
+        }
+        if (jobId) {
+            await this.persistedExtractionJobRepository.update({ id: jobId }, { status: 'completed', progress: 100, finishedAt: new Date() });
         }
     }
     async reembedAll() {

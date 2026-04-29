@@ -2551,12 +2551,15 @@ String get _activeConversationType {
           ),
           const SizedBox(height: 8),
           ...extractJobs.map(
-            (job) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text('${job.stage} · ${job.status}'),
-              subtitle: Text('文档 ${job.documentId} · ${job.startedAt}'),
-              trailing: Text('${job.progress}%'),
-            ),
+            (job) {
+              final doc = documents.where((d) => d.id == job.documentId).firstOrNull;
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(doc?.title ?? job.documentId),
+                subtitle: Text('${job.stage} · ${job.startedAt}'),
+                trailing: Text('${job.progress}%'),
+              );
+            },
           ),
         ],
       ),
