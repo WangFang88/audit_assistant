@@ -396,8 +396,12 @@ String get _activeConversationType {
     });
 
     try {
-      final overview = await widget.apiService.fetchDashboard(groupId: groupId);
-      final bundle = await _loadGroupBundle(groupId);
+      final results = await Future.wait([
+        widget.apiService.fetchDashboard(groupId: groupId),
+        _loadGroupBundle(groupId),
+      ]);
+      final overview = results[0] as DashboardOverview;
+      final bundle = results[1] as _GroupBundle;
 
       if (!mounted) {
         return;
@@ -441,10 +445,17 @@ String get _activeConversationType {
   }
 
   Future<_GroupBundle> _loadGroupBundle(String? groupId) async {
-    final conversations = _isAdmin ? const <ConversationSummary>[] : await widget.apiService.fetchConversations(groupId: groupId);
-    final members = _isAdmin || groupId == null ? const <GroupMember>[] : await widget.apiService.fetchMembers(groupId);
-    final documents = await widget.apiService.fetchDocuments(groupId: _isAdmin ? null : groupId);
-    final extractJobs = await widget.apiService.fetchExtractionJobs(groupId: _isAdmin ? null : groupId);
+    final results = await Future.wait([
+      _isAdmin ? Future.value(const <ConversationSummary>[]) : widget.apiService.fetchConversations(groupId: groupId),
+      _isAdmin || groupId == null ? Future.value(const <GroupMember>[]) : widget.apiService.fetchMembers(groupId),
+      widget.apiService.fetchDocuments(groupId: _isAdmin ? null : groupId),
+      widget.apiService.fetchExtractionJobs(groupId: _isAdmin ? null : groupId),
+    ]);
+
+    final conversations = results[0] as List<ConversationSummary>;
+    final members = results[1] as List<GroupMember>;
+    final documents = results[2] as List<KnowledgeDocument>;
+    final extractJobs = results[3] as List<ExtractionJob>;
     final selectedConversationId = _pickConversationId(conversations, groupId);
     final messages = _isAdmin || selectedConversationId == null
         ? const <ChatMessage>[]
