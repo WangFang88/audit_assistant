@@ -2520,8 +2520,8 @@ String get _activeConversationType {
                     onPressed: () => _showDocumentChunksDialog(document),
                     child: const Text('查看文本块'),
                   ),
-                  if ((document.libraryType == 'public' && _isAdmin) ||
-                      (document.libraryType == 'private' && _isCurrentUserLeader))
+                  if ((document.libraryType == '公共库' && _isAdmin) ||
+                      (document.libraryType == '私有库' && _isCurrentUserLeader))
                     IconButton(
                       icon: const Icon(Icons.delete_outline, size: 20),
                       tooltip: '删除',
