@@ -139,7 +139,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      '请先启动 backend 服务。演示账号：审计组长 13800138001、审计助理 13800138002、法规顾问 13800138003、管理员 admin / 13800138000；默认密码均为 123456。也支持输入新手机号后直接注册并登录。',
+                      '请先启动 backend 服务后登录。',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
