@@ -941,6 +941,9 @@ export class DocumentsService {
     await this.persistedChunkRepository.delete({ documentId });
     await this.persistedExtractionJobRepository.delete({ documentId });
     await this.persistedDocumentRepository.delete({ id: documentId });
+    if (document.filePath) {
+      this.fileStorageService.removeChatMessageFile(document.filePath);
+    }
     const privateDocumentCount = await this.countVisiblePrivateDocuments();
     this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
   }
