@@ -28,7 +28,7 @@ class _AuditAssistantAppState extends State<AuditAssistantApp> {
   Future<void> _restoreSession() async {
     AppUser? user;
     try {
-      user = await _apiService.restoreSession();
+      user = await _apiService.restoreSession().timeout(const Duration(seconds: 8));
     } catch (_) {
       user = null;
     }
