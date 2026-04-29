@@ -3816,14 +3816,19 @@ class _SubscriptionPlanRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (plan.recommended)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      margin: const EdgeInsets.only(bottom: 6),
-                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(4)),
-                      child: Text('推荐', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 11)),
-                    ),
-                  Text(plan.label, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Row(
+                    children: [
+                      Text(plan.label, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      if (plan.recommended) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(4)),
+                          child: Text('推荐', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 11)),
+                        ),
+                      ],
+                    ],
+                  ),
                   const SizedBox(height: 4),
                   Text(plan.price, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 16, fontWeight: FontWeight.bold)),
                   Text(plan.duration, style: Theme.of(context).textTheme.bodySmall),
