@@ -2512,7 +2512,7 @@ String get _activeConversationType {
             (document) => ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 4),
               title: Text(document.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text('${document.uploadedAt} · ${document.libraryType} · admin=$_isAdmin'),
+              subtitle: Text('${document.uploadedAt} · ${document.libraryType == 'private' ? '私有库' : '公共库'}'),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
