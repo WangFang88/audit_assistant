@@ -83,8 +83,9 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
+      body: SingleChildScrollView(
+        child: Center(
+          child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 460),
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -148,6 +149,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
+    ),
     );
   }
 }
