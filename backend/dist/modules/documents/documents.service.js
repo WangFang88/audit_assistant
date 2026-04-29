@@ -813,10 +813,22 @@ let DocumentsService = class DocumentsService {
     async deleteDocument(documentId) {
         const document = await this.persistedDocumentRepository.findOne({ where: { id: documentId, deletedAt: (0, typeorm_2.IsNull)() } });
         if (!document)
-            throw new Error('文件不存在');
+            throw new common_1.NotFoundException('文件不存在');
+        if (document.libraryType === 'public') {
+            if (!this.authService.isAdmin())
+                throw new common_1.ForbiddenException('只有管理员才能删除公共库文件');
+        }
+        else {
+            if (!document.teamId)
+                throw new common_1.ForbiddenException('无法确认文件所属项目组');
+            await this.groupsService.assertIsLeader(document.teamId);
+        }
         await this.persistedChunkRepository.delete({ documentId });
         await this.persistedExtractionJobRepository.delete({ documentId });
         await this.persistedDocumentRepository.delete({ id: documentId });
+        if (document.filePath) {
+            this.fileStorageService.removeChatMessageFile(document.filePath);
+        }
         const privateDocumentCount = await this.countVisiblePrivateDocuments();
         this.subscriptionsService.syncUsage({ privateDocuments: privateDocumentCount });
     }
