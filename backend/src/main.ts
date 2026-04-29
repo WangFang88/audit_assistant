@@ -21,6 +21,16 @@ async function bootstrap() {
     }),
   );
 
+  // Serve Flutter Web static files (must be after API prefix)
+  const webDistPath = process.env.WEB_DIST_PATH ?? join(process.cwd(), '..', 'web');
+  if (require('node:fs').existsSync(webDistPath)) {
+    app.useStaticAssets(webDistPath, { index: false });
+    const { Router } = require('express');
+    const router = Router();
+    router.get('*', (_req: any, res: any) => res.sendFile(join(webDistPath, 'index.html')));
+    app.use(router);
+  }
+
   await app.listen(process.env.PORT ? Number(process.env.PORT) : 3000);
 }
 
