@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/models/app_models.dart';
 import '../../core/services/api_service.dart';
 import '../../shared/widgets/section_card.dart';
+import '../payment/payment_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({
@@ -1172,55 +1173,44 @@ String get _activeConversationType {
   Future<void> _subscribe(String planType) async {
     if (_isAdmin) return;
 
-    final subscription = _overview?.subscription;
-    final planLabels = {'weekly': '周订阅 ¥70/7天', 'monthly': '月订阅 ¥200/30天', 'yearly': '年订阅 ¥2000/365天'};
-    final label = planLabels[planType] ?? planType;
+    final s = _overview?.subscription;
+    final planMap = {
+      'weekly':  (_PlanOption(id: 'weekly',  label: '周订阅',  price: s?.weeklyPrice  ?? '¥70',   duration: '7 天'),),
+      'monthly': (_PlanOption(id: 'monthly', label: '月订阅',  price: s?.monthlyPrice ?? '¥200',  duration: '30 天'),),
+      'yearly':  (_PlanOption(id: 'yearly',  label: '年订阅',  price: s?.yearlyPrice  ?? '¥2000', duration: '365 天'),),
+    };
+    final plan = planMap[planType]?.$1;
+    if (plan == null || !mounted) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('确认开通订阅'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('套餐：$label'),
-            const SizedBox(height: 8),
-            if (subscription != null && subscription.effectiveOrder != null)
-              Text('注意：当前已有生效订阅，新订阅将在到期后生效。', style: TextStyle(color: Colors.orange[700])),
-            const SizedBox(height: 8),
-            const Text('（演示模式：无需真实支付，点击确认即刻开通）', style: TextStyle(color: Colors.grey)),
-          ],
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PaymentPage(
+          planId: plan.id,
+          planLabel: plan.label,
+          price: plan.price,
+          duration: plan.duration,
+          onCancel: () => Navigator.of(context).pop(),
+          onPaid: () async {
+            Navigator.of(context).pop();
+            setState(() { _subscribing = true; _error = null; });
+            try {
+              await widget.apiService.createSubscriptionOrder(planType: planType);
+              await _loadDashboard(preferredGroupId: _activeGroupId);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${plan.label} 已开通。')));
+            } on ApiException catch (error) {
+              if (!mounted) return;
+              setState(() => _error = error.message);
+            } catch (_) {
+              if (!mounted) return;
+              setState(() => _error = '订阅开通失败。');
+            } finally {
+              if (mounted) setState(() => _subscribing = false);
+            }
+          },
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('确认开通')),
-        ],
       ),
     );
-
-    if (confirmed != true || !mounted) return;
-
-    setState(() {
-      _subscribing = true;
-      _error = null;
-    });
-
-    try {
-      await widget.apiService.createSubscriptionOrder(planType: planType);
-      await _loadDashboard(preferredGroupId: _activeGroupId);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$label 已开通。')));
-    } on ApiException catch (error) {
-      if (!mounted) return;
-      setState(() => _error = error.message);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _error = '订阅开通失败。');
-    } finally {
-      if (mounted) setState(() => _subscribing = false);
-    }
   }
 
   Future<void> _showMemberInfoDialog(GroupMember member) async {
