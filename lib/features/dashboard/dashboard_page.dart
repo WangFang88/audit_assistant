@@ -2240,7 +2240,7 @@ String get _activeConversationType {
             Text('检索结果', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 16),
             Expanded(
-              child: SingleChildScrollView(
+              child: SelectionArea(child: SingleChildScrollView(
                 child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2362,7 +2362,7 @@ String get _activeConversationType {
           // Text(result.explanation, style: theme.textTheme.bodySmall),
         ],
               ),
-            ),
+            )),
           ),
         ],
         ),
