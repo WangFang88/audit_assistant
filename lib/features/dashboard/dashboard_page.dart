@@ -2520,11 +2520,13 @@ String get _activeConversationType {
                     onPressed: () => _showDocumentChunksDialog(document),
                     child: const Text('查看文本块'),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 20),
-                    tooltip: '删除',
-                    onPressed: () => _deleteDocument(document),
-                  ),
+                  if ((document.libraryType == 'public' && _isAdmin) ||
+                      (document.libraryType == 'private' && _isCurrentUserLeader))
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      tooltip: '删除',
+                      onPressed: () => _deleteDocument(document),
+                    ),
                 ],
               ),
             ),
