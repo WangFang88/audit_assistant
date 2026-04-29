@@ -549,6 +549,16 @@ class ApiService {
     _decodeMap(response);
   }
 
+  Future<void> deleteDocument({required String documentId}) async {
+    final response = await _requestWithRefresh(
+      (headers) => _client.delete(
+        Uri.parse('$_baseUrl/documents/$documentId'),
+        headers: headers,
+      ),
+    );
+    _decodeMap(response);
+  }
+
   Future<void> _refreshSession() async {
     final refreshToken = await getRefreshToken();
     if (refreshToken == null) {

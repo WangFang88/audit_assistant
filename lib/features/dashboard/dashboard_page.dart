@@ -1557,6 +1557,30 @@ String get _activeConversationType {
     }
   }
 
+  Future<void> _deleteDocument(KnowledgeDocument document) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确认删除文件'),
+        content: Text('确定要删除《${document.title}》吗？相关文本块也会一并移除。'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('确认删除')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await widget.apiService.deleteDocument(documentId: document.id);
+      await _refreshDocuments();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('文件已删除。')));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('删除失败。')));
+    }
+  }
+
   Future<void> _deleteGroup(ProjectGroup group) async {
     if (_isAdmin) {
       return;
@@ -2489,9 +2513,19 @@ String get _activeConversationType {
               contentPadding: const EdgeInsets.symmetric(horizontal: 4),
               title: Text(document.title, style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text('${document.uploadedAt} · ${document.libraryType == 'private' ? '私有库' : '公共库'}'),
-              trailing: TextButton(
-                onPressed: () => _showDocumentChunksDialog(document),
-                child: const Text('查看文本块'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: () => _showDocumentChunksDialog(document),
+                    child: const Text('查看文本块'),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    tooltip: '删除',
+                    onPressed: () => _deleteDocument(document),
+                  ),
+                ],
               ),
             ),
           ),

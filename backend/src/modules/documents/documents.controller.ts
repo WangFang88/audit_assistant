@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentsService, ImportDocumentDto } from './documents.service';
 
@@ -30,5 +30,10 @@ export class DocumentsController {
   @Post('reembed-all')
   async reembedAll() {
     return this.documentsService.reembedAll();
+  }
+
+  @Delete(':documentId')
+  async deleteDocument(@Param('documentId') documentId: string) {
+    return this.documentsService.deleteDocument(documentId);
   }
 }
