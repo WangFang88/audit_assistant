@@ -1,62 +1,82 @@
 import 'package:flutter/material.dart';
 
 ThemeData buildAppTheme() {
-  // 自定义浅色清爽色系
-  const primaryColor = Color(0xFF2D6AFF);      // 品牌蓝（更清爽）
-  const secondaryColor = Color(0xFF5C6A81);    // 次要文字
-  const surfaceColor = Color(0xFFFFFFFF);      // 卡片/面板背景
-  const backgroundColor = Color(0xFFF5F7FA);   // 页面背景
-  const dividerColor = Color(0xFFE8ECF2);       // 分割线
+  // ==================== 完整配色方案 ====================
+  const primaryColor = Color(0xFF2D6AFF);        // 品牌蓝
+  const primaryLight = Color(0xFF5B8DFF);        // 浅蓝（悬浮/高亮）
+  const primaryBg = Color(0xFFF0F4FF);           // 极浅蓝背景（选中态/标签背景）
+
+  // 辅助色（解决单调问题）
+  const successColor = Color(0xFF10B981);        // 翠绿
+  const warningColor = Color(0xFFF59E0B);        // 琥珀
+  const errorColor = Color(0xFFEF4444);          // 红色
+  const infoColor = Color(0xFF8B5CF6);           // 紫色
+
+  // 背景分层
+  const bgPage = Color(0xFFF5F7FA);              // 页面最底层
+  const bgCard = Color(0xFFFFFFFF);              // 卡片背景
+  const bgSidebar = Color(0xFFFFFFFF);           // 侧边栏背景
+  const bgInput = Color(0xFFF9FAFB);             // 输入框背景
+
+  // 文字颜色
+  const textPrimary = Color(0xFF1A2C3E);         // 主要文字
+  const textSecondary = Color(0xFF5B6E8C);       // 次要文字
+  const textTertiary = Color(0xFF8E9DAD);        // 辅助文字
+
+  const dividerColor = Color(0xFFE8ECF2);         // 分割线
 
   final colorScheme = ColorScheme.light(
     primary: primaryColor,
-    secondary: secondaryColor,
-    surface: surfaceColor,
-    background: backgroundColor,
+    secondary: textSecondary,
+    tertiary: infoColor,
+    error: errorColor,
+    surface: bgCard,
+    background: bgPage,
     onPrimary: Colors.white,
     onSecondary: Colors.white,
-    onSurface: const Color(0xFF1F2A3E),         // 主要文字
-    onBackground: const Color(0xFF1F2A3E),
+    onSurface: textPrimary,
+    onBackground: textPrimary,
     outline: dividerColor,
   );
 
   return ThemeData(
     useMaterial3: true,
     colorScheme: colorScheme,
-    
-    // 页面背景
-    scaffoldBackgroundColor: backgroundColor,
-    
-    // AppBar 样式
-    appBarTheme: AppBarTheme(
+
+    // ==================== 页面背景 ====================
+    scaffoldBackgroundColor: bgPage,
+
+    // ==================== AppBar ====================
+    appBarTheme: const AppBarTheme(
       centerTitle: false,
-      backgroundColor: Colors.white,
-      foregroundColor: const Color(0xFF1F2A3E),
+      backgroundColor: bgCard,
+      foregroundColor: textPrimary,
       elevation: 0,
       scrolledUnderElevation: 0,
-      titleTextStyle: const TextStyle(
+      titleTextStyle: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w500,
-        color: Color(0xFF1F2A3E),
+        color: textPrimary,
       ),
     ),
-    
-    // 卡片样式
+
+    // ==================== 卡片样式 ====================
     cardTheme: CardThemeData(
-      elevation: 0,
-      color: Colors.white,
+      elevation: 1,
+      shadowColor: Colors.black.withOpacity(0.04),
+      color: bgCard,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16), // 比原来略小，更精致
+        borderRadius: BorderRadius.circular(16),
       ),
-      margin: const EdgeInsets.all(0),
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
-      surfaceTintColor: Colors.transparent, // 去掉 Material3 的默认染色
+      surfaceTintColor: Colors.transparent,
     ),
-    
-    // 输入框样式
+
+    // ==================== 输入框样式 ====================
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: const Color(0xFFF5F7FA),      // 浅灰背景，区别于白色卡片
+      fillColor: bgInput,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
@@ -67,17 +87,17 @@ ThemeData buildAppTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF2D6AFF), width: 1.5),
+        borderSide: const BorderSide(color: primaryColor, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       hintStyle: const TextStyle(
-        color: Color(0xFF8E9AAD),
+        color: textTertiary,
         fontSize: 14,
         fontWeight: FontWeight.w400,
       ),
     ),
-    
-    // 按钮样式（主按钮）
+
+    // ==================== 按钮样式 ====================
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryColor,
@@ -94,12 +114,11 @@ ThemeData buildAppTheme() {
         ),
       ),
     ),
-    
-    // 次要按钮（文字+边框）
+
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: const Color(0xFF5C6A81),
-        side: const BorderSide(color: Color(0xFFE8ECF2), width: 1),
+        foregroundColor: textSecondary,
+        side: const BorderSide(color: dividerColor, width: 1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
@@ -110,8 +129,7 @@ ThemeData buildAppTheme() {
         ),
       ),
     ),
-    
-    // 文字按钮（用于“新建项目组”等）
+
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: primaryColor,
@@ -125,79 +143,120 @@ ThemeData buildAppTheme() {
         ),
       ),
     ),
-    
-    // 分割线颜色
-    dividerTheme: const DividerThemeData(
-      color: Color(0xFFE8ECF2),
-      thickness: 1,
-      space: 0,
+
+    // ==================== Chip 标签（用于状态/类型） ====================
+    chipTheme: ChipThemeData(
+      backgroundColor: primaryBg,
+      labelStyle: const TextStyle(color: primaryColor, fontSize: 12),
+      side: BorderSide.none,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
     ),
-    
-    // 全局文字主题
-    textTheme: const TextTheme(
-      displayLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: Color(0xFF1F2A3E)),
-      displayMedium: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: Color(0xFF1F2A3E)),
-      titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF1F2A3E)),
-      titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Color(0xFF1F2A3E)),
-      bodyLarge: TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: Color(0xFF1F2A3E)),
-      bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: Color(0xFF1F2A3E)),
-      bodySmall: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: Color(0xFF5C6A81)),
-      labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Color(0xFF8E9AAD)),
-    ),
-    
-    // 列表项样式（项目组列表）
+
+    // ==================== 列表项（项目组列表） ====================
     listTileTheme: ListTileThemeData(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       tileColor: Colors.transparent,
-      selectedTileColor: const Color(0xFFF0F4FF),  // 选中态浅蓝背景
+      selectedTileColor: primaryBg,
+
       selectedColor: primaryColor,
-      textColor: const Color(0xFF1F2A3E),
+      textColor: textPrimary,
+      titleTextStyle: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: textPrimary,
+      ),
+      subtitleTextStyle: const TextStyle(
+        fontSize: 12,
+        color: textTertiary,
+      ),
     ),
-    
-    // 对话框样式
+
+    // ==================== 分割线 ====================
+    dividerTheme: const DividerThemeData(
+      color: dividerColor,
+      thickness: 1,
+      space: 0,
+    ),
+
+    // ==================== 文字主题 ====================
+    textTheme: const TextTheme(
+      displayLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: textPrimary),
+      displayMedium: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: textPrimary),
+      titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textPrimary),
+      titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: textPrimary),
+      bodyLarge: TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: textPrimary),
+      bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: textPrimary),
+      bodySmall: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: textSecondary),
+      labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: textTertiary),
+    ),
+
+    // ==================== 对话框 ====================
     dialogTheme: DialogThemeData(
-      backgroundColor: Colors.white,
+      backgroundColor: bgCard,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       elevation: 0,
       titleTextStyle: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w600,
-        color: Color(0xFF1F2A3E),
+        color: textPrimary,
       ),
       contentTextStyle: const TextStyle(
         fontSize: 14,
-        color: Color(0xFF5C6A81),
+        color: textSecondary,
       ),
     ),
-    
-    // 底部弹窗
+
+    // ==================== 底部弹窗 ====================
     bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: Colors.white,
+      backgroundColor: bgCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       elevation: 0,
     ),
-    
-    // 图标主题（用于线性图标）
+
+    // ==================== 图标 ====================
     iconTheme: const IconThemeData(
-      color: Color(0xFF8E9AAD),
+      color: textTertiary,
       size: 20,
     ),
-    
-    // 导航栏（底部Tab）
+
+    // ==================== 底部导航栏（手机端） ====================
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: Colors.white,
+      backgroundColor: bgCard,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      indicatorColor: const Color(0xFFF0F4FF),
+      indicatorColor: primaryBg,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF2D6AFF));
+          return const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: primaryColor,
+          );
         }
-        return const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Color(0xFF8E9AAD));
+        return const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          color: textTertiary,
+        );
       }),
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return const IconThemeData(color: primaryColor, size: 24);
+        }
+        return const IconThemeData(color: textTertiary, size: 24);
+      }),
+    ),
+
+    // ==================== SnackBar ====================
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: textPrimary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      contentTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
     ),
   );
 }
