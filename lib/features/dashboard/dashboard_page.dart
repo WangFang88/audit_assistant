@@ -1685,7 +1685,7 @@ String get _activeConversationType {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFF),
+                            color: Theme.of(context).colorScheme.surfaceContainerLowest,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: const Color(0xFFDCE6F5)),
                           ),
@@ -2372,7 +2372,7 @@ String get _activeConversationType {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFF),
+                      color: Theme.of(context).colorScheme.surfaceContainerLowest,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(citation.matchedChunk),
@@ -2416,7 +2416,7 @@ String get _activeConversationType {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFF),
+                color: Theme.of(context).colorScheme.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFD9E3F0)),
               ),

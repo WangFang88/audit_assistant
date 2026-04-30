@@ -258,5 +258,15 @@ ThemeData buildAppTheme() {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       contentTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
     ),
+
+    // ==================== NavigationRail ====================
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: bgSidebar,
+      selectedIconTheme: const IconThemeData(color: primaryColor, size: 24),
+      unselectedIconTheme: IconThemeData(color: textTertiary, size: 24),
+      selectedLabelTextStyle: const TextStyle(color: primaryColor, fontSize: 12, fontWeight: FontWeight.w500),
+      unselectedLabelTextStyle: TextStyle(color: textTertiary, fontSize: 12),
+      indicatorColor: primaryBg,
+    ),
   );
 }
