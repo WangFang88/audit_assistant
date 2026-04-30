@@ -54,6 +54,14 @@
       "role": "member",
       "trialEndsAt": "2026-05-01",
       "passwordHash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
+    },
+    {
+      "id": "user-1777546351825",
+      "name": "新用户8003",
+      "phone": "13800138003",
+      "role": "member",
+      "trialEndsAt": "2026-05-01",
+      "passwordHash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
     }
   ],
   "queryLogs": [

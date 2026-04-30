@@ -351,10 +351,21 @@ let DocumentsService = class DocumentsService {
         const entities = await this.persistedExtractionJobRepository.find({
             order: { startedAt: 'ASC' },
         });
+        const isAdmin = this.authService.isAdmin();
+        const currentUserId = this.authService.me().id;
+        if (!isAdmin) {
+            const myDocs = await this.persistedDocumentRepository.find({
+                where: { uploadedBy: currentUserId, deletedAt: (0, typeorm_2.IsNull)() },
+                select: ['id'],
+            });
+            const myDocIds = new Set(myDocs.map((d) => d.id));
+            return entities
+                .filter((e) => myDocIds.has(e.documentId))
+                .map((entity) => this.toExtractionJobRecord(entity));
+        }
         return entities.map((entity) => this.toExtractionJobRecord(entity)).filter((job) => {
-            if (job.groupId == null) {
+            if (job.groupId == null)
                 return true;
-            }
             return groupId != null && job.groupId === groupId;
         });
     }

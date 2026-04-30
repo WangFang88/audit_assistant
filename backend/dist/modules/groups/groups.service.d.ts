@@ -60,17 +60,17 @@ export declare class GroupsService {
         userId: string;
         name: string;
         phone: string;
-        role: "leader" | "member";
+        role: "member" | "leader";
     }[]>;
     updateMemberRole(groupId: string, memberId: string, dto: UpdateMemberRoleDto): Promise<{
         groupId: string;
         memberId: string;
-        role: "leader" | "member";
+        role: "member" | "leader";
     }>;
     invite(groupId: string, dto: InviteMemberDto): Promise<{
         groupId: string;
         phone: string;
-        role: "leader" | "member";
+        role: "member" | "leader";
         memberCount: number;
     }>;
     transferLeader(groupId: string, dto: TransferLeaderDto): Promise<{

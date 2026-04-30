@@ -48,7 +48,7 @@ export declare class OverviewController {
             userId: string;
             name: string;
             phone: string;
-            role: "leader" | "member";
+            role: "member" | "leader";
         }[];
         documents: {
             id: string;
@@ -94,7 +94,7 @@ export declare class OverviewController {
             latestOrder: {
                 id: string;
                 planType: "free" | "weekly" | "monthly" | "yearly";
-                planLabel: "free" | "weekly" | "monthly" | "yearly" | "免费版" | "周订阅" | "月订阅" | "年订阅";
+                planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
                 amount: string;
                 paidAt: string;
                 expiredAt: string;
@@ -102,7 +102,7 @@ export declare class OverviewController {
             effectiveOrder: {
                 id: string;
                 planType: "free" | "weekly" | "monthly" | "yearly";
-                planLabel: "free" | "weekly" | "monthly" | "yearly" | "免费版" | "周订阅" | "月订阅" | "年订阅";
+                planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
                 amount: string;
                 paidAt: string;
                 expiredAt: string;
@@ -110,7 +110,7 @@ export declare class OverviewController {
             orderHistory: {
                 id: string;
                 planType: "free" | "weekly" | "monthly" | "yearly";
-                planLabel: "free" | "weekly" | "monthly" | "yearly" | "免费版" | "周订阅" | "月订阅" | "年订阅";
+                planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
                 amount: string;
                 paidAt: string;
                 expiredAt: string;
