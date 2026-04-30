@@ -2099,7 +2099,7 @@ String get _activeConversationType {
                         child: Text('管理员公共库'),
                       )
                     : DropdownButtonFormField<String>(
-                        initialValue: _selectedGroupId,
+                        value: _selectedGroupId,
                         decoration: const InputDecoration(labelText: '当前项目组'),
                         items: groups
                             .map(

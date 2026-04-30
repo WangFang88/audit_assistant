@@ -1,6 +1,6 @@
 {
   "usage": {
-    "groups": 0,
+    "groups": 2,
     "privateDocuments": 0,
     "dailyQueries": 0,
     "dailyQueryDate": "2026-04-30"
@@ -10,7 +10,16 @@
   "documents": [],
   "chunks": [],
   "extractionJobs": [],
-  "subscriptions": [],
+  "subscriptions": [
+    {
+      "id": "order-1777532545042",
+      "userId": "user-1777531505817",
+      "planType": "weekly",
+      "amount": "70.00",
+      "paidAt": "2026-04-29 23:02",
+      "expiredAt": "2026-05-06 23:02"
+    }
+  ],
   "conversations": [],
   "messages": [],
   "users": [
@@ -18,6 +27,14 @@
       "id": "user-1777531505817",
       "name": "新用户5262",
       "phone": "18501335262",
+      "role": "member",
+      "trialEndsAt": "2026-05-01",
+      "passwordHash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
+    },
+    {
+      "id": "user-1777532606855",
+      "name": "新用户8001",
+      "phone": "13800138001",
       "role": "member",
       "trialEndsAt": "2026-05-01",
       "passwordHash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
