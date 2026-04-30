@@ -2403,8 +2403,8 @@ String get _activeConversationType {
       action: Wrap(
         spacing: 8,
         children: [
-          FilledButton.tonal(onPressed: _activeGroupId == null ? null : _showInviteDialog, child: const Text('邀请成员')),
-          FilledButton.tonal(onPressed: _hasReachedGroupLimit ? null : _showCreateGroupDialog, child: const Text('创建项目组')),
+          FilledButton(onPressed: _activeGroupId == null ? null : _showInviteDialog, child: const Text('邀请成员')),
+          FilledButton(onPressed: _hasReachedGroupLimit ? null : _showCreateGroupDialog, child: const Text('创建项目组')),
         ],
       ),
       child: Column(
@@ -2430,7 +2430,7 @@ String get _activeConversationType {
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 12),
-                  FilledButton.tonal(
+                  FilledButton(
                     onPressed: _hasReachedGroupLimit ? null : _showCreateGroupDialog,
                     child: const Text('立即创建项目组'),
                   ),
@@ -2524,8 +2524,8 @@ String get _activeConversationType {
       action: Wrap(
         spacing: 8,
         children: [
-          FilledButton.tonal(onPressed: _documentsLoading ? null : _refreshDocuments, child: const Text('刷新任务')),
-          FilledButton.tonal(
+          FilledButton(onPressed: _documentsLoading ? null : _refreshDocuments, child: const Text('刷新任务')),
+          FilledButton(
             onPressed: (_isCurrentUserLeader || _canImportPublicDocuments) && !(_hasReachedPrivateDocumentLimit && _activeGroupId != null)
                 ? _showImportDocumentDialog
                 : null,
