@@ -82,74 +82,115 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      body: SingleChildScrollView(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              theme.colorScheme.primary.withOpacity(0.05),
+              theme.colorScheme.surface,
+            ],
+          ),
+        ),
         child: Center(
-          child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text('小嘉审计助手', style: Theme.of(context).textTheme.headlineSmall),
-                    const SizedBox(height: 8),
-                    Text(
-                      '浏览器访问、项目组协作、公共库与私有库统一检索。',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 24),
-                    TextField(
-                      controller: _phoneController,
-                      decoration: const InputDecoration(labelText: '账号 / 手机号'),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      onSubmitted: (_) => _submitting ? null : _submit(register: false),
-                      decoration: const InputDecoration(labelText: '密码'),
-                    ),
-                    if (_error != null) ...[
-                      const SizedBox(height: 16),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Card(
+                elevation: 2,
+                shadowColor: Colors.black.withOpacity(0.08),
+                child: Padding(
+                  padding: const EdgeInsets.all(40),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Icon(Icons.analytics_outlined, size: 48, color: theme.colorScheme.primary),
+                      const SizedBox(height: 20),
                       Text(
-                        _error!,
-                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                        '小嘉审计助手',
+                        style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '浏览器访问、项目组协作、公共库与私有库统一检索',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 32),
+                      TextField(
+                        controller: _phoneController,
+                        decoration: const InputDecoration(
+                          labelText: '账号 / 手机号',
+                          prefixIcon: Icon(Icons.phone_android),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        onSubmitted: (_) => _submitting ? null : _submit(register: false),
+                        decoration: const InputDecoration(
+                          labelText: '密码',
+                          prefixIcon: Icon(Icons.lock_outline),
+                        ),
+                      ),
+                      if (_error != null) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.error.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.error_outline, size: 18, color: theme.colorScheme.error),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(_error!, style: TextStyle(color: theme.colorScheme.error, fontSize: 13)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 28),
+                      FilledButton(
+                        onPressed: _submitting ? null : () => _submit(register: false),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: _submitting
+                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Text('登录并进入工作台', style: TextStyle(fontSize: 15)),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        onPressed: _submitting ? null : () => _submit(register: true),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text('注册并登录', style: TextStyle(fontSize: 15)),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        '请先启动 backend 服务后登录',
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                        textAlign: TextAlign.center,
                       ),
                     ],
-                    const SizedBox(height: 20),
-                    FilledButton(
-                      onPressed: _submitting ? null : () => _submit(register: false),
-                      child: _submitting
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('登录并进入工作台'),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: _submitting ? null : () => _submit(register: true),
-                      child: const Text('注册并登录'),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      '请先启动 backend 服务后登录。',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 }

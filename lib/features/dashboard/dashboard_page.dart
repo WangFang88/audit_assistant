@@ -1991,12 +1991,29 @@ String get _activeConversationType {
       );
     }
 
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('小嘉审计助手'),
+        title: Row(
+          children: [
+            Icon(Icons.analytics_outlined, color: theme.colorScheme.primary, size: 22),
+            const SizedBox(width: 8),
+            const Text('小嘉审计助手'),
+          ],
+        ),
         actions: [
-          IconButton(onPressed: () => _loadDashboard(preferredGroupId: _selectedGroupId), icon: const Icon(Icons.refresh)),
-          TextButton(onPressed: widget.onLogout, child: const Text('退出')),
+          IconButton(
+            onPressed: () => _loadDashboard(preferredGroupId: _selectedGroupId),
+            icon: const Icon(Icons.refresh_outlined),
+            tooltip: '刷新',
+          ),
+          const SizedBox(width: 4),
+          TextButton.icon(
+            onPressed: widget.onLogout,
+            icon: const Icon(Icons.logout, size: 16),
+            label: const Text('退出'),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Row(
@@ -2028,24 +2045,48 @@ String get _activeConversationType {
     List<RoadmapItem> roadmap,
     ArchitectureTargets architectureTargets,
   ) {
+    final theme = Theme.of(context);
+    final statusText = _isAdmin
+        ? '当前角色：管理员 · 当前视角：公共库管理'
+        : () {
+            final s = subscription;
+            final isActive = s.effectiveOrder != null;
+            if (isActive) return '${s.effectiveOrder!.planLabel} · 到期：${s.effectiveOrder!.expiredAt}';
+            final isExpired = s.planId == 'expired' || s.statusLabel.contains('已过期');
+            if (isExpired) return '试用已结束，请订阅以继续使用';
+            return '试用到期：${s.trialEndsAt} · 全功能试用 ${s.trialDays} 天';
+          }();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('你好，${user.name}', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          Text(
-            _isAdmin
-                ? '当前角色：管理员 · 当前视角：公共库管理'
-                : () {
-                    final s = subscription;
-                    final isActive = s.effectiveOrder != null;
-                    if (isActive) return '当前角色：${user.role} · ${s.effectiveOrder!.planLabel} · 到期：${s.effectiveOrder!.expiredAt}';
-                    final isExpired = s.planId == 'expired' || s.statusLabel.contains('已过期');
-                    if (isExpired) return '当前角色：${user.role} · 试用已结束，请订阅以继续使用';
-                    return '当前角色：${user.role} · 试用到期：${s.trialEndsAt} · 全功能试用 ${s.trialDays} 天';
-                  }(),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.75)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('你好，${user.name}', style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Text(statusText, style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withOpacity(0.85))),
+                    ],
+                  ),
+                ),
+                Icon(Icons.waving_hand_outlined, color: Colors.white.withOpacity(0.6), size: 36),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           Row(
@@ -3571,19 +3612,22 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       width: 220,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.5)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
+          Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.55))),
           const SizedBox(height: 6),
-          Text(value, style: Theme.of(context).textTheme.titleMedium),
+          Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
         ],
       ),
     );
