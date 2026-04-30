@@ -18,7 +18,7 @@ export class SubscriptionsController {
   async getOverview() {
     const currentUser = this.authService.me();
     const memberships = await this.teamMemberRepository.findBy({ userId: currentUser.id, role: 'leader' });
-    return this.subscriptionsService.getOverview(memberships.length);
+    return await this.subscriptionsService.getOverview(memberships.length);
   }
 
   @Post('orders')

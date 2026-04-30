@@ -58,9 +58,9 @@ let QueryService = class QueryService {
         if (!this.authService.isAdmin() && resolvedGroupId != null) {
             await this.groupsService.assertCanAccessGroup(resolvedGroupId);
         }
-        const usage = this.subscriptionsService.getUsage();
+        const usage = await this.subscriptionsService.getUsage();
         if (!options?.skipAccounting) {
-            this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
+            await this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
         }
         const group = resolvedGroupId ? await this.groupsService.getGroupById(resolvedGroupId) : null;
         const teamAgent = resolvedGroupId ? await this.teamAgentsService.getVisibleAgentByGroupId(resolvedGroupId) : null;

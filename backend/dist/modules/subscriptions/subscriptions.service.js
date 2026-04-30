@@ -14,9 +14,11 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateSubscriptionOrderDto = exports.SubscriptionsService = void 0;
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
 const class_validator_1 = require("class-validator");
-const query_log_repository_1 = require("../../database/repositories/query-log.repository");
-const subscription_repository_1 = require("../../database/repositories/subscription.repository");
+const query_log_entity_1 = require("../../database/entities/query-log.entity");
+const subscription_entity_1 = require("../../database/entities/subscription.entity");
 const date_1 = require("../../utils/date");
 const audit_service_1 = require("../audit/audit.service");
 const auth_service_1 = require("../auth/auth.service");
@@ -29,31 +31,14 @@ __decorate([
     __metadata("design:type", String)
 ], CreateSubscriptionOrderDto.prototype, "planType", void 0);
 let SubscriptionsService = class SubscriptionsService {
-    constructor(localStateService, queryLogRepository, subscriptionRepository, authService, auditService) {
+    constructor(localStateService, subscriptionRepo, queryLogRepo, authService, auditService) {
         this.localStateService = localStateService;
-        this.queryLogRepository = queryLogRepository;
-        this.subscriptionRepository = subscriptionRepository;
+        this.subscriptionRepo = subscriptionRepo;
+        this.queryLogRepo = queryLogRepo;
         this.authService = authService;
         this.auditService = auditService;
         this.currentPlanId = 'free';
         this.trialDays = 1;
-        this.queryLogs = [];
-        this.subscriptionOrders = [
-            {
-                id: 'order-free-1',
-                userId: 'user-2',
-                planType: 'free',
-                amount: '0.00',
-                paidAt: '2026-04-25 09:00',
-                expiredAt: '2026-05-01 00:00',
-            },
-        ];
-        this.usage = {
-            groups: 1,
-            privateDocuments: 0,
-            dailyQueries: 0,
-            dailyQueryDate: this.getCurrentDateKey(),
-        };
         this.planPrices = {
             weekly: '70.00',
             monthly: '200.00',
@@ -120,26 +105,6 @@ let SubscriptionsService = class SubscriptionsService {
                 },
             },
         ];
-        const persistedState = this.localStateService.readState();
-        if (persistedState.usage) {
-            this.usage = {
-                ...this.usage,
-                ...persistedState.usage,
-            };
-        }
-        if (persistedState.queryLogs) {
-            this.queryLogs = persistedState.queryLogs.map((queryLog) => {
-                const entity = this.queryLogRepository.createEntity(queryLog);
-                return this.queryLogRepository.mapEntity(entity);
-            });
-        }
-        if (persistedState.subscriptions) {
-            this.subscriptionOrders = persistedState.subscriptions.map((subscription) => {
-                const entity = this.subscriptionRepository.createEntity(subscription);
-                return this.subscriptionRepository.mapEntity(entity);
-            });
-        }
-        this.ensureDailyUsageIsCurrent();
     }
     isAdmin() {
         return this.authService.me().role === 'admin';
@@ -153,32 +118,30 @@ let SubscriptionsService = class SubscriptionsService {
     buildTrialEndsAt(baseDate = new Date()) {
         return this.addDays(baseDate, this.trialDays).toISOString().slice(0, 10);
     }
-    persistQueryLogs() {
-        this.localStateService.saveQueryLogs(this.queryLogs);
-    }
-    persistSubscriptions() {
-        this.localStateService.saveSubscriptions(this.subscriptionOrders);
-    }
-    getUserSubscriptionOrders() {
+    persistQueryLogs() { }
+    persistSubscriptions() { }
+    async getUserSubscriptionOrders() {
         const currentUserId = this.authService.me().id;
-        return this.subscriptionOrders.filter((order) => order.userId === currentUserId);
+        return this.subscriptionRepo.findBy({ userId: currentUserId });
     }
-    getLatestSubscriptionOrder() {
-        const userOrders = this.getUserSubscriptionOrders();
-        return userOrders[userOrders.length - 1] ?? null;
+    async getLatestSubscriptionOrder() {
+        const orders = await this.getUserSubscriptionOrders();
+        return orders[orders.length - 1] ?? null;
     }
-    getActiveSubscriptionOrder() {
-        const activeOrders = this.getUserSubscriptionOrders().filter((order) => this.isOrderActive(order));
-        if (activeOrders.length === 0) {
+    async getActiveSubscriptionOrder() {
+        const now = new Date();
+        const orders = await this.subscriptionRepo.find({
+            where: { userId: this.authService.me().id },
+        });
+        const active = orders.filter((o) => o.expiredAt > now);
+        if (active.length === 0)
             return null;
-        }
-        return activeOrders.sort((a, b) => {
-            const rankDiff = this.getCurrentPlanRank(b.planType) - this.getCurrentPlanRank(a.planType);
-            if (rankDiff !== 0) {
-                return rankDiff;
-            }
-            return new Date(b.paidAt.replace(' ', 'T')).getTime() - new Date(a.paidAt.replace(' ', 'T')).getTime();
-        })[0];
+        return active.sort((a, b) => this.getCurrentPlanRank(this.normalizePlanType(b.planType)) - this.getCurrentPlanRank(this.normalizePlanType(a.planType)))[0];
+    }
+    normalizePlanType(planType) {
+        if (planType === 'weekly' || planType === 'monthly' || planType === 'yearly')
+            return planType;
+        return 'free';
     }
     formatDateTime(date) {
         return (0, date_1.formatCst)(date, false);
@@ -195,160 +158,130 @@ let SubscriptionsService = class SubscriptionsService {
         return this.plans.find((plan) => plan.id === planType)?.name ?? planType;
     }
     isOrderActive(order) {
-        return new Date(order.expiredAt.replace(' ', 'T')).getTime() > Date.now();
+        return order.expiredAt > new Date();
     }
-    getSubscriptionStatus() {
-        if (this.isAdmin()) {
+    async getSubscriptionStatus() {
+        if (this.isAdmin())
             return 'admin-preview';
-        }
-        const activeOrder = this.getActiveSubscriptionOrder();
-        if (activeOrder) {
+        const activeOrder = await this.getActiveSubscriptionOrder();
+        if (activeOrder)
             return 'active';
-        }
         const trialEndsAt = new Date(`${this.getCurrentUserTrialEndsAt()}T23:59:59.999Z`).getTime();
-        if (trialEndsAt >= Date.now()) {
+        if (trialEndsAt >= Date.now())
             return 'trial';
-        }
         return 'expired';
     }
     getSubscriptionStatusLabel(status) {
         switch (status) {
-            case 'trial':
-                return '试用中';
-            case 'active':
-                return '已开通';
-            case 'expired':
-                return '试用已结束';
-            case 'admin-preview':
-                return '管理员预览';
+            case 'trial': return '试用中';
+            case 'active': return '已开通';
+            case 'expired': return '试用已结束';
+            case 'admin-preview': return '管理员预览';
         }
     }
-    hasActiveHigherTierOrder(planType) {
-        const latestOrder = this.getLatestSubscriptionOrder();
-        if (!latestOrder) {
+    async hasActiveHigherTierOrder(planType) {
+        const latestOrder = await this.getLatestSubscriptionOrder();
+        if (!latestOrder || !this.isOrderActive(latestOrder))
             return false;
-        }
-        if (!this.isOrderActive(latestOrder)) {
-            return false;
-        }
-        return this.getCurrentPlanRank(latestOrder.planType) > this.getCurrentPlanRank(planType);
+        return this.getCurrentPlanRank(this.normalizePlanType(latestOrder.planType)) > this.getCurrentPlanRank(planType);
     }
-    rebuildDailyUsageFromLogs() {
-        const currentDateKey = this.getCurrentDateKey();
-        const dailyQueries = this.queryLogs
-            .filter((queryLog) => queryLog.queriedAt.slice(0, 10) === currentDateKey)
-            .reduce((total, queryLog) => total + queryLog.consumedQuota, 0);
-        this.usage = {
-            ...this.usage,
-            dailyQueries,
-            dailyQueryDate: currentDateKey,
-        };
-        this.localStateService.saveUsage(this.usage);
+    async getDailyQueryCount() {
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+        const logs = await this.queryLogRepo.find({
+            where: { userId: this.authService.me().id },
+        });
+        return logs
+            .filter((l) => l.queriedAt >= today)
+            .reduce((sum, l) => sum + l.consumedQuota, 0);
     }
-    ensureDailyUsageIsCurrent() {
-        const currentDateKey = this.getCurrentDateKey();
-        if (this.usage.dailyQueryDate !== currentDateKey) {
-            this.usage = {
-                ...this.usage,
-                dailyQueryDate: currentDateKey,
-            };
-        }
-        this.rebuildDailyUsageFromLogs();
-    }
-    getCurrentPlan() {
+    async getCurrentPlan() {
         if (this.isAdmin()) {
             return {
                 id: 'admin-preview',
                 name: '管理员预览',
                 priceLabel: '¥0 / 管理员预览',
                 activationLabel: '管理员预览',
-                limits: {
-                    groupCount: 999,
-                    privateDocuments: 999,
-                    dailyQueries: 9999,
-                    caseSearch: true,
-                },
+                limits: { groupCount: 999, privateDocuments: 999, dailyQueries: 9999, caseSearch: true },
             };
         }
-        const activeOrder = this.getActiveSubscriptionOrder();
+        const activeOrder = await this.getActiveSubscriptionOrder();
         if (activeOrder) {
             return this.plans.find((plan) => plan.id === activeOrder.planType) ?? this.plans[0];
         }
         return this.plans.find((plan) => plan.id === this.currentPlanId) ?? this.plans[0];
     }
-    getUsage() {
-        this.ensureDailyUsageIsCurrent();
-        return { ...this.usage };
+    async getUsage() {
+        const dailyQueries = await this.getDailyQueryCount();
+        return { dailyQueries, dailyQueryDate: this.getCurrentDateKey() };
     }
-    syncUsage(usage) {
-        this.ensureDailyUsageIsCurrent();
-        this.usage = {
-            ...this.usage,
-            ...usage,
-            dailyQueryDate: usage.dailyQueryDate ?? this.usage.dailyQueryDate,
-        };
-        this.localStateService.saveUsage(this.usage);
+    syncUsage(_usage) {
     }
-    assertCanCreateGroup(currentGroupCount) {
-        const limit = this.getCurrentPlan().limits.groupCount;
-        if (currentGroupCount >= limit) {
+    async assertCanCreateGroup(currentGroupCount) {
+        const plan = await this.getCurrentPlan();
+        if (currentGroupCount >= plan.limits.groupCount) {
             throw new common_1.BadRequestException('当前套餐的项目组数量已达上限，请升级后继续创建');
         }
     }
-    getGroupLimitForUser(userId) {
-        const activeOrder = this.subscriptionOrders
-            .filter((o) => o.userId === userId && this.isOrderActive(o))
-            .sort((a, b) => this.getCurrentPlanRank(b.planType) - this.getCurrentPlanRank(a.planType))[0];
-        const planId = activeOrder?.planType ?? 'free';
+    async getGroupLimitForUser(userId) {
+        const now = new Date();
+        const orders = await this.subscriptionRepo.find({ where: { userId } });
+        const active = orders
+            .filter((o) => o.expiredAt > now)
+            .sort((a, b) => this.getCurrentPlanRank(this.normalizePlanType(b.planType)) - this.getCurrentPlanRank(this.normalizePlanType(a.planType)))[0];
+        const planId = active ? this.normalizePlanType(active.planType) : 'free';
         return this.plans.find((p) => p.id === planId)?.limits.groupCount ?? this.plans[0].limits.groupCount;
     }
-    assertCanImportPrivateDocument(currentPrivateDocumentCount) {
-        const limit = this.getCurrentPlan().limits.privateDocuments;
-        if (currentPrivateDocumentCount >= limit) {
+    async assertCanImportPrivateDocument(currentPrivateDocumentCount) {
+        const plan = await this.getCurrentPlan();
+        if (currentPrivateDocumentCount >= plan.limits.privateDocuments) {
             throw new common_1.BadRequestException('当前套餐的私有库文件数量已达上限，请升级后继续导入');
         }
     }
-    assertCanRunQuery(currentDailyQueries) {
-        this.ensureDailyUsageIsCurrent();
-        const limit = this.getCurrentPlan().limits.dailyQueries;
-        if (currentDailyQueries >= limit) {
+    async assertCanRunQuery(currentDailyQueries) {
+        const plan = await this.getCurrentPlan();
+        if (currentDailyQueries >= plan.limits.dailyQueries) {
             throw new common_1.BadRequestException('今日 RAG 查询次数已用完，请明日再试或升级套餐');
         }
     }
-    recordQueryLog(queryLog) {
-        this.ensureDailyUsageIsCurrent();
-        const entity = this.queryLogRepository.createEntity(queryLog);
-        this.queryLogs.push(this.queryLogRepository.mapEntity(entity));
-        this.persistQueryLogs();
-        this.rebuildDailyUsageFromLogs();
+    async recordQueryLog(queryLog) {
+        const entity = this.queryLogRepo.create({
+            id: queryLog.id,
+            userId: queryLog.userId,
+            teamId: queryLog.teamId,
+            queryText: queryLog.queryText,
+            queriedAt: new Date(queryLog.queriedAt.replace(' ', 'T')),
+            consumedQuota: queryLog.consumedQuota,
+        });
+        await this.queryLogRepo.save(entity);
     }
-    syncSubscriptionOrder(order) {
-        const entity = this.subscriptionRepository.createEntity(order);
-        const snapshot = this.subscriptionRepository.mapEntity(entity);
-        const nextOrders = this.subscriptionOrders.filter((item) => item.id !== snapshot.id);
-        nextOrders.push(snapshot);
-        this.subscriptionOrders = nextOrders;
-        this.persistSubscriptions();
+    async syncSubscriptionOrder(order) {
+        await this.subscriptionRepo.upsert({
+            id: order.id,
+            userId: order.userId,
+            planType: order.planType,
+            amount: order.amount,
+            paidAt: new Date(order.paidAt.replace(' ', 'T')),
+            expiredAt: new Date(order.expiredAt.replace(' ', 'T')),
+        }, ['id']);
     }
     async createSubscriptionOrder(dto) {
-        if (this.isAdmin()) {
+        if (this.isAdmin())
             throw new common_1.BadRequestException('管理员预览账号不支持创建模拟订阅');
-        }
-        if (this.hasActiveHigherTierOrder(dto.planType)) {
+        if (await this.hasActiveHigherTierOrder(dto.planType))
             throw new common_1.BadRequestException('当前高等级订阅仍在有效期内，暂不支持降级为更低套餐');
-        }
         const now = new Date();
         const expiredAt = this.addDays(now, this.planDurations[dto.planType]);
         const user = this.authService.me();
-        const order = {
+        await this.syncSubscriptionOrder({
             id: `order-${Date.now()}`,
             userId: user.id,
             planType: dto.planType,
             amount: this.planPrices[dto.planType],
             paidAt: this.formatDateTime(now),
             expiredAt: this.formatDateTime(expiredAt),
-        };
-        this.syncSubscriptionOrder(order);
+        });
+        const order = await this.subscriptionRepo.findOneBy({ userId: user.id, planType: dto.planType });
         await this.auditService.recordEvent({
             eventType: 'subscription.activate',
             actorUserId: user.id,
@@ -356,66 +289,38 @@ let SubscriptionsService = class SubscriptionsService {
             targetType: 'subscription',
             targetId: order.id,
             summary: `模拟开通了${this.getPlanLabel(dto.planType)}`,
-            detail: {
-                planType: order.planType,
-                amount: order.amount,
-                expiredAt: order.expiredAt,
-                activationMode: 'simulation',
-            },
+            detail: { planType: dto.planType, amount: this.planPrices[dto.planType], expiredAt: this.formatDateTime(expiredAt), activationMode: 'simulation' },
         });
-        return {
-            ...order,
-            activationMode: 'simulation',
-            message: `${this.getPlanLabel(dto.planType)}已模拟开通。`,
-        };
+        return { activationMode: 'simulation', message: `${this.getPlanLabel(dto.planType)}已模拟开通。` };
     }
-    getOverview(actualGroupCount, actualPrivateDocuments) {
-        this.ensureDailyUsageIsCurrent();
-        const plan = this.getCurrentPlan();
-        const latestOrder = this.getLatestSubscriptionOrder();
-        const activeOrder = this.getActiveSubscriptionOrder();
-        const status = this.getSubscriptionStatus();
+    async getOverview(actualGroupCount, actualPrivateDocuments) {
+        const plan = await this.getCurrentPlan();
+        const latestOrder = await this.getLatestSubscriptionOrder();
+        const activeOrder = await this.getActiveSubscriptionOrder();
+        const status = await this.getSubscriptionStatus();
+        const dailyQueries = await this.getDailyQueryCount();
+        const mapOrder = (o) => ({
+            id: o.id,
+            planType: this.normalizePlanType(o.planType),
+            planLabel: this.getPlanLabel(this.normalizePlanType(o.planType)),
+            amount: o.amount,
+            paidAt: (0, date_1.formatCst)(o.paidAt, false),
+            expiredAt: (0, date_1.formatCst)(o.expiredAt, false),
+        });
+        const allOrders = await this.getUserSubscriptionOrders();
         return {
             currentPlanId: plan.id,
             trialEndsAt: this.getCurrentUserTrialEndsAt(),
             trialDays: this.trialDays,
             status,
             statusLabel: this.getSubscriptionStatusLabel(status),
-            latestOrder: latestOrder == null
-                ? null
-                : {
-                    id: latestOrder.id,
-                    planType: latestOrder.planType,
-                    planLabel: this.getPlanLabel(latestOrder.planType),
-                    amount: latestOrder.amount,
-                    paidAt: latestOrder.paidAt,
-                    expiredAt: latestOrder.expiredAt,
-                },
-            effectiveOrder: activeOrder == null
-                ? null
-                : {
-                    id: activeOrder.id,
-                    planType: activeOrder.planType,
-                    planLabel: this.getPlanLabel(activeOrder.planType),
-                    amount: activeOrder.amount,
-                    paidAt: activeOrder.paidAt,
-                    expiredAt: activeOrder.expiredAt,
-                },
-            orderHistory: this.getUserSubscriptionOrders()
-                .map((order) => ({
-                id: order.id,
-                planType: order.planType,
-                planLabel: this.getPlanLabel(order.planType),
-                amount: order.amount,
-                paidAt: order.paidAt,
-                expiredAt: order.expiredAt,
-            }))
-                .slice()
-                .reverse(),
+            latestOrder: latestOrder ? mapOrder(latestOrder) : null,
+            effectiveOrder: activeOrder ? mapOrder(activeOrder) : null,
+            orderHistory: allOrders.map(mapOrder).reverse(),
             usage: {
-                groups: { used: actualGroupCount ?? this.usage.groups, limit: plan.limits.groupCount },
-                privateDocuments: { used: actualPrivateDocuments ?? this.usage.privateDocuments, limit: plan.limits.privateDocuments },
-                dailyQueries: { used: this.usage.dailyQueries, limit: plan.limits.dailyQueries },
+                groups: { used: actualGroupCount ?? 0, limit: plan.limits.groupCount },
+                privateDocuments: { used: actualPrivateDocuments ?? 0, limit: plan.limits.privateDocuments },
+                dailyQueries: { used: dailyQueries, limit: plan.limits.dailyQueries },
             },
             limits: {
                 maxGroups: plan.limits.groupCount,
@@ -431,21 +336,19 @@ let SubscriptionsService = class SubscriptionsService {
                 this.plans[0].limits.caseSearch ? '案例查询能力已包含' : '案例查询能力需订阅后开启',
             ],
             plans: this.plans,
-            pricing: {
-                weekly: '¥70 / 周',
-                monthly: '¥200 / 月',
-                yearly: '¥2000 / 年',
-            },
+            pricing: { weekly: '¥70 / 周', monthly: '¥200 / 月', yearly: '¥2000 / 年' },
         };
     }
 };
 exports.SubscriptionsService = SubscriptionsService;
 exports.SubscriptionsService = SubscriptionsService = __decorate([
     (0, common_1.Injectable)(),
+    __param(1, (0, typeorm_1.InjectRepository)(subscription_entity_1.SubscriptionEntity)),
+    __param(2, (0, typeorm_1.InjectRepository)(query_log_entity_1.QueryLogEntity)),
     __param(3, (0, common_1.Inject)((0, common_1.forwardRef)(() => auth_service_1.AuthService))),
     __metadata("design:paramtypes", [local_state_service_1.LocalStateService,
-        query_log_repository_1.QueryLogRepository,
-        subscription_repository_1.SubscriptionRepository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         auth_service_1.AuthService,
         audit_service_1.AuditService])
 ], SubscriptionsService);

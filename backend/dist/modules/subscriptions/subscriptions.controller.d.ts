@@ -113,11 +113,5 @@ export declare class SubscriptionsController {
     createOrder(dto: CreateSubscriptionOrderDto): Promise<{
         activationMode: string;
         message: string;
-        id: string;
-        userId: string;
-        planType: "free" | "weekly" | "monthly" | "yearly";
-        amount: string;
-        paidAt: string;
-        expiredAt: string;
     }>;
 }

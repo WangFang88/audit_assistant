@@ -187,7 +187,7 @@ let GroupsService = class GroupsService {
         this.assertAdminCannotManageGroups();
         const currentUser = this.getCurrentUser();
         const existingGroups = await this.listGroups();
-        this.subscriptionsService.assertCanCreateGroup(existingGroups.length);
+        await this.subscriptionsService.assertCanCreateGroup(existingGroups.length);
         const groupId = `group-${Date.now()}`;
         await this.teamRepository.save(this.teamRepository.create({
             id: groupId,
@@ -294,7 +294,7 @@ let GroupsService = class GroupsService {
             throw new common_1.NotFoundException('目标成员不存在');
         }
         const newLeaderGroupCount = await this.teamRepository.countBy({ ownerUserId: dto.targetUserId });
-        const newLeaderGroupLimit = this.subscriptionsService.getGroupLimitForUser(dto.targetUserId);
+        const newLeaderGroupLimit = await this.subscriptionsService.getGroupLimitForUser(dto.targetUserId);
         if (newLeaderGroupCount >= newLeaderGroupLimit) {
             throw new common_1.BadRequestException('该成员当前套餐已达项目组上限，无法接受组长移交');
         }

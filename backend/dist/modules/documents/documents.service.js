@@ -670,7 +670,7 @@ let DocumentsService = class DocumentsService {
             }
             await this.groupsService.assertIsLeader(dto.groupId);
             const currentPrivateDocuments = await this.countVisiblePrivateDocuments();
-            this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
+            await this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
         }
         const documentId = `doc-${Date.now()}`;
         const storedFile = this.saveUploadedFile(file, dto.libraryType, documentId, dto.groupId);

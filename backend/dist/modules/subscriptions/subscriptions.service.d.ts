@@ -1,5 +1,6 @@
-import { QueryLogRepository, QueryLogSnapshot } from '../../database/repositories/query-log.repository';
-import { SubscriptionOrderSnapshot, SubscriptionRepository } from '../../database/repositories/subscription.repository';
+import { Repository } from 'typeorm';
+import { QueryLogEntity } from '../../database/entities/query-log.entity';
+import { SubscriptionEntity } from '../../database/entities/subscription.entity';
 import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { LocalStateService } from './local-state.service';
@@ -15,16 +16,13 @@ type UsageSnapshot = {
 type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'admin-preview';
 export declare class SubscriptionsService {
     private readonly localStateService;
-    private readonly queryLogRepository;
-    private readonly subscriptionRepository;
+    private readonly subscriptionRepo;
+    private readonly queryLogRepo;
     private readonly authService;
     private readonly auditService;
-    constructor(localStateService: LocalStateService, queryLogRepository: QueryLogRepository, subscriptionRepository: SubscriptionRepository, authService: AuthService, auditService: AuditService);
+    constructor(localStateService: LocalStateService, subscriptionRepo: Repository<SubscriptionEntity>, queryLogRepo: Repository<QueryLogEntity>, authService: AuthService, auditService: AuditService);
     private readonly currentPlanId;
     private readonly trialDays;
-    private queryLogs;
-    private subscriptionOrders;
-    private usage;
     private readonly planPrices;
     private readonly planDurations;
     private readonly planRank;
@@ -38,6 +36,7 @@ export declare class SubscriptionsService {
     private getUserSubscriptionOrders;
     private getLatestSubscriptionOrder;
     private getActiveSubscriptionOrder;
+    private normalizePlanType;
     private formatDateTime;
     private addDays;
     private getCurrentPlanRank;
@@ -46,9 +45,8 @@ export declare class SubscriptionsService {
     private getSubscriptionStatus;
     private getSubscriptionStatusLabel;
     private hasActiveHigherTierOrder;
-    private rebuildDailyUsageFromLogs;
-    private ensureDailyUsageIsCurrent;
-    getCurrentPlan(): {
+    private getDailyQueryCount;
+    getCurrentPlan(): Promise<{
         readonly id: "free";
         readonly name: "免费版";
         readonly priceLabel: "¥0 / 1天试用";
@@ -103,31 +101,37 @@ export declare class SubscriptionsService {
             dailyQueries: number;
             caseSearch: boolean;
         };
-    };
-    getUsage(): {
-        groups: number;
-        privateDocuments: number;
+    }>;
+    getUsage(): Promise<{
         dailyQueries: number;
         dailyQueryDate: string;
-    };
-    syncUsage(usage: Partial<UsageSnapshot>): void;
-    assertCanCreateGroup(currentGroupCount: number): void;
-    getGroupLimitForUser(userId: string): number;
-    assertCanImportPrivateDocument(currentPrivateDocumentCount: number): void;
-    assertCanRunQuery(currentDailyQueries: number): void;
-    recordQueryLog(queryLog: QueryLogSnapshot): void;
-    syncSubscriptionOrder(order: SubscriptionOrderSnapshot): void;
-    createSubscriptionOrder(dto: CreateSubscriptionOrderDto): Promise<{
-        activationMode: string;
-        message: string;
+    }>;
+    syncUsage(_usage: Partial<UsageSnapshot>): void;
+    assertCanCreateGroup(currentGroupCount: number): Promise<void>;
+    getGroupLimitForUser(userId: string): Promise<number>;
+    assertCanImportPrivateDocument(currentPrivateDocumentCount: number): Promise<void>;
+    assertCanRunQuery(currentDailyQueries: number): Promise<void>;
+    recordQueryLog(queryLog: {
         id: string;
         userId: string;
-        planType: "free" | "weekly" | "monthly" | "yearly";
+        teamId: string | null;
+        queryText: string;
+        queriedAt: string;
+        consumedQuota: number;
+    }): Promise<void>;
+    syncSubscriptionOrder(order: {
+        id: string;
+        userId: string;
+        planType: string;
         amount: string;
         paidAt: string;
         expiredAt: string;
+    }): Promise<void>;
+    createSubscriptionOrder(dto: CreateSubscriptionOrderDto): Promise<{
+        activationMode: string;
+        message: string;
     }>;
-    getOverview(actualGroupCount?: number, actualPrivateDocuments?: number): {
+    getOverview(actualGroupCount?: number, actualPrivateDocuments?: number): Promise<{
         currentPlanId: string;
         trialEndsAt: string;
         trialDays: number;
@@ -229,6 +233,6 @@ export declare class SubscriptionsService {
             monthly: string;
             yearly: string;
         };
-    };
+    }>;
 }
 export { CreateSubscriptionOrderDto };

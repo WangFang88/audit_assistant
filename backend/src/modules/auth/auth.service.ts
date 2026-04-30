@@ -65,22 +65,7 @@ export class AuthService {
     private readonly userRepository: Repository<UserEntity>,
     private readonly auditService: AuditService,
   ) {
-    const persistedUsers = this.localStateService.readState().users;
-    if (persistedUsers && persistedUsers.length > 0) {
-      this.registeredUsers = persistedUsers
-        .filter((user) => !this.demoUsers.some((demoUser) => demoUser.id === user.id))
-        .map((user) => ({
-          id: user.id,
-          name: user.name,
-          phone: user.phone,
-          role: user.role,
-          trialEndsAt: user.trialEndsAt,
-          passwordHash: user.passwordHash ?? user.password ?? '',
-          passwordIsLegacyPlaintext: user.passwordHash == null,
-          subscriptionType: 'free',
-        }));
-    }
-    setImmediate(() => this.syncUsersToDatabase());
+    setImmediate(() => this.loadUsersFromDatabase());
   }
 
   private readonly demoUsers: AuthUserRecord[] = [
@@ -137,19 +122,7 @@ export class AuthService {
   }
 
   private persistUsers() {
-    this.localStateService.saveUsers(
-      this.registeredUsers.map((user) => {
-        const entity = this.authUserRepository.createEntity(this.toSnapshot(user));
-        return {
-          id: entity.id,
-          name: entity.nickname,
-          phone: entity.phone,
-          role: entity.role,
-          trialEndsAt: (entity.subscriptionExpiredAt ?? new Date(`${this.getDefaultTrialEndsAt()}T00:00:00.000Z`)).toISOString().slice(0, 10),
-          passwordHash: entity.passwordHash,
-        };
-      }),
-    );
+    // users are persisted directly to DB on register/update
   }
 
   private hashPassword(password: string) {
@@ -339,8 +312,21 @@ export class AuthService {
   }
 
 
-  private async syncUsersToDatabase() {
-    for (const user of this.users) {
+  private async loadUsersFromDatabase() {
+    const dbUsers = await this.userRepository.find({ where: { role: 'member' } });
+    this.registeredUsers = dbUsers
+      .filter((u) => !this.demoUsers.some((d) => d.id === u.id))
+      .map((u) => ({
+        id: u.id,
+        name: u.nickname,
+        phone: u.phone,
+        role: u.role as 'admin' | 'member',
+        trialEndsAt: '2099-12-31',
+        passwordHash: u.passwordHash,
+        subscriptionType: 'free',
+      }));
+    // 确保 demoUsers 也在数据库中
+    for (const user of this.demoUsers) {
       await this.userRepository.upsert(
         { id: user.id, phone: user.phone, nickname: user.name, passwordHash: user.passwordHash ?? '', role: user.role as 'admin' | 'member' },
         ['id'],

@@ -81,7 +81,7 @@ let OverviewService = class OverviewService {
             documents,
             extractJobs,
             libraryScope,
-            subscription: this.subscriptionsService.getOverview(visibleGroups.length, privateDocCount),
+            subscription: await this.subscriptionsService.getOverview(visibleGroups.length, privateDocCount),
             recentAuditEvents,
             conversations,
             activeTeamAgent: activeTeamAgent == null

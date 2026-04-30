@@ -85,22 +85,7 @@ let AuthService = class AuthService {
         ];
         this.registeredUsers = [];
         this.userStorage = new async_hooks_1.AsyncLocalStorage();
-        const persistedUsers = this.localStateService.readState().users;
-        if (persistedUsers && persistedUsers.length > 0) {
-            this.registeredUsers = persistedUsers
-                .filter((user) => !this.demoUsers.some((demoUser) => demoUser.id === user.id))
-                .map((user) => ({
-                id: user.id,
-                name: user.name,
-                phone: user.phone,
-                role: user.role,
-                trialEndsAt: user.trialEndsAt,
-                passwordHash: user.passwordHash ?? user.password ?? '',
-                passwordIsLegacyPlaintext: user.passwordHash == null,
-                subscriptionType: 'free',
-            }));
-        }
-        setImmediate(() => this.syncUsersToDatabase());
+        setImmediate(() => this.loadUsersFromDatabase());
     }
     get users() {
         return [...this.demoUsers, ...this.registeredUsers];
@@ -137,17 +122,6 @@ let AuthService = class AuthService {
         };
     }
     persistUsers() {
-        this.localStateService.saveUsers(this.registeredUsers.map((user) => {
-            const entity = this.authUserRepository.createEntity(this.toSnapshot(user));
-            return {
-                id: entity.id,
-                name: entity.nickname,
-                phone: entity.phone,
-                role: entity.role,
-                trialEndsAt: (entity.subscriptionExpiredAt ?? new Date(`${this.getDefaultTrialEndsAt()}T00:00:00.000Z`)).toISOString().slice(0, 10),
-                passwordHash: entity.passwordHash,
-            };
-        }));
     }
     hashPassword(password) {
         return (0, crypto_1.createHash)('sha256').update(password).digest('hex');
@@ -301,8 +275,20 @@ let AuthService = class AuthService {
         await this.userRepository.update({ id: currentUser.id }, { nickname: dto.name }).catch(() => { });
         return { ...currentUser, name: dto.name };
     }
-    async syncUsersToDatabase() {
-        for (const user of this.users) {
+    async loadUsersFromDatabase() {
+        const dbUsers = await this.userRepository.find({ where: { role: 'member' } });
+        this.registeredUsers = dbUsers
+            .filter((u) => !this.demoUsers.some((d) => d.id === u.id))
+            .map((u) => ({
+            id: u.id,
+            name: u.nickname,
+            phone: u.phone,
+            role: u.role,
+            trialEndsAt: '2099-12-31',
+            passwordHash: u.passwordHash,
+            subscriptionType: 'free',
+        }));
+        for (const user of this.demoUsers) {
             await this.userRepository.upsert({ id: user.id, phone: user.phone, nickname: user.name, passwordHash: user.passwordHash ?? '', role: user.role }, ['id']).catch(() => { });
         }
     }

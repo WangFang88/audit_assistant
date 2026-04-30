@@ -82,7 +82,7 @@ export declare class AuthService {
         role: "admin" | "member";
         trialEndsAt: string;
     }>;
-    private syncUsersToDatabase;
+    private loadUsersFromDatabase;
     isAdmin(): boolean;
 }
 export { LoginDto, RefreshTokenDto, RegisterDto, UpdateProfileDto };

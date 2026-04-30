@@ -215,7 +215,7 @@ export class GroupsService {
     this.assertAdminCannotManageGroups();
     const currentUser = this.getCurrentUser();
     const existingGroups = await this.listGroups();
-    this.subscriptionsService.assertCanCreateGroup(existingGroups.length);
+    await this.subscriptionsService.assertCanCreateGroup(existingGroups.length);
 
     const groupId = `group-${Date.now()}`;
     await this.teamRepository.save(
@@ -347,7 +347,7 @@ export class GroupsService {
 
     // 检查新组长已拥有的项目组数量是否超出其套餐限制
     const newLeaderGroupCount = await this.teamRepository.countBy({ ownerUserId: dto.targetUserId });
-    const newLeaderGroupLimit = this.subscriptionsService.getGroupLimitForUser(dto.targetUserId);
+    const newLeaderGroupLimit = await this.subscriptionsService.getGroupLimitForUser(dto.targetUserId);
     if (newLeaderGroupCount >= newLeaderGroupLimit) {
       throw new BadRequestException('该成员当前套餐已达项目组上限，无法接受组长移交');
     }
