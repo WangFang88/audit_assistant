@@ -1497,7 +1497,6 @@ String get _activeConversationType {
       ),
     );
   }
-  }
 
   Future<void> _removeMember(GroupMember member) async {
     if (_isAdmin || _activeGroupId == null || member.role == '组长') {
