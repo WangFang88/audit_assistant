@@ -15,6 +15,7 @@ const user_entity_1 = require("../../database/entities/user.entity");
 const audit_module_1 = require("../audit/audit.module");
 const subscriptions_module_1 = require("../subscriptions/subscriptions.module");
 const auth_controller_1 = require("./auth.controller");
+const auth_context_interceptor_1 = require("./auth-context.interceptor");
 const auth_guard_1 = require("./auth.guard");
 const auth_service_1 = require("./auth.service");
 let AuthModule = class AuthModule {
@@ -27,10 +28,8 @@ exports.AuthModule = AuthModule = __decorate([
         providers: [
             auth_service_1.AuthService,
             core_1.Reflector,
-            {
-                provide: core_1.APP_GUARD,
-                useClass: auth_guard_1.AuthGuard,
-            },
+            { provide: core_1.APP_GUARD, useClass: auth_guard_1.AuthGuard },
+            { provide: core_1.APP_INTERCEPTOR, useClass: auth_context_interceptor_1.AuthContextInterceptor },
         ],
         exports: [auth_service_1.AuthService],
     })

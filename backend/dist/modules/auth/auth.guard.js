@@ -41,6 +41,7 @@ let AuthGuard = class AuthGuard {
             throw new common_1.UnauthorizedException('登录状态已失效');
         }
         request.user = user;
+        request.runWithUser = (fn) => this.authService.runWithUser(user, fn);
         return true;
     }
 };

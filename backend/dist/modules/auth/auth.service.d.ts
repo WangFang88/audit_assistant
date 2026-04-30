@@ -37,7 +37,7 @@ export declare class AuthService {
     constructor(localStateService: LocalStateService, authUserRepository: AuthUserRepository, userRepository: Repository<UserEntity>, auditService: AuditService);
     private readonly demoUsers;
     private registeredUsers;
-    private currentUser;
+    private readonly userStorage;
     private get users();
     private toSnapshot;
     private fromSnapshot;
@@ -72,9 +72,16 @@ export declare class AuthService {
     };
     validateAccessToken(token: string): DemoUser | null;
     me(): DemoUser;
+    runWithUser<T>(user: DemoUser, fn: () => T): T;
     getUserByPhone(phone: string): AuthUserRecord | null;
     getUserById(id: string): AuthUserRecord | null;
-    updateProfile(dto: UpdateProfileDto): Promise<DemoUser>;
+    updateProfile(dto: UpdateProfileDto): Promise<{
+        name: string;
+        id: string;
+        phone: string;
+        role: "admin" | "member";
+        trialEndsAt: string;
+    }>;
     private syncUsersToDatabase;
     isAdmin(): boolean;
 }

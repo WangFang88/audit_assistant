@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateProfileDto = exports.RegisterDto = exports.RefreshTokenDto = exports.LoginDto = exports.AuthService = void 0;
 const crypto_1 = require("crypto");
+const async_hooks_1 = require("async_hooks");
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
 const typeorm_1 = require("@nestjs/typeorm");
@@ -83,7 +84,7 @@ let AuthService = class AuthService {
             },
         ];
         this.registeredUsers = [];
-        this.currentUser = this.toPublicUser(this.demoUsers[0]);
+        this.userStorage = new async_hooks_1.AsyncLocalStorage();
         const persistedUsers = this.localStateService.readState().users;
         if (persistedUsers && persistedUsers.length > 0) {
             this.registeredUsers = persistedUsers
@@ -187,12 +188,10 @@ let AuthService = class AuthService {
         return this.users.find((user) => user.id === userId) ?? null;
     }
     setCurrentUser(user) {
-        this.currentUser = user;
         return user;
     }
     buildAuthResponse(user) {
         const publicUser = this.toPublicUser(user);
-        this.setCurrentUser(publicUser);
         return {
             accessToken: this.buildAccessToken(user.id),
             refreshToken: this.buildRefreshToken(user.id),
@@ -273,10 +272,17 @@ let AuthService = class AuthService {
         if (!user) {
             return null;
         }
-        return this.setCurrentUser(this.toPublicUser(user));
+        return this.toPublicUser(user);
     }
     me() {
-        return this.currentUser;
+        const user = this.userStorage.getStore();
+        if (!user) {
+            throw new common_1.UnauthorizedException('未登录');
+        }
+        return user;
+    }
+    runWithUser(user, fn) {
+        return this.userStorage.run(user, fn);
     }
     getUserByPhone(phone) {
         return this.findUserByPhone(phone);
@@ -285,15 +291,15 @@ let AuthService = class AuthService {
         return this.users.find((u) => u.id === id) ?? null;
     }
     async updateProfile(dto) {
-        const user = this.users.find((u) => u.id === this.currentUser.id);
+        const currentUser = this.me();
+        const user = this.users.find((u) => u.id === currentUser.id);
         if (!user) {
             throw new common_1.UnauthorizedException('用户不存在');
         }
         user.name = dto.name;
-        this.currentUser = { ...this.currentUser, name: dto.name };
         this.persistUsers();
-        await this.userRepository.update({ id: this.currentUser.id }, { nickname: dto.name }).catch(() => { });
-        return this.currentUser;
+        await this.userRepository.update({ id: currentUser.id }, { nickname: dto.name }).catch(() => { });
+        return { ...currentUser, name: dto.name };
     }
     async syncUsersToDatabase() {
         for (const user of this.users) {
@@ -301,7 +307,7 @@ let AuthService = class AuthService {
         }
     }
     isAdmin() {
-        return this.currentUser.role === 'admin';
+        return this.me().role === 'admin';
     }
 };
 exports.AuthService = AuthService;

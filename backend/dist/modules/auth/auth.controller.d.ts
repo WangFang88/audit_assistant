@@ -43,8 +43,8 @@ export declare class AuthController {
         trialEndsAt: string;
     };
     updateProfile(dto: UpdateProfileDto): Promise<{
-        id: string;
         name: string;
+        id: string;
         phone: string;
         role: "admin" | "member";
         trialEndsAt: string;
