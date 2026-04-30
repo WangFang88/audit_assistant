@@ -344,6 +344,13 @@ export class GroupsService {
       throw new NotFoundException('目标成员不存在');
     }
 
+    // 检查新组长已拥有的项目组数量是否超出其套餐限制
+    const newLeaderGroupCount = await this.teamRepository.countBy({ ownerUserId: dto.targetUserId });
+    const newLeaderGroupLimit = this.subscriptionsService.getGroupLimitForUser(dto.targetUserId);
+    if (newLeaderGroupCount >= newLeaderGroupLimit) {
+      throw new BadRequestException('该成员当前套餐已达项目组上限，无法接受组长移交');
+    }
+
     const previousLeaderId = group.ownerUserId;
     await this.teamMemberRepository.update({ teamId: groupId, userId: group.ownerUserId }, { role: 'member' });
     await this.teamMemberRepository.update({ teamId: groupId, userId: dto.targetUserId }, { role: 'leader' });

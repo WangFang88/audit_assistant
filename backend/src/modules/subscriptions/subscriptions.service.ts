@@ -329,6 +329,14 @@ export class SubscriptionsService {
     }
   }
 
+  getGroupLimitForUser(userId: string): number {
+    const activeOrder = this.subscriptionOrders
+      .filter((o) => o.userId === userId && this.isOrderActive(o))
+      .sort((a, b) => this.getCurrentPlanRank(b.planType) - this.getCurrentPlanRank(a.planType))[0];
+    const planId = activeOrder?.planType ?? 'free';
+    return this.plans.find((p) => p.id === planId)?.limits.groupCount ?? this.plans[0].limits.groupCount;
+  }
+
   assertCanImportPrivateDocument(currentPrivateDocumentCount: number) {
     const limit = this.getCurrentPlan().limits.privateDocuments;
     if (currentPrivateDocumentCount >= limit) {
