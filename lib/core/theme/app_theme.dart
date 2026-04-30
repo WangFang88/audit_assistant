@@ -42,7 +42,7 @@ ThemeData buildAppTheme() {
     ),
     
     // 卡片样式
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
@@ -156,7 +156,7 @@ ThemeData buildAppTheme() {
     ),
     
     // 对话框样式
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       elevation: 0,
