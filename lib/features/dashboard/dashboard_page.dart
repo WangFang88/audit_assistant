@@ -1358,17 +1358,17 @@ String get _activeConversationType {
 
   Future<void> _showInviteDialog() async {
     if (_isAdmin || _activeGroupId == null) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请先选择项目组后再邀请成员。')));
       return;
     }
 
     final phoneController = TextEditingController();
     String selectedRole = '成员';
+    String? dialogError;
+    bool loading = false;
 
-    final confirmed = await showDialog<bool>(
+    await showDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -1387,47 +1387,42 @@ String get _activeConversationType {
                 onChanged: (value) => setDialogState(() => selectedRole = value ?? '成员'),
                 decoration: const InputDecoration(labelText: '角色'),
               ),
+              if (dialogError != null) ...[
+                const SizedBox(height: 8),
+                Text(dialogError!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              ],
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
             FilledButton(
-              onPressed: () {
-                final phone = phoneController.text.trim();
-                if (phone.isEmpty || phone.length < 11) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('请输入 11 位手机号后再发送邀请。')),
-                  );
-                  return;
-                }
-                Navigator.pop(context, true);
-              },
+              onPressed: loading
+                  ? null
+                  : () async {
+                      final phone = phoneController.text.trim();
+                      if (phone.isEmpty || phone.length < 11) {
+                        setDialogState(() => dialogError = '请输入 11 位手机号后再发送邀请。');
+                        return;
+                      }
+                      setDialogState(() { dialogError = null; loading = true; });
+                      try {
+                        await widget.apiService.inviteMember(
+                          groupId: _activeGroupId!,
+                          phone: phone,
+                          role: selectedRole,
+                        );
+                        if (context.mounted) Navigator.pop(context);
+                        await _refreshMembers();
+                      } on ApiException catch (e) {
+                        setDialogState(() { dialogError = e.message; loading = false; });
+                      }
+                    },
               child: const Text('发送邀请'),
             ),
           ],
         ),
       ),
     );
-
-    if (confirmed != true) {
-      return;
-    }
-
-    try {
-      await widget.apiService.inviteMember(
-        groupId: _activeGroupId!,
-        phone: phoneController.text.trim(),
-        role: selectedRole,
-      );
-      await _refreshMembers();
-    } on ApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _error = error.message;
-      });
-    }
   }
 
   Future<void> _showTransferLeaderDialog() async {
