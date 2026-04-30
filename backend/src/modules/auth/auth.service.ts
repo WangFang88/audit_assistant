@@ -9,35 +9,35 @@ import { AuditService } from '../audit/audit.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 
 class LoginDto {
-  @IsString()
-  @MinLength(3)
+  @IsString({ message: '账号不能为空' })
+  @MinLength(3, { message: '账号至少需要 3 位' })
   phone!: string;
 
-  @IsString()
-  @MinLength(6)
+  @IsString({ message: '密码不能为空' })
+  @MinLength(6, { message: '密码至少需要 6 位' })
   password!: string;
 }
 
 class RefreshTokenDto {
-  @IsString()
-  @MinLength(6)
+  @IsString({ message: 'refreshToken 不能为空' })
+  @MinLength(6, { message: 'refreshToken 格式错误' })
   refreshToken!: string;
 }
 
 class RegisterDto {
-  @IsString()
-  @Matches(/^[\d\s\-()]{11,20}$/)
+  @IsString({ message: '手机号不能为空' })
+  @Matches(/^[\d\s\-()]{11,20}$/, { message: '请输入有效的手机号' })
   phone!: string;
 
-  @IsString()
-  @MinLength(6)
+  @IsString({ message: '密码不能为空' })
+  @MinLength(6, { message: '密码至少需要 6 位' })
   password!: string;
 }
 
 class UpdateProfileDto {
-  @IsString()
-  @MinLength(2)
-  @MaxLength(20)
+  @IsString({ message: '姓名不能为空' })
+  @MinLength(2, { message: '姓名至少需要 2 个字符' })
+  @MaxLength(20, { message: '姓名最多 20 个字符' })
   name!: string;
 }
 
