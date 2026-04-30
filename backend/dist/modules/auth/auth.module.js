@@ -18,6 +18,7 @@ const auth_controller_1 = require("./auth.controller");
 const auth_context_interceptor_1 = require("./auth-context.interceptor");
 const auth_guard_1 = require("./auth.guard");
 const auth_service_1 = require("./auth.service");
+const redis_user_cache_service_1 = require("./redis-user-cache.service");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -27,6 +28,7 @@ exports.AuthModule = AuthModule = __decorate([
         controllers: [auth_controller_1.AuthController],
         providers: [
             auth_service_1.AuthService,
+            redis_user_cache_service_1.RedisUserCacheService,
             core_1.Reflector,
             { provide: core_1.APP_GUARD, useClass: auth_guard_1.AuthGuard },
             { provide: core_1.APP_INTERCEPTOR, useClass: auth_context_interceptor_1.AuthContextInterceptor },

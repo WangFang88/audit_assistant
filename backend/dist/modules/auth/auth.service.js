@@ -23,6 +23,7 @@ const auth_user_repository_1 = require("../../database/repositories/auth-user.re
 const user_entity_1 = require("../../database/entities/user.entity");
 const audit_service_1 = require("../audit/audit.service");
 const local_state_service_1 = require("../subscriptions/local-state.service");
+const redis_user_cache_service_1 = require("./redis-user-cache.service");
 class LoginDto {
 }
 exports.LoginDto = LoginDto;
@@ -67,11 +68,12 @@ __decorate([
     __metadata("design:type", String)
 ], UpdateProfileDto.prototype, "name", void 0);
 let AuthService = class AuthService {
-    constructor(localStateService, authUserRepository, userRepository, auditService) {
+    constructor(localStateService, authUserRepository, userRepository, auditService, redisCache) {
         this.localStateService = localStateService;
         this.authUserRepository = authUserRepository;
         this.userRepository = userRepository;
         this.auditService = auditService;
+        this.redisCache = redisCache;
         this.demoUsers = [
             {
                 id: 'user-1',
@@ -222,6 +224,7 @@ let AuthService = class AuthService {
         this.registeredUsers = [...this.registeredUsers, user];
         this.persistUsers();
         await this.userRepository.upsert({ id: user.id, phone: user.phone, nickname: user.name, passwordHash: user.passwordHash ?? '', role: 'member' }, ['id']).catch(() => { });
+        await this.redisCache.setUser(user).catch(() => { });
         const response = this.buildAuthResponse(user);
         await this.auditService.recordEvent({
             eventType: 'auth.register',
@@ -273,9 +276,11 @@ let AuthService = class AuthService {
         user.name = dto.name;
         this.persistUsers();
         await this.userRepository.update({ id: currentUser.id }, { nickname: dto.name }).catch(() => { });
+        await this.redisCache.updateUser(currentUser.id, { name: dto.name }).catch(() => { });
         return { ...currentUser, name: dto.name };
     }
     async loadUsersFromDatabase() {
+        await this.redisCache.connect();
         const dbUsers = await this.userRepository.find({ where: { role: 'member' } });
         this.registeredUsers = dbUsers
             .filter((u) => !this.demoUsers.some((d) => d.id === u.id))
@@ -288,6 +293,9 @@ let AuthService = class AuthService {
             passwordHash: u.passwordHash,
             subscriptionType: 'free',
         }));
+        for (const user of [...this.demoUsers, ...this.registeredUsers]) {
+            await this.redisCache.setUser(user).catch(() => { });
+        }
         for (const user of this.demoUsers) {
             await this.userRepository.upsert({ id: user.id, phone: user.phone, nickname: user.name, passwordHash: user.passwordHash ?? '', role: user.role }, ['id']).catch(() => { });
         }
@@ -303,6 +311,7 @@ exports.AuthService = AuthService = __decorate([
     __metadata("design:paramtypes", [local_state_service_1.LocalStateService,
         auth_user_repository_1.AuthUserRepository,
         typeorm_2.Repository,
-        audit_service_1.AuditService])
+        audit_service_1.AuditService,
+        redis_user_cache_service_1.RedisUserCacheService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

@@ -8,6 +8,7 @@ import { AuthUserRepository, AuthUserSnapshot } from '../../database/repositorie
 import { UserEntity } from '../../database/entities/user.entity';
 import { AuditService } from '../audit/audit.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
+import { RedisUserCacheService } from './redis-user-cache.service';
 
 class LoginDto {
   @IsString({ message: '账号不能为空' })
@@ -64,6 +65,7 @@ export class AuthService {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     private readonly auditService: AuditService,
+    private readonly redisCache: RedisUserCacheService,
   ) {
     setImmediate(() => this.loadUsersFromDatabase());
   }
@@ -248,6 +250,7 @@ export class AuthService {
       { id: user.id, phone: user.phone, nickname: user.name, passwordHash: user.passwordHash ?? '', role: 'member' },
       ['id'],
     ).catch(() => {});
+    await this.redisCache.setUser(user).catch(() => {});
     const response = this.buildAuthResponse(user);
     await this.auditService.recordEvent({
       eventType: 'auth.register',
@@ -308,11 +311,13 @@ export class AuthService {
     user.name = dto.name;
     this.persistUsers();
     await this.userRepository.update({ id: currentUser.id }, { nickname: dto.name }).catch(() => {});
+    await this.redisCache.updateUser(currentUser.id, { name: dto.name }).catch(() => {});
     return { ...currentUser, name: dto.name };
   }
 
 
   private async loadUsersFromDatabase() {
+    await this.redisCache.connect();
     const dbUsers = await this.userRepository.find({ where: { role: 'member' } });
     this.registeredUsers = dbUsers
       .filter((u) => !this.demoUsers.some((d) => d.id === u.id))
@@ -325,6 +330,10 @@ export class AuthService {
         passwordHash: u.passwordHash,
         subscriptionType: 'free',
       }));
+    // 写入 Redis 缓存
+    for (const user of [...this.demoUsers, ...this.registeredUsers]) {
+      await this.redisCache.setUser(user).catch(() => {});
+    }
     // 确保 demoUsers 也在数据库中
     for (const user of this.demoUsers) {
       await this.userRepository.upsert(

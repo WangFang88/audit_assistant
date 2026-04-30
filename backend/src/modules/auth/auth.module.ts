@@ -9,12 +9,14 @@ import { AuthController } from './auth.controller';
 import { AuthContextInterceptor } from './auth-context.interceptor';
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
+import { RedisUserCacheService } from './redis-user-cache.service';
 
 @Module({
   imports: [DatabaseSupportModule, AuditModule, forwardRef(() => SubscriptionsModule), TypeOrmModule.forFeature([UserEntity])],
   controllers: [AuthController],
   providers: [
     AuthService,
+    RedisUserCacheService,
     Reflector,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_INTERCEPTOR, useClass: AuthContextInterceptor },
