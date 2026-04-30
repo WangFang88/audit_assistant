@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, In, Repository } from 'typeorm';
+import { formatCst } from '../../utils/date';
 import { DocumentChunkEntity } from '../../database/entities/document-chunk.entity';
 import { DocumentEntity } from '../../database/entities/document.entity';
 import { DocumentExtractionJobEntity } from '../../database/entities/document-extraction-job.entity';
@@ -125,7 +126,7 @@ export class DocumentsService {
       chunkCount: entity.chunkCount,
       indexStatus: entity.indexStatus as DocumentRecord['indexStatus'],
       extractionMode: (entity.extractionMode ?? 'text') as DocumentRecord['extractionMode'],
-      uploadedAt: entity.uploadedAt.toISOString().slice(0, 16).replace('T', ' '),
+      uploadedAt: formatCst(entity.uploadedAt, false),
       groupId: entity.teamId,
       fileType: entity.fileType as DocumentRecord['fileType'],
       chunkStrategy: 'structure-first',
@@ -161,7 +162,7 @@ export class DocumentsService {
       status: entity.status === 'failed' ? 'processing' : entity.status,
       stage: entity.stage,
       progress: entity.progress,
-      startedAt: entity.startedAt.toISOString().slice(0, 16).replace('T', ' '),
+      startedAt: formatCst(entity.startedAt, false),
     };
   }
 
@@ -770,7 +771,7 @@ export class DocumentsService {
       groupId: dto.groupId ?? null,
       fileType: classification.fileType,
       extractionMode: hasRawText ? 'text' : classification.extractionMode,
-      uploadedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      uploadedAt: formatCst(new Date(), false),
       indexStatus: 'ready' as const,
       chunkStrategy: 'structure-first' as const,
       parserTarget: 'multimodal-parser' as const,

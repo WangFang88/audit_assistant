@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { extname } from 'node:path';
 import { Repository } from 'typeorm';
+import { formatCst } from '../../utils/date';
 import { ConversationParticipantEntity } from '../../database/entities/conversation-participant.entity';
 import { ConversationEntity } from '../../database/entities/conversation.entity';
 import { MessageEntity } from '../../database/entities/message.entity';
@@ -74,7 +75,7 @@ export class ChatService {
   ) {}
 
   private formatDateTime(date: Date) {
-    return date.toISOString().slice(0, 16).replace('T', ' ');
+    return formatCst(date, false);
   }
 
   private assertAdminCannotUseChat() {

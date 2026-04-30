@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SubscriptionEntity } from '../entities/subscription.entity';
+import { formatCst } from '../../utils/date';
 
 export type SubscriptionOrderSnapshot = {
   id: string;
@@ -42,6 +43,6 @@ export class SubscriptionRepository {
   }
 
   private formatDateTime(date: Date) {
-    return date.toISOString().slice(0, 16).replace('T', ' ');
+    return formatCst(date, false);
   }
 }

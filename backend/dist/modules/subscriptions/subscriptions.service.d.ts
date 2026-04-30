@@ -136,7 +136,7 @@ export declare class SubscriptionsService {
         latestOrder: {
             id: string;
             planType: "free" | "weekly" | "monthly" | "yearly";
-            planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
+            planLabel: "free" | "weekly" | "monthly" | "yearly" | "免费版" | "周订阅" | "月订阅" | "年订阅";
             amount: string;
             paidAt: string;
             expiredAt: string;
@@ -144,7 +144,7 @@ export declare class SubscriptionsService {
         effectiveOrder: {
             id: string;
             planType: "free" | "weekly" | "monthly" | "yearly";
-            planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
+            planLabel: "free" | "weekly" | "monthly" | "yearly" | "免费版" | "周订阅" | "月订阅" | "年订阅";
             amount: string;
             paidAt: string;
             expiredAt: string;
@@ -152,7 +152,7 @@ export declare class SubscriptionsService {
         orderHistory: {
             id: string;
             planType: "free" | "weekly" | "monthly" | "yearly";
-            planLabel: "free" | "免费版" | "weekly" | "周订阅" | "monthly" | "月订阅" | "yearly" | "年订阅";
+            planLabel: "free" | "weekly" | "monthly" | "yearly" | "免费版" | "周订阅" | "月订阅" | "年订阅";
             amount: string;
             paidAt: string;
             expiredAt: string;

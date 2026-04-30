@@ -30,7 +30,7 @@ export class QueryLogRepository {
       userId: entity.userId,
       teamId: entity.teamId,
       queryText: entity.queryText,
-      queriedAt: entity.queriedAt.toISOString().slice(0, 19).replace('T', ' '),
+      queriedAt: formatCst(entity.queriedAt),
       consumedQuota: entity.consumedQuota,
     };
   }

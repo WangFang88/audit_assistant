@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuditEventRepository = void 0;
 const common_1 = require("@nestjs/common");
 const audit_event_entity_1 = require("../entities/audit-event.entity");
+const date_1 = require("../../utils/date");
 let AuditEventRepository = class AuditEventRepository {
     createEntity(snapshot) {
         const entity = new audit_event_entity_1.AuditEventEntity();
@@ -37,7 +38,7 @@ let AuditEventRepository = class AuditEventRepository {
             summary: entity.summary,
             status: entity.status,
             detail: entity.detail ?? {},
-            createdAt: entity.createdAt.toISOString().slice(0, 19).replace('T', ' '),
+            createdAt: (0, date_1.formatCst)(entity.createdAt),
         };
     }
 };

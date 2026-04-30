@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TeamEntity } from '../entities/team.entity';
 import { TeamMemberEntity } from '../entities/team-member.entity';
+import { formatCst } from '../../utils/date';
 
 export type TeamSnapshot = {
   id: string;
@@ -54,6 +55,6 @@ export class TeamRepository {
   }
 
   private formatDateTime(date: Date) {
-    return date.toISOString().slice(0, 16).replace('T', ' ');
+    return formatCst(date, false);
   }
 }

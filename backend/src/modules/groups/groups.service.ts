@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { TeamMemberEntity } from '../../database/entities/team-member.entity';
 import { TeamEntity } from '../../database/entities/team.entity';
 import { UserEntity } from '../../database/entities/user.entity';
+import { formatCst } from '../../utils/date';
 import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
@@ -87,7 +88,7 @@ export class GroupsService {
       ownerUserId: entity.ownerUserId,
       memberCount,
       privateDocumentCount,
-      lastQueryAt: entity.lastQueryAt ? entity.lastQueryAt.toISOString().slice(0, 16).replace('T', ' ') : null,
+      lastQueryAt: entity.lastQueryAt ? formatCst(entity.lastQueryAt, false) : null,
     };
   }
 
@@ -371,7 +372,7 @@ export class GroupsService {
       groupName: group.name,
       previousLeaderId,
       newLeaderId: dto.targetUserId,
-      transferredAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      transferredAt: formatCst(new Date(), false),
     };
   }
 
@@ -420,7 +421,7 @@ export class GroupsService {
       groupName: group.name,
       removedMemberId: memberId,
       removedUserId: member.userId,
-      removedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      removedAt: formatCst(new Date(), false),
       memberCount,
       action: isSelfExit ? 'quit' : 'remove',
     };
@@ -460,7 +461,7 @@ export class GroupsService {
     return {
       deletedGroupId: group.id,
       deletedGroupName: group.name,
-      deletedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      deletedAt: formatCst(new Date(), false),
       remainingGroups: remainingGroups.length,
     };
   }

@@ -18,6 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const audit_event_entity_1 = require("../../database/entities/audit-event.entity");
 const audit_event_repository_1 = require("../../database/repositories/audit-event.repository");
+const date_1 = require("../../utils/date");
 let AuditService = class AuditService {
     constructor(auditEventEntityRepository, auditEventRepository) {
         this.auditEventEntityRepository = auditEventEntityRepository;
@@ -35,7 +36,7 @@ let AuditService = class AuditService {
             summary: input.summary,
             status: input.status ?? 'success',
             detail: input.detail ?? {},
-            createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+            createdAt: (0, date_1.formatCst)(new Date()),
         };
         await this.auditEventEntityRepository.save(this.auditEventRepository.createEntity(snapshot));
         return snapshot;

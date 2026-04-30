@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/com
 import { IsIn } from 'class-validator';
 import { QueryLogRepository, QueryLogSnapshot } from '../../database/repositories/query-log.repository';
 import { SubscriptionOrderSnapshot, SubscriptionRepository } from '../../database/repositories/subscription.repository';
+import { formatCst } from '../../utils/date';
 import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { LocalStateService } from './local-state.service';
@@ -192,7 +193,7 @@ export class SubscriptionsService {
   }
 
   private formatDateTime(date: Date) {
-    return date.toISOString().slice(0, 16).replace('T', ' ');
+    return formatCst(date, false);
   }
 
   private addDays(baseDate: Date, days: number) {

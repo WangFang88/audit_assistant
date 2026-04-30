@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { formatCst } from '../../utils/date';
 import { TeamAgentEntity } from '../../database/entities/team-agent.entity';
 import { AuthService } from '../auth/auth.service';
 import { GroupsService } from '../groups/groups.service';
@@ -56,7 +57,7 @@ export class TeamAgentsService {
       name: entity.name,
       status: entity.status,
       capabilities: entity.capabilities.filter(this.isCapability),
-      createdAt: entity.createdAt.toISOString().slice(0, 16).replace('T', ' '),
+      createdAt: formatCst(entity.createdAt, false),
       defaultConversationId: entity.defaultConversationId,
       config: {
         retrievalScope: 'public_plus_group_private',

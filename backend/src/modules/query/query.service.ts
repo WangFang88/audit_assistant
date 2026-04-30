@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { IsOptional, IsString, MinLength } from 'class-validator';
+import { formatCst } from '../../utils/date';
 import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { DocumentsService } from '../documents/documents.service';
@@ -135,7 +136,7 @@ export class QueryService {
         userId: this.authService.me().id,
         teamId: resolvedGroupId ?? null,
         queryText: dto.question,
-        queriedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        queriedAt: formatCst(new Date()),
         consumedQuota: 1,
       });
     }
