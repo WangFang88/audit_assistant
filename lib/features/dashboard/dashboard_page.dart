@@ -418,7 +418,7 @@ String get _activeConversationType {
         _extractJobs = bundle.extractJobs;
         _selectedConversationId = bundle.selectedConversationId;
         _messages = bundle.messages;
-        if (_selectedIndex == 1 && _selectedConversationId == null) {
+        if (_selectedIndex == 1 && _selectedConversationId == null && bundle.conversations.isEmpty) {
           _selectedIndex = 0;
         }
       });
