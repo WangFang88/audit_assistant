@@ -42,11 +42,21 @@ export class AuditService {
     return snapshot;
   }
 
-  async listRecentEvents(limit = 10) {
-    const entities = await this.auditEventEntityRepository.find({
-      order: { createdAt: 'DESC' },
-      take: limit,
-    });
+  async listRecentEvents(limit = 10, filter?: { isAdmin?: boolean; userId?: string; groupIds?: string[] }) {
+    const qb = this.auditEventEntityRepository.createQueryBuilder('e').orderBy('e.createdAt', 'DESC').take(limit);
+
+    if (filter && !filter.isAdmin) {
+      if (filter.groupIds && filter.groupIds.length > 0) {
+        qb.where('(e.actorUserId = :userId OR e.groupId IN (:...groupIds))', {
+          userId: filter.userId,
+          groupIds: filter.groupIds,
+        });
+      } else {
+        qb.where('e.actorUserId = :userId', { userId: filter.userId });
+      }
+    }
+
+    const entities = await qb.getMany();
     return entities.map((entity) => this.auditEventRepository.mapEntity(entity));
   }
 }

@@ -2,7 +2,7 @@
   "usage": {
     "groups": 2,
     "privateDocuments": 0,
-    "dailyQueries": 0,
+    "dailyQueries": 1,
     "dailyQueryDate": "2026-04-30"
   },
   "groups": [],
@@ -16,8 +16,16 @@
       "userId": "user-1777531505817",
       "planType": "weekly",
       "amount": "70.00",
-      "paidAt": "2026-04-29 23:02",
-      "expiredAt": "2026-05-06 23:02"
+      "paidAt": "2026-04-29 15:02",
+      "expiredAt": "2026-05-06 15:02"
+    },
+    {
+      "id": "order-1777538691504",
+      "userId": "user-1777532606855",
+      "planType": "weekly",
+      "amount": "70.00",
+      "paidAt": "2026-04-30 00:44",
+      "expiredAt": "2026-05-07 00:44"
     }
   ],
   "conversations": [],
@@ -38,6 +46,16 @@
       "role": "member",
       "trialEndsAt": "2026-05-01",
       "passwordHash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
+    }
+  ],
+  "queryLogs": [
+    {
+      "id": "query-log-1777538997168",
+      "userId": "user-1777531505817",
+      "teamId": "group-1777532966882",
+      "queryText": "请检索与专项资金使用和采购审批相关的制度依据。",
+      "queriedAt": "2026-04-30 00:49:57",
+      "consumedQuota": 1
     }
   ]
 }

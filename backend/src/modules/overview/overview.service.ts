@@ -34,7 +34,11 @@ export class OverviewService {
         this.documentsService.listExtractionJobs(effectiveGroupId),
         this.documentsService.getLibraryScopeSummary(effectiveGroupId),
         this.documentsService.countPrivateDocuments(visibleGroups.map((g) => g.id)),
-        this.auditService.listRecentEvents(),
+        this.auditService.listRecentEvents(10, {
+          isAdmin,
+          userId: user.id,
+          groupIds: visibleGroups.map((g) => g.id),
+        }),
         isAdmin ? Promise.resolve([]) : this.chatService.listConversations(effectiveGroupId),
       ]);
 
