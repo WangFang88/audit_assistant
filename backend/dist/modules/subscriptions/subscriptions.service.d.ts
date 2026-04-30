@@ -112,6 +112,7 @@ export declare class SubscriptionsService {
     };
     syncUsage(usage: Partial<UsageSnapshot>): void;
     assertCanCreateGroup(currentGroupCount: number): void;
+    getGroupLimitForUser(userId: string): number;
     assertCanImportPrivateDocument(currentPrivateDocumentCount: number): void;
     assertCanRunQuery(currentDailyQueries: number): void;
     recordQueryLog(queryLog: QueryLogSnapshot): void;

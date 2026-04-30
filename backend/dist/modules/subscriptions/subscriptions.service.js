@@ -294,6 +294,13 @@ let SubscriptionsService = class SubscriptionsService {
             throw new common_1.BadRequestException('当前套餐的项目组数量已达上限，请升级后继续创建');
         }
     }
+    getGroupLimitForUser(userId) {
+        const activeOrder = this.subscriptionOrders
+            .filter((o) => o.userId === userId && this.isOrderActive(o))
+            .sort((a, b) => this.getCurrentPlanRank(b.planType) - this.getCurrentPlanRank(a.planType))[0];
+        const planId = activeOrder?.planType ?? 'free';
+        return this.plans.find((p) => p.id === planId)?.limits.groupCount ?? this.plans[0].limits.groupCount;
+    }
     assertCanImportPrivateDocument(currentPrivateDocumentCount) {
         const limit = this.getCurrentPlan().limits.privateDocuments;
         if (currentPrivateDocumentCount >= limit) {

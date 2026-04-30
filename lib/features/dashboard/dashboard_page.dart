@@ -1443,48 +1443,60 @@ String get _activeConversationType {
     }
 
     String? selectedUserId = _members.first.userId;
-    final confirmed = await showDialog<bool>(
+    String? dialogError;
+    bool loading = false;
+
+    await showDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('移交组长'),
-          content: DropdownButtonFormField<String>(
-            initialValue: selectedUserId,
-            items: _members
-                .map((member) => DropdownMenuItem(
-                      value: member.userId,
-                      child: Text('${member.name} · ${member.role}'),
-                    ))
-                .toList(),
-            onChanged: (value) => setDialogState(() => selectedUserId = value),
-            decoration: const InputDecoration(labelText: '选择目标成员'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: selectedUserId,
+                items: _members
+                    .map((member) => DropdownMenuItem(
+                          value: member.userId,
+                          child: Text('${member.name} · ${member.role}'),
+                        ))
+                    .toList(),
+                onChanged: (value) => setDialogState(() => selectedUserId = value),
+                decoration: const InputDecoration(labelText: '选择目标成员'),
+              ),
+              if (dialogError != null) ...[
+                const SizedBox(height: 8),
+                Text(dialogError!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              ],
+            ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('确认移交')),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+            FilledButton(
+              onPressed: loading
+                  ? null
+                  : () async {
+                      if (selectedUserId == null) return;
+                      setDialogState(() { dialogError = null; loading = true; });
+                      try {
+                        await widget.apiService.transferLeader(
+                          groupId: _activeGroupId!,
+                          targetUserId: selectedUserId!,
+                        );
+                        if (context.mounted) Navigator.pop(context);
+                        await _refreshMembers();
+                      } on ApiException catch (e) {
+                        setDialogState(() { dialogError = e.message; loading = false; });
+                      }
+                    },
+              child: const Text('确认移交'),
+            ),
           ],
         ),
       ),
     );
-
-    if (confirmed != true || selectedUserId == null) {
-      return;
-    }
-
-    try {
-      await widget.apiService.transferLeader(
-        groupId: _activeGroupId!,
-        targetUserId: selectedUserId!,
-      );
-      await _refreshMembers();
-    } on ApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _error = error.message;
-      });
-    }
+  }
   }
 
   Future<void> _removeMember(GroupMember member) async {

@@ -11,7 +11,7 @@ export declare class SubscriptionsController {
         currentPlanId: string;
         trialEndsAt: string;
         trialDays: number;
-        status: "active" | "admin-preview" | "trial" | "expired";
+        status: "admin-preview" | "trial" | "active" | "expired";
         statusLabel: string;
         latestOrder: {
             id: string;

@@ -292,6 +292,11 @@ let GroupsService = class GroupsService {
         if (!newLeader) {
             throw new common_1.NotFoundException('目标成员不存在');
         }
+        const newLeaderGroupCount = await this.teamRepository.countBy({ ownerUserId: dto.targetUserId });
+        const newLeaderGroupLimit = this.subscriptionsService.getGroupLimitForUser(dto.targetUserId);
+        if (newLeaderGroupCount >= newLeaderGroupLimit) {
+            throw new common_1.BadRequestException('该成员当前套餐已达项目组上限，无法接受组长移交');
+        }
         const previousLeaderId = group.ownerUserId;
         await this.teamMemberRepository.update({ teamId: groupId, userId: group.ownerUserId }, { role: 'member' });
         await this.teamMemberRepository.update({ teamId: groupId, userId: dto.targetUserId }, { role: 'leader' });
