@@ -272,6 +272,10 @@ export class AuthService {
 
     this.registeredUsers = [...this.registeredUsers, user];
     this.persistUsers();
+    await this.userRepository.upsert(
+      { id: user.id, phone: user.phone, nickname: user.name, passwordHash: user.passwordHash ?? '', role: 'member' },
+      ['id'],
+    ).catch(() => {});
     const response = this.buildAuthResponse(user);
     await this.auditService.recordEvent({
       eventType: 'auth.register',
