@@ -2098,27 +2098,44 @@ String get _activeConversationType {
           const SizedBox(height: 16),
           Row(
             children: [
-              SizedBox(
-                width: compact ? double.infinity : 320,
-                child: _isAdmin
-                    ? const InputDecorator(
-                        decoration: InputDecoration(labelText: '当前视角'),
-                        child: Text('管理员公共库'),
-                      )
-                    : DropdownButtonFormField<String>(
-                        value: _selectedGroupId,
-                        decoration: const InputDecoration(labelText: '当前项目组'),
-                        items: groups
-                            .map(
-                              (group) => DropdownMenuItem(
-                                value: group.id,
-                                child: Text('${group.name} · ${group.organizationName}'),
-                              ),
+              compact
+                  ? Expanded(
+                      child: _isAdmin
+                          ? const InputDecorator(
+                              decoration: InputDecoration(labelText: '当前视角'),
+                              child: Text('管理员公共库'),
                             )
-                            .toList(),
-                        onChanged: _switchingGroup ? null : _switchGroup,
-                      ),
-              ),
+                          : DropdownButtonFormField<String>(
+                              value: _selectedGroupId,
+                              decoration: const InputDecoration(labelText: '当前项目组'),
+                              items: groups
+                                  .map((group) => DropdownMenuItem(
+                                        value: group.id,
+                                        child: Text('${group.name} · ${group.organizationName}'),
+                                      ))
+                                  .toList(),
+                              onChanged: _switchingGroup ? null : _switchGroup,
+                            ),
+                    )
+                  : SizedBox(
+                      width: 320,
+                      child: _isAdmin
+                          ? const InputDecorator(
+                              decoration: InputDecoration(labelText: '当前视角'),
+                              child: Text('管理员公共库'),
+                            )
+                          : DropdownButtonFormField<String>(
+                              value: _selectedGroupId,
+                              decoration: const InputDecoration(labelText: '当前项目组'),
+                              items: groups
+                                  .map((group) => DropdownMenuItem(
+                                        value: group.id,
+                                        child: Text('${group.name} · ${group.organizationName}'),
+                                      ))
+                                  .toList(),
+                              onChanged: _switchingGroup ? null : _switchGroup,
+                            ),
+                    ),
               if (_switchingGroup) ...[
                 const SizedBox(width: 12),
                 const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
