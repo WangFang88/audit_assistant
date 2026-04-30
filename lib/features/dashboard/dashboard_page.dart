@@ -1974,10 +1974,16 @@ String get _activeConversationType {
     if (compact) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(pages[_selectedIndex].label),
+          title: Row(
+            children: [
+              Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+              const SizedBox(width: 6),
+              const Text('小嘉审计助手'),
+            ],
+          ),
           actions: [
-            IconButton(onPressed: () => _loadDashboard(preferredGroupId: _selectedGroupId), icon: const Icon(Icons.refresh)),
-            TextButton(onPressed: widget.onLogout, child: const Text('退出')),
+            IconButton(onPressed: () => _loadDashboard(preferredGroupId: _selectedGroupId), icon: const Icon(Icons.refresh_outlined)),
+            IconButton(onPressed: widget.onLogout, icon: const Icon(Icons.logout), tooltip: '退出'),
           ],
         ),
         body: pages[_selectedIndex].child,
@@ -2057,6 +2063,7 @@ String get _activeConversationType {
             return '试用到期：${s.trialEndsAt} · 全功能试用 ${s.trialDays} 天';
           }();
 
+    final compact = MediaQuery.of(context).size.width < 900;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -2092,7 +2099,7 @@ String get _activeConversationType {
           Row(
             children: [
               SizedBox(
-                width: 320,
+                width: compact ? double.infinity : 320,
                 child: _isAdmin
                     ? const InputDecorator(
                         decoration: InputDecoration(labelText: '当前视角'),
@@ -2120,15 +2127,13 @@ String get _activeConversationType {
           ),
           const SizedBox(height: 12),
           Wrap(
-            spacing: 12,
-            runSpacing: 12,
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Chip(label: Text('当前范围：${activeContext.queryScopeLabel}')),
-              Chip(label: Text(_isAdmin ? '当前视角：管理员公共库' : activeContext.groupName == null ? '未进入项目组' : '当前项目组：${activeContext.groupName}')),
-              if (!_isAdmin && activeContext.agentName != null) Chip(label: Text('项目组Agent：${activeContext.agentName}')),
-              if (!_isAdmin && activeContext.knowledgeScopeLabel.isNotEmpty) Chip(label: Text('知识范围：${activeContext.knowledgeScopeLabel}')),
-              // const Chip(label: Text('回答要求：可溯源')),
-              // Chip(label: Text('交付目标：${architectureTargets.deliveryMode}')),
+              Chip(label: Text('范围：${activeContext.queryScopeLabel}')),
+              Chip(label: Text(_isAdmin ? '管理员公共库' : activeContext.groupName == null ? '未选项目组' : activeContext.groupName!)),
+              if (!_isAdmin && activeContext.agentName != null) Chip(label: Text('Agent：${activeContext.agentName}')),
+              if (!_isAdmin && activeContext.knowledgeScopeLabel.isNotEmpty) Chip(label: Text(activeContext.knowledgeScopeLabel)),
             ],
           ),
           const SizedBox(height: 8),
@@ -3604,8 +3609,9 @@ class _StatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compact = MediaQuery.of(context).size.width < 900;
     return Container(
-      width: 220,
+      width: compact ? (MediaQuery.of(context).size.width - 64) / 2 : 220,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
