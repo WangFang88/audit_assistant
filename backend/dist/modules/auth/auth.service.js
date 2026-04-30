@@ -26,43 +26,43 @@ class LoginDto {
 }
 exports.LoginDto = LoginDto;
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(3),
+    (0, class_validator_1.IsString)({ message: '账号不能为空' }),
+    (0, class_validator_1.MinLength)(3, { message: '账号至少需要 3 位' }),
     __metadata("design:type", String)
 ], LoginDto.prototype, "phone", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(6),
+    (0, class_validator_1.IsString)({ message: '密码不能为空' }),
+    (0, class_validator_1.MinLength)(6, { message: '密码至少需要 6 位' }),
     __metadata("design:type", String)
 ], LoginDto.prototype, "password", void 0);
 class RefreshTokenDto {
 }
 exports.RefreshTokenDto = RefreshTokenDto;
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(6),
+    (0, class_validator_1.IsString)({ message: 'refreshToken 不能为空' }),
+    (0, class_validator_1.MinLength)(6, { message: 'refreshToken 格式错误' }),
     __metadata("design:type", String)
 ], RefreshTokenDto.prototype, "refreshToken", void 0);
 class RegisterDto {
 }
 exports.RegisterDto = RegisterDto;
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.Matches)(/^[\d\s\-()]{11,20}$/),
+    (0, class_validator_1.IsString)({ message: '手机号不能为空' }),
+    (0, class_validator_1.Matches)(/^[\d\s\-()]{11,20}$/, { message: '请输入有效的手机号' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "phone", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(6),
+    (0, class_validator_1.IsString)({ message: '密码不能为空' }),
+    (0, class_validator_1.MinLength)(6, { message: '密码至少需要 6 位' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);
 class UpdateProfileDto {
 }
 exports.UpdateProfileDto = UpdateProfileDto;
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(2),
-    (0, class_validator_1.MaxLength)(20),
+    (0, class_validator_1.IsString)({ message: '姓名不能为空' }),
+    (0, class_validator_1.MinLength)(2, { message: '姓名至少需要 2 个字符' }),
+    (0, class_validator_1.MaxLength)(20, { message: '姓名最多 20 个字符' }),
     __metadata("design:type", String)
 ], UpdateProfileDto.prototype, "name", void 0);
 let AuthService = class AuthService {
