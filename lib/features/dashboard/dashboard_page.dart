@@ -2003,7 +2003,7 @@ String get _activeConversationType {
           destinations: pages
               .map((page) => NavigationDestination(icon: Icon(page.icon), label: page.label))
               .toList(),
-          onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+          onDestinationSelected: (index) { setState(() => _selectedIndex = index); _loadDashboard(); },
         ),
       );
     }
@@ -2038,7 +2038,7 @@ String get _activeConversationType {
           NavigationRail(
             selectedIndex: _selectedIndex,
             labelType: NavigationRailLabelType.all,
-            onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+            onDestinationSelected: (index) { setState(() => _selectedIndex = index); _loadDashboard(); },
             destinations: pages
                 .map((page) => NavigationRailDestination(icon: Icon(page.icon), label: Text(page.label)))
                 .toList(),
