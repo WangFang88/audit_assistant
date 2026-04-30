@@ -17,5 +17,9 @@ export declare class AuditService {
     private readonly auditEventRepository;
     constructor(auditEventEntityRepository: Repository<AuditEventEntity>, auditEventRepository: AuditEventRepository);
     recordEvent(input: CreateAuditEventInput): Promise<AuditEventSnapshot>;
-    listRecentEvents(limit?: number): Promise<AuditEventSnapshot[]>;
+    listRecentEvents(limit?: number, filter?: {
+        isAdmin?: boolean;
+        userId?: string;
+        groupIds?: string[];
+    }): Promise<AuditEventSnapshot[]>;
 }

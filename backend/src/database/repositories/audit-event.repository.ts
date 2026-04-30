@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AuditEventEntity } from '../entities/audit-event.entity';
+import { formatCst } from '../../utils/date';
 
 export type AuditEventSnapshot = {
   id: string;

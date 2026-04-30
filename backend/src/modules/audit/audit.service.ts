@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditEventEntity } from '../../database/entities/audit-event.entity';
 import { AuditEventRepository, AuditEventSnapshot } from '../../database/repositories/audit-event.repository';
+import { formatCst } from '../../utils/date';
 
 export type CreateAuditEventInput = {
   eventType: string;
@@ -36,7 +37,7 @@ export class AuditService {
       summary: input.summary,
       status: input.status ?? 'success',
       detail: input.detail ?? {},
-      createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      createdAt: formatCst(new Date()),
     };
     await this.auditEventEntityRepository.save(this.auditEventRepository.createEntity(snapshot));
     return snapshot;
