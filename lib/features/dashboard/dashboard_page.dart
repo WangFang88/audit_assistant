@@ -2456,7 +2456,7 @@ String get _activeConversationType {
                 spacing: 8,
                 children: [
                   Text(group.lastQueryAt),
-                  if (_isCurrentUserLeader)
+                  if (group.id == _selectedGroupId && _isCurrentUserLeader)
                     TextButton(
                       onPressed: _switchingGroup ? null : () => _deleteGroup(group),
                       child: const Text('删除'),
