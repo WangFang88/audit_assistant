@@ -2289,7 +2289,7 @@ String get _activeConversationType {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF6F8FC),
+              color: theme.colorScheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -2331,14 +2331,14 @@ String get _activeConversationType {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: const Color(0xFFD9E3F0)),
+                color: theme.colorScheme.surface,
+                border: Border.all(color: theme.colorScheme.outline.withOpacity(0.4)),
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x0D0F172A),
+                    color: Colors.black.withOpacity(0.04),
                     blurRadius: 12,
-                    offset: Offset(0, 4),
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -2884,8 +2884,8 @@ String get _activeConversationType {
                                           constraints: const BoxConstraints(maxWidth: 420),
                                           decoration: BoxDecoration(
                                             color: isCurrentUser
-                                                ? const Color(0xFFE8F1FF)
-                                                : const Color(0xFFF7F7FA),
+                                                ? Theme.of(context).colorScheme.primaryContainer
+                                                : Theme.of(context).colorScheme.surfaceContainerLowest,
                                             borderRadius: BorderRadius.circular(14),
                                           ),
                                           child: Column(
@@ -2987,7 +2987,7 @@ String get _activeConversationType {
                                                                 fit: BoxFit.cover,
                                                                 errorBuilder: (context, error, stackTrace) {
                                                                   return Container(
-                                                                    color: const Color(0xFFF0F3F8),
+                                                                    color: Theme.of(context).colorScheme.surfaceContainerLowest,
                                                                     alignment: Alignment.center,
                                                                     child: const Icon(Icons.broken_image_outlined),
                                                                   );
@@ -3109,11 +3109,11 @@ String get _activeConversationType {
                                       constraints: const BoxConstraints(maxWidth: 420),
                                       decoration: BoxDecoration(
                                         color: pending.status == _PendingChatMessageStatus.failed
-                                            ? const Color(0xFFFFF1F3)
-                                            : const Color(0xFFE8F1FF),
+                                            ? Theme.of(context).colorScheme.errorContainer
+                                            : Theme.of(context).colorScheme.primaryContainer,
                                         borderRadius: BorderRadius.circular(14),
                                         border: pending.status == _PendingChatMessageStatus.failed
-                                            ? Border.all(color: const Color(0xFFF1B9B9))
+                                            ? Border.all(color: Theme.of(context).colorScheme.error.withOpacity(0.4))
                                             : null,
                                       ),
                                       child: Column(
