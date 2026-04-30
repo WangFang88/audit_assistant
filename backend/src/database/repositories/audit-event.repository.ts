@@ -46,7 +46,7 @@ export class AuditEventRepository {
       summary: entity.summary,
       status: entity.status,
       detail: entity.detail ?? {},
-      createdAt: entity.createdAt.toISOString().slice(0, 19).replace('T', ' '),
+      createdAt: formatCst(entity.createdAt),
     };
   }
 }
