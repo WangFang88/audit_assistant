@@ -405,11 +405,22 @@ export class DocumentsService {
       order: { startedAt: 'ASC' },
     });
 
-    return entities.map((entity) => this.toExtractionJobRecord(entity)).filter((job) => {
-      if (job.groupId == null) {
-        return true;
-      }
+    const isAdmin = this.authService.isAdmin();
+    const currentUserId = this.authService.me().id;
 
+    if (!isAdmin) {
+      const myDocs = await this.persistedDocumentRepository.find({
+        where: { uploadedBy: currentUserId, deletedAt: IsNull() },
+        select: ['id'],
+      });
+      const myDocIds = new Set(myDocs.map((d) => d.id));
+      return entities
+        .filter((e) => myDocIds.has(e.documentId))
+        .map((entity) => this.toExtractionJobRecord(entity));
+    }
+
+    return entities.map((entity) => this.toExtractionJobRecord(entity)).filter((job) => {
+      if (job.groupId == null) return true;
       return groupId != null && job.groupId === groupId;
     });
   }
