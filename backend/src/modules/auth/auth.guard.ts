@@ -28,6 +28,7 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<{
       headers: { authorization?: string };
       user?: unknown;
+      runWithUser?: <T>(fn: () => T) => T;
     }>();
     const authorization = request.headers.authorization;
     if (!authorization) {
@@ -45,6 +46,7 @@ export class AuthGuard implements CanActivate {
     }
 
     request.user = user;
+    request.runWithUser = (fn) => this.authService.runWithUser(user, fn);
     return true;
   }
 }

@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { AsyncLocalStorage } from 'async_hooks';
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { IsString, Matches, MinLength, MaxLength } from 'class-validator';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -95,7 +96,7 @@ export class AuthService {
   ];
 
   private registeredUsers: AuthUserRecord[] = [];
-  private currentUser: DemoUser = this.toPublicUser(this.demoUsers[0]);
+  private readonly userStorage = new AsyncLocalStorage<DemoUser>();
 
   private get users() {
     return [...this.demoUsers, ...this.registeredUsers];
@@ -201,13 +202,11 @@ export class AuthService {
   }
 
   private setCurrentUser(user: DemoUser) {
-    this.currentUser = user;
     return user;
   }
 
   private buildAuthResponse(user: AuthUserRecord) {
     const publicUser = this.toPublicUser(user);
-    this.setCurrentUser(publicUser);
     return {
       accessToken: this.buildAccessToken(user.id),
       refreshToken: this.buildRefreshToken(user.id),
@@ -304,11 +303,19 @@ export class AuthService {
       return null;
     }
 
-    return this.setCurrentUser(this.toPublicUser(user));
+    return this.toPublicUser(user);
   }
 
   me() {
-    return this.currentUser;
+    const user = this.userStorage.getStore();
+    if (!user) {
+      throw new UnauthorizedException('未登录');
+    }
+    return user;
+  }
+
+  runWithUser<T>(user: DemoUser, fn: () => T): T {
+    return this.userStorage.run(user, fn);
   }
 
   getUserByPhone(phone: string) {
@@ -320,15 +327,15 @@ export class AuthService {
   }
 
   async updateProfile(dto: UpdateProfileDto) {
-    const user = this.users.find((u) => u.id === this.currentUser.id);
+    const currentUser = this.me();
+    const user = this.users.find((u) => u.id === currentUser.id);
     if (!user) {
       throw new UnauthorizedException('用户不存在');
     }
     user.name = dto.name;
-    this.currentUser = { ...this.currentUser, name: dto.name };
     this.persistUsers();
-    await this.userRepository.update({ id: this.currentUser.id }, { nickname: dto.name }).catch(() => {});
-    return this.currentUser;
+    await this.userRepository.update({ id: currentUser.id }, { nickname: dto.name }).catch(() => {});
+    return { ...currentUser, name: dto.name };
   }
 
 
@@ -342,7 +349,7 @@ export class AuthService {
   }
 
   isAdmin() {
-    return this.currentUser.role === 'admin';
+    return this.me().role === 'admin';
   }
 }
 
