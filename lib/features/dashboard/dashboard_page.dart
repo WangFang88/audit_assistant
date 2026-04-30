@@ -1382,7 +1382,6 @@ String get _activeConversationType {
                 initialValue: selectedRole,
                 items: const [
                   DropdownMenuItem(value: '成员', child: Text('成员')),
-                  DropdownMenuItem(value: '组长', child: Text('组长')),
                 ],
                 onChanged: (value) => setDialogState(() => selectedRole = value ?? '成员'),
                 decoration: const InputDecoration(labelText: '角色'),
