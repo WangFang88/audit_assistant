@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubscriptionRepository = void 0;
 const common_1 = require("@nestjs/common");
 const subscription_entity_1 = require("../entities/subscription.entity");
+const date_1 = require("../../utils/date");
 let SubscriptionRepository = class SubscriptionRepository {
     createEntity(snapshot) {
         const entity = new subscription_entity_1.SubscriptionEntity();
@@ -37,7 +38,7 @@ let SubscriptionRepository = class SubscriptionRepository {
         return 'free';
     }
     formatDateTime(date) {
-        return date.toISOString().slice(0, 16).replace('T', ' ');
+        return (0, date_1.formatCst)(date, false);
     }
 };
 exports.SubscriptionRepository = SubscriptionRepository;

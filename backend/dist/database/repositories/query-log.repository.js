@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.QueryLogRepository = void 0;
 const common_1 = require("@nestjs/common");
 const query_log_entity_1 = require("../entities/query-log.entity");
+const date_1 = require("../../utils/date");
 let QueryLogRepository = class QueryLogRepository {
     createEntity(snapshot) {
         const entity = new query_log_entity_1.QueryLogEntity();
@@ -26,7 +27,7 @@ let QueryLogRepository = class QueryLogRepository {
             userId: entity.userId,
             teamId: entity.teamId,
             queryText: entity.queryText,
-            queriedAt: entity.queriedAt.toISOString().slice(0, 19).replace('T', ' '),
+            queriedAt: (0, date_1.formatCst)(entity.queriedAt),
             consumedQuota: entity.consumedQuota,
         };
     }

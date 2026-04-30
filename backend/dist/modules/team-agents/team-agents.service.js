@@ -16,6 +16,7 @@ exports.TeamAgentsService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const date_1 = require("../../utils/date");
 const team_agent_entity_1 = require("../../database/entities/team-agent.entity");
 const auth_service_1 = require("../auth/auth.service");
 const groups_service_1 = require("../groups/groups.service");
@@ -43,7 +44,7 @@ let TeamAgentsService = class TeamAgentsService {
             name: entity.name,
             status: entity.status,
             capabilities: entity.capabilities.filter(this.isCapability),
-            createdAt: entity.createdAt.toISOString().slice(0, 16).replace('T', ' '),
+            createdAt: (0, date_1.formatCst)(entity.createdAt, false),
             defaultConversationId: entity.defaultConversationId,
             config: {
                 retrievalScope: 'public_plus_group_private',

@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
 const query_log_repository_1 = require("../../database/repositories/query-log.repository");
 const subscription_repository_1 = require("../../database/repositories/subscription.repository");
+const date_1 = require("../../utils/date");
 const audit_service_1 = require("../audit/audit.service");
 const auth_service_1 = require("../auth/auth.service");
 const local_state_service_1 = require("./local-state.service");
@@ -180,7 +181,7 @@ let SubscriptionsService = class SubscriptionsService {
         })[0];
     }
     formatDateTime(date) {
-        return date.toISOString().slice(0, 16).replace('T', ' ');
+        return (0, date_1.formatCst)(date, false);
     }
     addDays(baseDate, days) {
         const nextDate = new Date(baseDate.getTime());

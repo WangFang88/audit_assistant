@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.QueryRequestDto = exports.QueryService = void 0;
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
+const date_1 = require("../../utils/date");
 const audit_service_1 = require("../audit/audit.service");
 const auth_service_1 = require("../auth/auth.service");
 const documents_service_1 = require("../documents/documents.service");
@@ -122,7 +123,7 @@ let QueryService = class QueryService {
                 userId: this.authService.me().id,
                 teamId: resolvedGroupId ?? null,
                 queryText: dto.question,
-                queriedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+                queriedAt: (0, date_1.formatCst)(new Date()),
                 consumedQuota: 1,
             });
         }

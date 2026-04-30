@@ -18,6 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const class_validator_1 = require("class-validator");
 const node_path_1 = require("node:path");
 const typeorm_2 = require("typeorm");
+const date_1 = require("../../utils/date");
 const conversation_participant_entity_1 = require("../../database/entities/conversation-participant.entity");
 const conversation_entity_1 = require("../../database/entities/conversation.entity");
 const message_entity_1 = require("../../database/entities/message.entity");
@@ -57,7 +58,7 @@ let ChatService = class ChatService {
         this.groupsService = groupsService;
     }
     formatDateTime(date) {
-        return date.toISOString().slice(0, 16).replace('T', ' ');
+        return (0, date_1.formatCst)(date, false);
     }
     assertAdminCannotUseChat() {
         if (!this.authService.isAdmin()) {

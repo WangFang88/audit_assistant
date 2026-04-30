@@ -48,7 +48,7 @@ export declare class OverviewController {
             userId: string;
             name: string;
             phone: string;
-            role: "member" | "leader";
+            role: "leader" | "member";
         }[];
         documents: {
             id: string;
@@ -191,7 +191,7 @@ export declare class OverviewController {
         recentAuditEvents: import("../../database/repositories/audit-event.repository").AuditEventSnapshot[];
         conversations: {
             id: string;
-            type: "group" | "agent" | "direct";
+            type: "group" | "direct" | "agent";
             title: string;
             groupId: string | null;
             isTeamAgent: boolean;

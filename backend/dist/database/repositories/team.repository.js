@@ -10,6 +10,7 @@ exports.TeamRepository = void 0;
 const common_1 = require("@nestjs/common");
 const team_entity_1 = require("../entities/team.entity");
 const team_member_entity_1 = require("../entities/team-member.entity");
+const date_1 = require("../../utils/date");
 let TeamRepository = class TeamRepository {
     mapTeamEntity(entity, memberCount, privateDocumentCount) {
         return {
@@ -39,7 +40,7 @@ let TeamRepository = class TeamRepository {
         return entity;
     }
     formatDateTime(date) {
-        return date.toISOString().slice(0, 16).replace('T', ' ');
+        return (0, date_1.formatCst)(date, false);
     }
 };
 exports.TeamRepository = TeamRepository;

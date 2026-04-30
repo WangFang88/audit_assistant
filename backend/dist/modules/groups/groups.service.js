@@ -20,6 +20,7 @@ const typeorm_2 = require("typeorm");
 const team_member_entity_1 = require("../../database/entities/team-member.entity");
 const team_entity_1 = require("../../database/entities/team.entity");
 const user_entity_1 = require("../../database/entities/user.entity");
+const date_1 = require("../../utils/date");
 const audit_service_1 = require("../audit/audit.service");
 const auth_service_1 = require("../auth/auth.service");
 const chat_service_1 = require("../chat/chat.service");
@@ -84,7 +85,7 @@ let GroupsService = class GroupsService {
             ownerUserId: entity.ownerUserId,
             memberCount,
             privateDocumentCount,
-            lastQueryAt: entity.lastQueryAt ? entity.lastQueryAt.toISOString().slice(0, 16).replace('T', ' ') : null,
+            lastQueryAt: entity.lastQueryAt ? (0, date_1.formatCst)(entity.lastQueryAt, false) : null,
         };
     }
     toMemberRecord(entity) {
@@ -316,7 +317,7 @@ let GroupsService = class GroupsService {
             groupName: group.name,
             previousLeaderId,
             newLeaderId: dto.targetUserId,
-            transferredAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+            transferredAt: (0, date_1.formatCst)(new Date(), false),
         };
     }
     async removeMember(groupId, memberId) {
@@ -361,7 +362,7 @@ let GroupsService = class GroupsService {
             groupName: group.name,
             removedMemberId: memberId,
             removedUserId: member.userId,
-            removedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+            removedAt: (0, date_1.formatCst)(new Date(), false),
             memberCount,
             action: isSelfExit ? 'quit' : 'remove',
         };
@@ -395,7 +396,7 @@ let GroupsService = class GroupsService {
         return {
             deletedGroupId: group.id,
             deletedGroupName: group.name,
-            deletedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+            deletedAt: (0, date_1.formatCst)(new Date(), false),
             remainingGroups: remainingGroups.length,
         };
     }

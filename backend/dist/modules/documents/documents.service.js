@@ -16,6 +16,7 @@ exports.ImportDocumentDto = exports.DocumentsService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const date_1 = require("../../utils/date");
 const document_chunk_entity_1 = require("../../database/entities/document-chunk.entity");
 const document_entity_1 = require("../../database/entities/document.entity");
 const document_extraction_job_entity_1 = require("../../database/entities/document-extraction-job.entity");
@@ -88,7 +89,7 @@ let DocumentsService = class DocumentsService {
             chunkCount: entity.chunkCount,
             indexStatus: entity.indexStatus,
             extractionMode: (entity.extractionMode ?? 'text'),
-            uploadedAt: entity.uploadedAt.toISOString().slice(0, 16).replace('T', ' '),
+            uploadedAt: (0, date_1.formatCst)(entity.uploadedAt, false),
             groupId: entity.teamId,
             fileType: entity.fileType,
             chunkStrategy: 'structure-first',
@@ -122,7 +123,7 @@ let DocumentsService = class DocumentsService {
             status: entity.status === 'failed' ? 'processing' : entity.status,
             stage: entity.stage,
             progress: entity.progress,
-            startedAt: entity.startedAt.toISOString().slice(0, 16).replace('T', ' '),
+            startedAt: (0, date_1.formatCst)(entity.startedAt, false),
         };
     }
     buildSeedDocuments() {
@@ -677,7 +678,7 @@ let DocumentsService = class DocumentsService {
             groupId: dto.groupId ?? null,
             fileType: classification.fileType,
             extractionMode: hasRawText ? 'text' : classification.extractionMode,
-            uploadedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+            uploadedAt: (0, date_1.formatCst)(new Date(), false),
             indexStatus: 'ready',
             chunkStrategy: 'structure-first',
             parserTarget: 'multimodal-parser',
