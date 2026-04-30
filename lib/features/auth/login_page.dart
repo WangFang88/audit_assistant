@@ -13,8 +13,8 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _phoneController = TextEditingController(text: '13800138001');
-  final _passwordController = TextEditingController(text: '123456');
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _submitting = false;
   String? _error;
 
