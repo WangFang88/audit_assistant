@@ -27,12 +27,14 @@ class ApiService {
     }
     if (kIsWeb) {
       final origin = getWebOrigin();
-      // Dev: Flutter runs on a different port than the backend (3000).
-      // If not already on :3000, point directly to localhost:3000.
       if (origin.isNotEmpty && !origin.contains('localhost') && !origin.contains('127.0.0.1')) {
-        return '$origin/api'; // production: same origin
+        return '$origin/api';
       }
-      return 'http://localhost:3000/api'; // development fallback
+      return 'http://localhost:3000/api';
+    }
+    // Android emulator: 10.0.2.2 maps to host machine's localhost
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:3000/api';
     }
     return 'http://localhost:3000/api';
   }
