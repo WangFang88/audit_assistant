@@ -82,6 +82,7 @@ class _MobileGroupsPageState extends State<MobileGroupsPage> {
               ),
             ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'groups_fab',
         onPressed: _showCreateDialog,
         child: const Icon(Icons.add),
       ),

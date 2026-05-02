@@ -137,6 +137,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
               ),
             ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'docs_fab',
         onPressed: _uploading ? null : _showUploadDialog,
         child: _uploading
             ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
