@@ -8,6 +8,8 @@ import 'package:http/http.dart' as http;
 
 import 'file_download_helper_stub.dart'
     if (dart.library.js_interop) 'file_download_helper_web.dart';
+import 'origin_helper_stub.dart'
+    if (dart.library.js_interop) 'origin_helper_web.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -24,8 +26,8 @@ class ApiService {
       return configuredBaseUrl;
     }
     if (kIsWeb) {
-      // On web, use current origin — resolved at runtime via JS interop in web build
-      return '/api';
+      final origin = getWebOrigin();
+      return origin.isNotEmpty ? '$origin/api' : 'http://localhost:3000/api';
     }
     return 'http://localhost:3000/api';
   }
