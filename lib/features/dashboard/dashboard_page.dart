@@ -2061,361 +2061,336 @@ String get _activeConversationType {
     List<RoadmapItem> roadmap,
     ArchitectureTargets architectureTargets,
   ) {
-    final theme = Theme.of(context);
-    final statusText = _isAdmin
-        ? '当前角色：管理员 · 当前视角：公共库管理'
-        : () {
-            final s = subscription;
-            final isActive = s.effectiveOrder != null;
-            if (isActive) return '${s.effectiveOrder!.planLabel} · 到期：${s.effectiveOrder!.expiredAt}';
-            final isExpired = s.planId == 'expired' || s.statusLabel.contains('已过期');
-            if (isExpired) return '试用已结束，请订阅以继续使用';
-            return '试用到期：${s.trialEndsAt} · 全功能试用 ${s.trialDays} 天';
-          }();
-
     final compact = MediaQuery.of(context).size.width < 900;
+
+    if (compact) {
+      return _buildWorkspaceMobile(context, user, groups, subscription, activeContext);
+    }
+    return _buildWorkspaceDesktop(context, user, groups, documents, extractJobs, subscription, result, activeContext, roadmap, architectureTargets);
+  }
+
+  Widget _buildWorkspaceMobile(
+    BuildContext context,
+    AppUser user,
+    List<ProjectGroup> groups,
+    SubscriptionOverview subscription,
+    ActiveContext activeContext,
+  ) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.75)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
+          // 品牌头部
+          _buildHeroSection(context, user, subscription, compact: true),
+          const SizedBox(height: 16),
+          // 大输入框
+          _buildMainSearchBox(context, activeContext, compact: true),
+          const SizedBox(height: 20),
+          // 四个功能卡片 2x2
+          _buildFeatureCards(context, compact: true),
+          const SizedBox(height: 20),
+          // 项目信息
+          _buildSidePanel(context, groups, subscription, compact: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWorkspaceDesktop(
+    BuildContext context,
+    AppUser user,
+    List<ProjectGroup> groups,
+    List<KnowledgeDocument> documents,
+    List<ExtractionJob> extractJobs,
+    SubscriptionOverview subscription,
+    QueryResult result,
+    ActiveContext activeContext,
+    List<RoadmapItem> roadmap,
+    ArchitectureTargets architectureTargets,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 7,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 24, 12, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('你好，${user.name}', style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 4),
-                      Text(statusText, style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withOpacity(0.85))),
-                    ],
-                  ),
-                ),
-                Icon(Icons.waving_hand_outlined, color: Colors.white.withOpacity(0.6), size: 36),
+                _buildHeroSection(context, user, subscription, compact: false),
+                const SizedBox(height: 20),
+                _buildMainSearchBox(context, activeContext, compact: false),
+                const SizedBox(height: 20),
+                _buildFeatureCards(context, compact: false),
+                const SizedBox(height: 24),
+                _buildDocumentPanel(documents, extractJobs),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              compact
-                  ? Expanded(
-                      child: _isAdmin
-                          ? const InputDecorator(
-                              decoration: InputDecoration(labelText: '当前视角'),
-                              child: Text('管理员公共库'),
-                            )
-                          : DropdownButtonFormField<String>(
-                              value: _selectedGroupId,
-                              decoration: const InputDecoration(labelText: '当前项目组'),
-                              items: groups
-                                  .map((group) => DropdownMenuItem(
-                                        value: group.id,
-                                        child: Text('${group.name} · ${group.organizationName}'),
-                                      ))
-                                  .toList(),
-                              onChanged: _switchingGroup ? null : _switchGroup,
-                            ),
-                    )
-                  : SizedBox(
-                      width: 320,
-                      child: _isAdmin
-                          ? const InputDecorator(
-                              decoration: InputDecoration(labelText: '当前视角'),
-                              child: Text('管理员公共库'),
-                            )
-                          : DropdownButtonFormField<String>(
-                              value: _selectedGroupId,
-                              decoration: const InputDecoration(labelText: '当前项目组'),
-                              items: groups
-                                  .map((group) => DropdownMenuItem(
-                                        value: group.id,
-                                        child: Text('${group.name} · ${group.organizationName}'),
-                                      ))
-                                  .toList(),
-                              onChanged: _switchingGroup ? null : _switchGroup,
-                            ),
-                    ),
-              if (_switchingGroup) ...[
-                const SizedBox(width: 12),
-                const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-              ],
-            ],
+        ),
+        SizedBox(
+          width: 300,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(12, 24, 24, 24),
+            child: _buildSidePanel(context, groups, subscription, compact: false),
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              Chip(label: Text('范围：${activeContext.queryScopeLabel}')),
-              Chip(label: Text(_isAdmin ? '管理员公共库' : activeContext.groupName == null ? '未选项目组' : activeContext.groupName!)),
-              if (!_isAdmin && activeContext.agentName != null) Chip(label: Text('Agent：${activeContext.agentName}')),
-              if (!_isAdmin && activeContext.knowledgeScopeLabel.isNotEmpty) Chip(label: Text(activeContext.knowledgeScopeLabel)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _isAdmin
-                ? '管理员仅检索公共库资料，不加载项目组成员、群聊协作与私有库上下文。'
-                : activeContext.agentName == null
-                ? activeContext.isolationNotice
-                : '${activeContext.agentName} 仅在公共库与当前项目组私有库范围内检索，不跨项目组读取私有资料。',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: 12),
-            Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-          ],
-          const SizedBox(height: 24),
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: _isAdmin
-                ? [
-                    _StatChip(label: '当前模式', value: '管理员公共库管理'),
-                    _StatChip(label: '公共库导入', value: '已开启'),
-                    _StatChip(label: '查询范围', value: '仅公共库'),
-                    _StatChip(label: '查询能力', value: '管理员预览'),
-                  ]
-                : [
-                    _StatChip(label: subscription.planName, value: subscription.priceLabel),
-                    _StatChip(label: '项目组Agent', value: _overview?.activeTeamAgent?.name ?? '未启用'),
-                    _StatChip(label: '项目组额度', value: subscription.groupUsage),
-                    _StatChip(label: '私有文件额度', value: subscription.documentUsage),
-                    _StatChip(label: '查询额度', value: subscription.queryUsage),
-                  ],
-          ),
-          // const SizedBox(height: 16),
-          // SectionCard(公共库管理路线/订阅限制与路线 - 已隐藏)
-          const SizedBox(height: 24),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final singleColumn = constraints.maxWidth < 1100;
-              if (singleColumn) {
-                return Column(
-                  children: [
-                    if (!_isAdmin) ...[
-                      _buildQueryPanel(activeContext),
-                      const SizedBox(height: 16),
-                      SizedBox(height: 400, child: _buildResultPanel(context, result)),
-                    ],
-                    _buildDocumentPanel(documents, extractJobs),
-                  ],
-                );
-              }
-
-              return Column(
-                children: [
-                  if (!_isAdmin) ...[
-                    SizedBox(
-                      height: 500,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(flex: 5, child: _buildQueryPanel(activeContext)),
-                          const SizedBox(width: 16),
-                          Expanded(flex: 6, child: _buildResultPanel(context, result)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  _buildDocumentPanel(documents, extractJobs),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildQueryPanel(ActiveContext activeContext) {
-    return SectionCard(
-      title: activeContext.agentName == null ? '统一查询' : '${activeContext.agentName} 工作台',
-      subtitle: activeContext.agentName == null ? '先限定双库范围，再做混合检索，最后生成可溯源答案。' : '当前项目组 Agent 将先限定公共库与本组私有库范围，再做混合检索并返回可溯源答案。',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            controller: _questionController,
-            maxLines: 8,
-            decoration: const InputDecoration(
-              labelText: '输入审计问题或检索需求',
-              alignLabelWithHint: true,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              Chip(label: Text('检索范围：${activeContext.queryScopeLabel}')),
-              if (!_isAdmin && _hasReachedDailyQueryLimit) const Chip(label: Text('今日查询额度已用尽')),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (!_isAdmin && _hasReachedDailyQueryLimit)
-            Text(
-              '免费版每日仅支持 ${_overview?.subscription.dailyQueriesLimit ?? 0} 次 RAG 查询，当前已达到上限。',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: _searching || _switchingGroup || (!_isAdmin && _hasReachedDailyQueryLimit) ? null : _runSearch,
-            child: _searching
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('执行检索'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResultPanel(BuildContext context, QueryResult result) {
+  Widget _buildHeroSection(
+    BuildContext context,
+    AppUser user,
+    SubscriptionOverview subscription, {
+    required bool compact,
+  }) {
     final theme = Theme.of(context);
+    final statusText = _isAdmin
+        ? '管理员 · 公共库管理视角'
+        : () {
+            final s = subscription;
+            if (s.effectiveOrder != null) return '${s.effectiveOrder!.planLabel} · 到期：${s.effectiveOrder!.expiredAt}';
+            if (s.planId == 'expired' || s.statusLabel.contains('已过期')) return '试用已结束，请订阅以继续使用';
+            return '试用到期：${s.trialEndsAt} · 全功能试用 ${s.trialDays} 天';
+          }();
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('检索结果', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SelectionArea(child: SingleChildScrollView(
-                child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-          // Wrap(
-          //   spacing: 12,
-          //   runSpacing: 12,
-          //   children: [
-          //     Chip(label: Text('结果范围：${result.scope.label}')),
-          //     if (result.agent != null) Chip(label: Text('命中Agent：${result.agent!.name}')),
-          //     Chip(label: Text('目标模型：${result.ragMeta.generationProviderTarget}')),
-          //     Chip(label: Text('检索模式：${result.ragMeta.retrievalMode}')),
-          //     Chip(label: Text('原型状态：${result.ragMeta.prototypeMode}')),
-          //     Chip(label: Text(result.ragMeta.answerTraceable ? '回答可溯源' : '回答未溯源')),
-          //   ],
-          // ),
-          // const SizedBox(height: 12),
-          // Text(result.scope.isolationNotice, style: theme.textTheme.bodySmall),
-          // const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(16),
-            ),
+    return Container(
+      padding: EdgeInsets.all(compact ? 16 : 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.75)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('系统回答', style: theme.textTheme.titleSmall),
+                Text(
+                  '小嘉审计助手',
+                  style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w700, fontSize: compact ? 18 : 22),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'AI 审计工作台',
+                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withOpacity(0.75), letterSpacing: 0.5),
+                ),
                 const SizedBox(height: 8),
-                Text(result.answer),
+                Text(
+                  '你好，${user.name} · $statusText',
+                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withOpacity(0.9)),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 12),
-          Text('引用条款', style: theme.textTheme.titleSmall),
-          const SizedBox(height: 12),
-          if (result.citations.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text('暂无引用条款', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.45))),
-            ),
-          ...result.citations.map(
-            (citation) => Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border.all(color: theme.colorScheme.outline.withOpacity(0.4)),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(citation.title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                      Chip(label: Text(_isAdmin ? '公共库' : citation.libraryType == 'private' ? '项目组私有库' : '公共库')),
-                      Chip(label: Text('命中 ${(citation.score * 100).toStringAsFixed(0)}%')),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      Chip(label: Text(citation.chapterTitle)),
-                      Chip(label: Text(citation.articleRef)),
-                      Chip(label: Text(citation.pageLabel)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text('命中片段', style: theme.textTheme.labelLarge),
-                  const SizedBox(height: 6),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(citation.matchedChunk),
-                  ),
-                  const SizedBox(height: 12),
-                  Text('命中原因', style: theme.textTheme.labelLarge),
-                  const SizedBox(height: 6),
-                  Text(citation.reason, style: theme.textTheme.bodySmall),
-                ],
-              ),
+          Icon(Icons.balance_outlined, color: Colors.white.withOpacity(0.5), size: compact ? 32 : 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainSearchBox(BuildContext context, ActiveContext activeContext, {required bool compact}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _questionController,
+          maxLines: compact ? 4 : 5,
+          decoration: InputDecoration(
+            hintText: '请输入审计问题，例如：学校食堂采购有哪些风险？',
+            alignLabelWithHint: true,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (!_isAdmin && _hasReachedDailyQueryLimit)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              '今日查询额度已用尽（${_overview?.subscription.dailyQueriesLimit ?? 0} 次/天）',
+              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
             ),
           ),
-          // Text(result.explanation, style: theme.textTheme.bodySmall),
-        ],
-              ),
-            )),
-          ),
-        ],
+        FilledButton.icon(
+          onPressed: _searching || _switchingGroup || (!_isAdmin && _hasReachedDailyQueryLimit) ? null : _runSearch,
+          icon: _searching
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.search),
+          label: Text(_searching ? '检索中…' : '开始审计问答'),
+          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureCards(BuildContext context, {required bool compact}) {
+    final cards = [
+      _FeatureCardData(icon: Icons.gavel_outlined, color: const Color(0xFF1D4ED8), title: '法条查询', subtitle: '国家法律与政策文件'),
+      _FeatureCardData(icon: Icons.library_books_outlined, color: const Color(0xFF0891B2), title: '资料库问答', subtitle: '自建/购买资料智能问答'),
+      _FeatureCardData(icon: Icons.cases_outlined, color: const Color(0xFF7C3AED), title: '案例参考', subtitle: '全国/地方审计案例'),
+      _FeatureCardData(icon: Icons.checklist_outlined, color: const Color(0xFF059669), title: '风险排查', subtitle: '结合法条案例生成检查点'),
+    ];
+
+    if (compact) {
+      return GridView.count(
+        crossAxisCount: 2,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.6,
+        children: cards.map((c) => _buildFeatureCard(context, c)).toList(),
+      );
+    }
+
+    return Row(
+      children: cards
+          .map((c) => Expanded(child: Padding(padding: const EdgeInsets.only(right: 12), child: _buildFeatureCard(context, c))))
+          .toList(),
+    );
+  }
+
+  Widget _buildFeatureCard(BuildContext context, _FeatureCardData data) {
+    return InkWell(
+      onTap: () {
+        _questionController.text = '请检索与${data.title}相关的内容。';
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: data.color.withOpacity(0.06),
+          border: Border.all(color: data.color.withOpacity(0.2)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(data.icon, color: data.color, size: 22),
+            const SizedBox(height: 6),
+            Text(data.title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: data.color)),
+            const SizedBox(height: 2),
+            Text(data.subtitle, style: TextStyle(fontSize: 11, color: data.color.withOpacity(0.7))),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSidePanel(BuildContext context, List<ProjectGroup> groups, SubscriptionOverview subscription, {required bool compact}) {
+    final theme = Theme.of(context);
+    final recentEvents = _overview?.recentAuditEvents ?? const [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 项目组选择
+        if (!_isAdmin) ...[
+          SectionCard(
+            title: '当前项目组',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: _selectedGroupId,
+                  decoration: const InputDecoration(labelText: '选择项目组', isDense: true),
+                  items: groups
+                      .map((g) => DropdownMenuItem(value: g.id, child: Text(g.name, overflow: TextOverflow.ellipsis)))
+                      .toList(),
+                  onChanged: _switchingGroup ? null : _switchGroup,
+                ),
+                if (_switchingGroup) ...[
+                  const SizedBox(height: 8),
+                  const LinearProgressIndicator(),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        // 额度
+        SectionCard(
+          title: '使用额度',
+          child: Column(
+            children: [
+              _buildQuotaRow(context, '项目组', subscription.groupsUsed, subscription.groupsLimit),
+              const SizedBox(height: 8),
+              _buildQuotaRow(context, '私有文件', subscription.privateDocumentsUsed, subscription.privateDocumentsLimit),
+              const SizedBox(height: 8),
+              _buildQuotaRow(context, '今日查询', subscription.dailyQueriesUsed, subscription.dailyQueriesLimit),
+              const SizedBox(height: 10),
+              OutlinedButton(
+                onPressed: () => setState(() => _selectedIndex = 4),
+                style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
+                child: Text('${subscription.planName} · 查看套餐', style: const TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // 最近操作
+        if (recentEvents.isNotEmpty)
+          SectionCard(
+            title: '最近操作',
+            child: Column(
+              children: recentEvents.take(5).map((e) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.history, size: 14, color: theme.colorScheme.outline),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          e.summary,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildQuotaRow(BuildContext context, String label, int used, int limit) {
+    final theme = Theme.of(context);
+    final ratio = limit > 0 ? (used / limit).clamp(0.0, 1.0) : 0.0;
+    final nearLimit = ratio >= 0.8;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: theme.textTheme.bodySmall),
+            Text(limit > 0 ? '$used / $limit' : '不限', style: theme.textTheme.bodySmall?.copyWith(color: nearLimit ? theme.colorScheme.error : null)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        if (limit > 0)
+          LinearProgressIndicator(
+            value: ratio,
+            color: nearLimit ? theme.colorScheme.error : theme.colorScheme.primary,
+            backgroundColor: theme.colorScheme.surfaceVariant,
+            minHeight: 4,
+            borderRadius: BorderRadius.circular(2),
+          ),
+      ],
     );
   }
 
@@ -3559,6 +3534,14 @@ String get _activeConversationType {
   }
 }
 
+class _FeatureCardData {
+  const _FeatureCardData({required this.icon, required this.color, required this.title, required this.subtitle});
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+}
+
 class _GroupBundle {
   const _GroupBundle({
     required this.conversations,
@@ -3625,37 +3608,6 @@ class _NavPage {
   final String label;
   final IconData icon;
   final Widget child;
-}
-
-class _StatChip extends StatelessWidget {
-  const _StatChip({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final compact = MediaQuery.of(context).size.width < 900;
-    return Container(
-      width: compact ? (MediaQuery.of(context).size.width - 64) / 2 : 220,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.5)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6, offset: const Offset(0, 2))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.55))),
-          const SizedBox(height: 6),
-          Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
 }
 
 class _MetricTile extends StatelessWidget {
