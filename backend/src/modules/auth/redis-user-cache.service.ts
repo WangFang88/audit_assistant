@@ -16,14 +16,17 @@ export class RedisUserCacheService implements OnModuleDestroy {
   private readonly client = new Redis({
     host: process.env.REDIS_HOST ?? 'localhost',
     port: Number(process.env.REDIS_PORT ?? 6379),
-    password: process.env.REDIS_PASSWORD,
+    password: process.env.REDIS_PASSWORD || undefined,
     lazyConnect: true,
     enableOfflineQueue: false,
+    maxRetriesPerRequest: 0,
+    retryStrategy: () => null,
   });
 
   private connected = false;
 
   async connect() {
+    this.client.on('error', () => { this.connected = false; });
     try {
       await this.client.connect();
       this.connected = true;
