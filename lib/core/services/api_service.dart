@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:web/web.dart' as web;
 
 import 'file_download_helper_stub.dart'
     if (dart.library.js_interop) 'file_download_helper_web.dart';
@@ -25,7 +24,8 @@ class ApiService {
       return configuredBaseUrl;
     }
     if (kIsWeb) {
-      return '${web.window.location.origin}/api';
+      // On web, use current origin — resolved at runtime via JS interop in web build
+      return '/api';
     }
     return 'http://localhost:3000/api';
   }

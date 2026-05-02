@@ -1,0 +1,305 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+
+import '../../core/models/app_models.dart';
+import '../../core/services/api_service.dart';
+
+class MobileHomePage extends StatefulWidget {
+  const MobileHomePage({super.key, required this.apiService, required this.user});
+  final ApiService apiService;
+  final AppUser user;
+
+  @override
+  State<MobileHomePage> createState() => _MobileHomePageState();
+}
+
+class _MobileHomePageState extends State<MobileHomePage> {
+  final _questionController = TextEditingController();
+  bool _loading = true;
+  bool _searching = false;
+  String? _error;
+  DashboardOverview? _overview;
+  QueryResult? _result;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _questionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final overview = await widget.apiService.fetchDashboard();
+      if (!mounted) return;
+      setState(() { _overview = overview; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = e.toString(); });
+    } finally {
+      if (mounted) setState(() { _loading = false; });
+    }
+  }
+
+  Future<void> _search() async {
+    final q = _questionController.text.trim();
+    if (q.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    setState(() { _searching = true; _result = null; });
+    try {
+      final result = await widget.apiService.search(question: q);
+      if (!mounted) return;
+      setState(() { _result = result; });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('检索失败：$e')));
+    } finally {
+      if (mounted) setState(() { _searching = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+        const SizedBox(height: 12),
+        FilledButton(onPressed: _load, child: const Text('重试')),
+      ]));
+    }
+    final overview = _overview!;
+    final sub = overview.subscription;
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          // Hero
+          _HeroCard(user: widget.user, subscription: sub),
+          const SizedBox(height: 16),
+          // Search box
+          TextField(
+            controller: _questionController,
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: '请输入审计问题，例如：学校食堂采购有哪些风险？',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+            ),
+          ),
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            onPressed: _searching ? null : _search,
+            icon: _searching
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.search),
+            label: Text(_searching ? '检索中…' : '开始审计问答'),
+            style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+          ),
+          const SizedBox(height: 20),
+          // Feature cards 2x2
+          _FeatureGrid(onTap: (title) => _questionController.text = '请检索与$title相关的内容。'),
+          const SizedBox(height: 20),
+          // Result
+          if (_result != null) _ResultCard(result: _result!),
+          // Quota
+          _QuotaCard(subscription: sub),
+        ]),
+      ),
+    );
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({required this.user, required this.subscription});
+  final AppUser user;
+  final SubscriptionOverview subscription;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final s = subscription;
+    final statusText = s.effectiveOrder != null
+        ? '${s.effectiveOrder!.planLabel} · 到期：${s.effectiveOrder!.expiredAt}'
+        : '试用到期：${s.trialEndsAt}';
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.75)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('小嘉审计助手', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text('AI 审计工作台', style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.75))),
+          const SizedBox(height: 6),
+          Text('你好，${user.name} · $statusText', style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.9))),
+        ])),
+        Icon(Icons.balance_outlined, color: Colors.white.withValues(alpha: 0.5), size: 32),
+      ]),
+    );
+  }
+}
+
+class _FeatureGrid extends StatelessWidget {
+  const _FeatureGrid({required this.onTap});
+  final void Function(String title) onTap;
+
+  static const _cards = [
+    (Icons.gavel_outlined, Color(0xFF1D4ED8), '法条查询', '国家法律与政策文件'),
+    (Icons.library_books_outlined, Color(0xFF0891B2), '资料库问答', '自建/购买资料智能问答'),
+    (Icons.cases_outlined, Color(0xFF7C3AED), '案例参考', '全国/地方审计案例'),
+    (Icons.checklist_outlined, Color(0xFF059669), '风险排查', '结合法条案例生成检查点'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 1.7,
+      children: _cards.map((c) {
+        final (icon, color, title, subtitle) = c;
+        return InkWell(
+          onTap: () => onTap(title),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.06),
+              border: Border.all(color: color.withValues(alpha: 0.2)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(height: 4),
+              Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: color)),
+              Text(subtitle, style: TextStyle(fontSize: 10, color: color.withValues(alpha: 0.7)), maxLines: 1, overflow: TextOverflow.ellipsis),
+            ]),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _ResultCard extends StatelessWidget {
+  const _ResultCard({required this.result});
+  final QueryResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 20),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('检索结果', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: SelectableText(result.answer, style: theme.textTheme.bodyMedium),
+          ),
+          if (result.citations.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text('引用条款 (${result.citations.length})', style: theme.textTheme.labelMedium),
+            const SizedBox(height: 8),
+            ...result.citations.take(3).map((c) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(c.title, style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text(c.matchedChunk, style: theme.textTheme.bodySmall, maxLines: 3, overflow: TextOverflow.ellipsis),
+                ]),
+              ),
+            )),
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
+class _QuotaCard extends StatelessWidget {
+  const _QuotaCard({required this.subscription});
+  final SubscriptionOverview subscription;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final s = subscription;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('使用额度', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 12),
+          _QuotaRow(label: '今日查询', used: s.dailyQueriesUsed, limit: s.dailyQueriesLimit),
+          const SizedBox(height: 8),
+          _QuotaRow(label: '私有文件', used: s.privateDocumentsUsed, limit: s.privateDocumentsLimit),
+          const SizedBox(height: 8),
+          _QuotaRow(label: '项目组', used: s.groupsUsed, limit: s.groupsLimit),
+        ]),
+      ),
+    );
+  }
+}
+
+class _QuotaRow extends StatelessWidget {
+  const _QuotaRow({required this.label, required this.used, required this.limit});
+  final String label;
+  final int used;
+  final int limit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ratio = limit > 0 ? (used / limit).clamp(0.0, 1.0) : 0.0;
+    final nearLimit = ratio >= 0.8;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(label, style: theme.textTheme.bodySmall),
+        Text(limit > 0 ? '$used / $limit' : '不限',
+            style: theme.textTheme.bodySmall?.copyWith(color: nearLimit ? theme.colorScheme.error : null)),
+      ]),
+      const SizedBox(height: 4),
+      if (limit > 0)
+        LinearProgressIndicator(
+          value: ratio,
+          color: nearLimit ? theme.colorScheme.error : theme.colorScheme.primary,
+          backgroundColor: theme.colorScheme.surfaceContainerHighest,
+          minHeight: 4,
+          borderRadius: BorderRadius.circular(2),
+        ),
+    ]);
+  }
+}
