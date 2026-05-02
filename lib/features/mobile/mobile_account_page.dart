@@ -99,18 +99,20 @@ class _MobileAccountPageState extends State<MobileAccountPage> {
           const Card(child: Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())))
         else if (_subscription != null) ...[
           _SubscriptionCard(subscription: _subscription!),
-          const SizedBox(height: 8),
-          FilledButton.icon(
-            onPressed: () async {
-              await Navigator.push(context, MaterialPageRoute(
-                builder: (_) => _PurchasePage(apiService: widget.apiService, subscription: _subscription!),
-              ));
-              _load(); // refresh after returning
-            },
-            icon: const Icon(Icons.shopping_cart_outlined),
-            label: const Text('购买套餐'),
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-          ),
+          if (widget.user.role != 'admin' && widget.user.role != '管理员') ...[
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () async {
+                await Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => _PurchasePage(apiService: widget.apiService, subscription: _subscription!),
+                ));
+                _load();
+              },
+              icon: const Icon(Icons.shopping_cart_outlined),
+              label: const Text('购买套餐'),
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+            ),
+          ],
         ],
         const SizedBox(height: 12),
         // Actions
