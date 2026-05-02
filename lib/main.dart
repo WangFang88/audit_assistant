@@ -14,8 +14,10 @@ class _RootApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mobile platforms get the mobile-optimized app
-    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android)) {
+    const forceMobile = bool.fromEnvironment('FORCE_MOBILE');
+    final isMobile = forceMobile ||
+        (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android));
+    if (isMobile) {
       return MaterialApp(
         title: '小嘉审计助手',
         debugShowCheckedModeBanner: false,
