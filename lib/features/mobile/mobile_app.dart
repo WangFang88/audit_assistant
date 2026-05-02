@@ -6,6 +6,7 @@ import '../auth/login_page.dart';
 import 'mobile_account_page.dart';
 import 'mobile_chat_page.dart';
 import 'mobile_docs_page.dart';
+import 'mobile_groups_page.dart';
 import 'mobile_home_page.dart';
 
 class MobileAuditApp extends StatefulWidget {
@@ -85,6 +86,7 @@ class _MobileShellState extends State<MobileShell> {
       MobileHomePage(apiService: widget.apiService, user: widget.user),
       MobileChatPage(apiService: widget.apiService, user: widget.user),
       MobileDocsPage(apiService: widget.apiService),
+      MobileGroupsPage(apiService: widget.apiService, user: widget.user),
       MobileAccountPage(apiService: widget.apiService, user: widget.user, onLogout: widget.onLogout),
     ];
 
@@ -102,6 +104,7 @@ class _MobileShellState extends State<MobileShell> {
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: '工作台'),
           NavigationDestination(icon: Icon(Icons.chat_outlined), selectedIcon: Icon(Icons.chat), label: '协作'),
           NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: '资料库'),
+          NavigationDestination(icon: Icon(Icons.group_outlined), selectedIcon: Icon(Icons.group), label: '项目组'),
           NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: '我的'),
         ],
       ),
