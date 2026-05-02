@@ -198,7 +198,7 @@ class _GroupDetailPageState extends State<_GroupDetailPage> {
                 decoration: const InputDecoration(labelText: '手机号', isDense: true)),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: role,
+              initialValue: role,
               decoration: const InputDecoration(labelText: '角色', isDense: true),
               items: const [
                 DropdownMenuItem(value: '成员', child: Text('成员')),

@@ -281,8 +281,9 @@ class _PurchasePageState extends State<_PurchasePage> {
                   color: isSelected ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3) : null,
                 ),
                 child: Row(children: [
-                  Radio<String>(value: plan.id, groupValue: _selected, onChanged: (v) => setState(() => _selected = v!)),
-                  const SizedBox(width: 4),
+                  Icon(isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                      color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline),
+                  const SizedBox(width: 8),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
                       Text(plan.label, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),

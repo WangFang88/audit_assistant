@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 ThemeData buildAppTheme() {
   // ==================== 完整配色方案 ====================
   const primaryColor = Color(0xFF2D6AFF);        // 品牌蓝
-  const primaryLight = Color(0xFF5B8DFF);        // 浅蓝（悬浮/高亮）
+
   const primaryBg = Color(0xFFF0F4FF);           // 极浅蓝背景（选中态/标签背景）
 
   // 辅助色（解决单调问题）
-  const successColor = Color(0xFF10B981);        // 翠绿
-  const warningColor = Color(0xFFF59E0B);        // 琥珀
+
   const errorColor = Color(0xFFEF4444);          // 红色
   const infoColor = Color(0xFF8B5CF6);           // 紫色
 

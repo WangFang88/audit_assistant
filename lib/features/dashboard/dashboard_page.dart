@@ -1454,7 +1454,7 @@ String get _activeConversationType {
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
-                value: selectedUserId,
+                initialValue: selectedUserId,
                 items: _members
                     .map((member) => DropdownMenuItem(
                           value: member.userId,
@@ -2301,7 +2301,7 @@ String get _activeConversationType {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 DropdownButtonFormField<String>(
-                  value: _selectedGroupId,
+                  initialValue: _selectedGroupId,
                   decoration: const InputDecoration(labelText: '选择项目组', isDense: true),
                   items: groups
                       .map((g) => DropdownMenuItem(value: g.id, child: Text(g.name, overflow: TextOverflow.ellipsis)))
