@@ -10,6 +10,7 @@ exports.FileStorageService = void 0;
 const common_1 = require("@nestjs/common");
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
+const library_type_1 = require("./library-type");
 let FileStorageService = class FileStorageService {
     constructor() {
         this.allowedChatFileExtensions = new Set(['.pdf', '.docx', '.xlsx', '.png', '.jpg', '.jpeg']);
@@ -66,13 +67,14 @@ let FileStorageService = class FileStorageService {
         };
     }
     saveFile(options) {
-        const folder = options.libraryType === 'private'
+        const isPrivate = !(0, library_type_1.isPublicLibrary)(options.libraryType);
+        const folder = isPrivate
             ? (0, node_path_1.join)(this.getUploadRoot(), 'teams', options.groupId ?? 'unknown', options.documentId)
-            : (0, node_path_1.join)(this.getUploadRoot(), 'public', options.documentId);
+            : (0, node_path_1.join)(this.getUploadRoot(), options.libraryType, options.documentId);
         const normalizedFileName = this.normalizeOriginalFileName(options.file.originalname || 'upload.bin');
-        const logicalPath = options.libraryType === 'private'
+        const logicalPath = isPrivate
             ? `/files/teams/${options.groupId}/${options.documentId}/original${(0, node_path_1.extname)(this.sanitizeFileName(normalizedFileName)) || '.bin'}`
-            : `/files/public/${options.documentId}/original${(0, node_path_1.extname)(this.sanitizeFileName(normalizedFileName)) || '.bin'}`;
+            : `/files/${options.libraryType}/${options.documentId}/original${(0, node_path_1.extname)(this.sanitizeFileName(normalizedFileName)) || '.bin'}`;
         return this.writeStoredFile(folder, options.file, logicalPath);
     }
     assertAllowedChatFile(file) {

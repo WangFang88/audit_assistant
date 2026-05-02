@@ -2,6 +2,7 @@ import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { DocumentsService } from '../documents/documents.service';
 import { EmbeddingService } from '../documents/embedding.service';
+import { LibraryType } from '../documents/library-type';
 import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { TeamAgentsService } from '../team-agents/team-agents.service';
@@ -14,7 +15,7 @@ declare class QueryRequestDto {
 type CitationRecord = {
     documentId: string;
     title: string;
-    libraryType: 'public' | 'private';
+    libraryType: LibraryType;
     score: number;
     matchedChunk: string;
     reason: string;

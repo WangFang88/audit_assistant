@@ -17,8 +17,8 @@ export class DocumentEntity {
   @Column({ name: 'file_type', type: 'varchar', length: 32, default: 'pdf' })
   fileType!: string;
 
-  @Column({ name: 'library_type', type: 'varchar', length: 16 })
-  libraryType!: 'public' | 'private';
+  @Column({ name: 'library_type', type: 'varchar', length: 32 })
+  libraryType!: 'regulation' | 'local_policy' | 'national_case' | 'local_case' | 'industry' | 'private';
 
   @Column({ name: 'team_id', type: 'varchar', length: 64, nullable: true })
   teamId!: string | null;

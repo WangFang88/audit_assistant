@@ -1782,7 +1782,7 @@ String get _activeConversationType {
 
     final titleController = TextEditingController();
     final rawTextController = TextEditingController();
-    String libraryType = _isAdmin || _activeGroupId == null ? '公共库' : '私有库';
+    String libraryType = _isAdmin || _activeGroupId == null ? 'regulation' : 'private';
     PlatformFile? selectedFile;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
@@ -1850,8 +1850,15 @@ String get _activeConversationType {
                   DropdownButtonFormField<String>(
                     initialValue: libraryType,
                     items: [
-                      if (_isAdmin) const DropdownMenuItem(value: '公共库', child: Text('公共库')),
-                      if (_isCurrentUserLeader && _activeGroupId != null) const DropdownMenuItem(value: '私有库', child: Text('私有库')),
+                      if (_isAdmin) ...[
+                        const DropdownMenuItem(value: 'regulation', child: Text('法规库')),
+                        const DropdownMenuItem(value: 'local_policy', child: Text('地方政策库')),
+                        const DropdownMenuItem(value: 'national_case', child: Text('全国案例库')),
+                        const DropdownMenuItem(value: 'local_case', child: Text('地方案例库')),
+                        const DropdownMenuItem(value: 'industry', child: Text('行业专题库')),
+                      ],
+                      if (_isCurrentUserLeader && _activeGroupId != null)
+                        const DropdownMenuItem(value: 'private', child: Text('私有库')),
                     ],
                     onChanged: (value) => setDialogState(() => libraryType = value ?? libraryType),
                     decoration: const InputDecoration(labelText: '入库范围'),
@@ -1901,7 +1908,7 @@ String get _activeConversationType {
         libraryType: libraryType,
         file: selectedFile!,
         rawText: rawTextController.text.trim().isEmpty ? null : rawTextController.text.trim(),
-        groupId: libraryType == '私有库' ? _activeGroupId : null,
+        groupId: libraryType == 'private' ? _activeGroupId : null,
       );
       if (!mounted) {
         return;
@@ -2567,7 +2574,7 @@ String get _activeConversationType {
                   (document) => ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                     title: Text(document.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text('${document.uploadedAt} · ${document.libraryType == 'private' ? '私有库' : '公共库'}'),
+                    subtitle: Text('${document.uploadedAt} · ${document.libraryType}'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -2575,7 +2582,7 @@ String get _activeConversationType {
                           onPressed: () => _showDocumentChunksDialog(document),
                           child: const Text('查看文本块'),
                         ),
-                        if ((document.libraryType == '公共库' && _isAdmin) ||
+                        if ((document.libraryType != '私有库' && _isAdmin) ||
                             (document.libraryType == '私有库' && _isCurrentUserLeader))
                           IconButton(
                             icon: const Icon(Icons.delete_outline, size: 20),

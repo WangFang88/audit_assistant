@@ -65,7 +65,7 @@ export declare class OverviewService {
         documents: {
             id: string;
             title: string;
-            libraryType: "public" | "private";
+            libraryType: import("../documents/library-type").LibraryType;
             sourcePath: string;
             fileName: string;
             uploadedBy: string;
@@ -101,7 +101,7 @@ export declare class OverviewService {
             currentPlanId: string;
             trialEndsAt: string;
             trialDays: number;
-            status: "active" | "admin-preview" | "trial" | "expired";
+            status: "admin-preview" | "trial" | "active" | "expired";
             statusLabel: string;
             latestOrder: {
                 id: string;

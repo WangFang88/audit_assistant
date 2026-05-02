@@ -27,7 +27,7 @@ __decorate([
     __metadata("design:type", Object)
 ], DocumentChunkEntity.prototype, "teamId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'library_type', type: 'varchar', length: 16 }),
+    (0, typeorm_1.Column)({ name: 'library_type', type: 'varchar', length: 32 }),
     __metadata("design:type", String)
 ], DocumentChunkEntity.prototype, "libraryType", void 0);
 __decorate([

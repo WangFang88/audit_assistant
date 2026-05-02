@@ -53,7 +53,7 @@ export declare class OverviewController {
         documents: {
             id: string;
             title: string;
-            libraryType: "public" | "private";
+            libraryType: import("../documents/library-type").LibraryType;
             sourcePath: string;
             fileName: string;
             uploadedBy: string;

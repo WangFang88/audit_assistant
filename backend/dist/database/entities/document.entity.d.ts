@@ -4,7 +4,7 @@ export declare class DocumentEntity {
     fileName: string;
     filePath: string;
     fileType: string;
-    libraryType: 'public' | 'private';
+    libraryType: 'regulation' | 'local_policy' | 'national_case' | 'local_case' | 'industry' | 'private';
     teamId: string | null;
     uploadedBy: string;
     uploadSource: string | null;

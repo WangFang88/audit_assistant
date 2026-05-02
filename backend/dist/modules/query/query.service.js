@@ -17,6 +17,7 @@ const audit_service_1 = require("../audit/audit.service");
 const auth_service_1 = require("../auth/auth.service");
 const documents_service_1 = require("../documents/documents.service");
 const embedding_service_1 = require("../documents/embedding.service");
+const library_type_1 = require("../documents/library-type");
 const groups_service_1 = require("../groups/groups.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 const team_agents_service_1 = require("../team-agents/team-agents.service");
@@ -115,7 +116,7 @@ let QueryService = class QueryService {
             : tokens.length === 0
                 ? '\u8303\u56f4\u4f18\u5148 + \u8bed\u4e49\u91cd\u6392'
                 : '\u5173\u952e\u8bcd + \u8bed\u4e49\u878d\u5408';
-        const publicHits = candidates.filter((c) => c.libraryType === 'public').length;
+        const publicHits = candidates.filter((c) => (0, library_type_1.isPublicLibrary)(c.libraryType)).length;
         const privateHits = candidates.filter((c) => c.libraryType === 'private').length;
         if (!options?.skipAccounting) {
             this.subscriptionsService.recordQueryLog({

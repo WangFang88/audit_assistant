@@ -9,16 +9,17 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { FileStorageService } from './file-storage.service';
 import { TextExtractionService } from './text-extraction.service';
 import { EmbeddingService } from './embedding.service';
+import { LibraryType } from './library-type';
 declare class ImportDocumentDto {
     title: string;
-    libraryType: 'public' | 'private';
+    libraryType: LibraryType;
     rawText?: string;
     groupId?: string;
 }
 type DocumentRecord = {
     id: string;
     title: string;
-    libraryType: 'public' | 'private';
+    libraryType: LibraryType;
     sourcePath: string;
     fileName: string;
     uploadedBy: string;
@@ -47,7 +48,7 @@ type DocumentChunkRecord = {
     id: string;
     documentId: string;
     groupId: string | null;
-    libraryType: 'public' | 'private';
+    libraryType: LibraryType;
     title: string;
     chapterTitle: string;
     articleRef: string;
@@ -97,7 +98,7 @@ export declare class DocumentsService {
         notes: string;
         id: string;
         title: string;
-        libraryType: "public" | "private";
+        libraryType: LibraryType;
         sourcePath: string;
         fileName: string;
         uploadedBy: string;

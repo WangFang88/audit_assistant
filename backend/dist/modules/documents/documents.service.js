@@ -28,6 +28,7 @@ const subscriptions_service_1 = require("../subscriptions/subscriptions.service"
 const file_storage_service_1 = require("./file-storage.service");
 const text_extraction_service_1 = require("./text-extraction.service");
 const embedding_service_1 = require("./embedding.service");
+const library_type_1 = require("./library-type");
 class ImportDocumentDto {
 }
 exports.ImportDocumentDto = ImportDocumentDto;
@@ -37,7 +38,7 @@ __decorate([
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "title", void 0);
 __decorate([
-    (0, class_validator_1.IsIn)(['public', 'private']),
+    (0, class_validator_1.IsIn)(library_type_1.LIBRARY_TYPES),
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "libraryType", void 0);
 __decorate([
@@ -73,7 +74,7 @@ let DocumentsService = class DocumentsService {
         }
     }
     assertAdminCanAccessDocument(document) {
-        if (!this.authService.isAdmin() || document.libraryType === 'public') {
+        if (!this.authService.isAdmin() || (0, library_type_1.isPublicLibrary)(document.libraryType)) {
             return;
         }
         throw new common_1.ForbiddenException('管理员仅可访问公共库文档，不能查看项目组私有资料');
@@ -131,8 +132,8 @@ let DocumentsService = class DocumentsService {
             {
                 id: 'doc-1',
                 title: '某区财政专项资金管理办法',
-                libraryType: 'public',
-                sourcePath: '/policies/public/fiscal-rules.pdf',
+                libraryType: 'regulation',
+                sourcePath: '/policies/regulation/fiscal-rules.pdf',
                 fileName: 'fiscal-rules.pdf',
                 uploadedBy: 'user-1',
                 chunkCount: 4,
@@ -206,7 +207,7 @@ let DocumentsService = class DocumentsService {
                 id: 'chunk-1',
                 documentId: 'doc-1',
                 groupId: null,
-                libraryType: 'public',
+                libraryType: 'regulation',
                 title: '某区财政专项资金管理办法',
                 chapterTitle: '第一章 适用范围',
                 articleRef: '第三条',
@@ -219,7 +220,7 @@ let DocumentsService = class DocumentsService {
                 id: 'chunk-2',
                 documentId: 'doc-1',
                 groupId: null,
-                libraryType: 'public',
+                libraryType: 'regulation',
                 title: '某区财政专项资金管理办法',
                 chapterTitle: '第二章 审批与执行',
                 articleRef: '第七条',
@@ -232,7 +233,7 @@ let DocumentsService = class DocumentsService {
                 id: 'chunk-3',
                 documentId: 'doc-1',
                 groupId: null,
-                libraryType: 'public',
+                libraryType: 'regulation',
                 title: '某区财政专项资金管理办法',
                 chapterTitle: '第三章 证据与归档',
                 articleRef: '第十二条',
@@ -245,7 +246,7 @@ let DocumentsService = class DocumentsService {
                 id: 'chunk-4',
                 documentId: 'doc-1',
                 groupId: null,
-                libraryType: 'public',
+                libraryType: 'regulation',
                 title: '某区财政专项资金管理办法',
                 chapterTitle: '第四章 监督与整改',
                 articleRef: '第十六条',
@@ -324,7 +325,7 @@ let DocumentsService = class DocumentsService {
             order: { uploadedAt: 'ASC' },
         });
         return entities.map((entity) => this.toDocumentRecord(entity)).filter((document) => {
-            if (document.libraryType === 'public') {
+            if ((0, library_type_1.isPublicLibrary)(document.libraryType)) {
                 return true;
             }
             return groupId != null && document.groupId === groupId;
@@ -382,7 +383,7 @@ let DocumentsService = class DocumentsService {
             if (chunk.indexStatus !== 'ready') {
                 return false;
             }
-            if (chunk.libraryType === 'public') {
+            if ((0, library_type_1.isPublicLibrary)(chunk.libraryType)) {
                 return true;
             }
             return groupId != null && chunk.groupId === groupId;
@@ -660,7 +661,7 @@ let DocumentsService = class DocumentsService {
         }
         await this.ensurePersistedDocumentSeedData();
         if (this.authService.isAdmin()) {
-            if (dto.libraryType !== 'public' || dto.groupId != null) {
+            if (!(0, library_type_1.isPublicLibrary)(dto.libraryType) || dto.groupId != null) {
                 throw new common_1.ForbiddenException('管理员仅可导入公共库文件，不能写入项目组私有库');
             }
         }
@@ -732,7 +733,7 @@ let DocumentsService = class DocumentsService {
             targetType: 'document',
             targetId: document.id,
             groupId: document.groupId,
-            summary: document.libraryType === 'public' ? '导入了公共库文档' : '导入了项目组私有文档',
+            summary: (0, library_type_1.isPublicLibrary)(document.libraryType) ? '导入了公共库文档' : '导入了项目组私有文档',
             detail: {
                 title: document.title,
                 libraryType: document.libraryType,
@@ -770,7 +771,7 @@ let DocumentsService = class DocumentsService {
         const document = await this.persistedDocumentRepository.findOne({ where: { id: documentId, deletedAt: (0, typeorm_2.IsNull)() } });
         if (!document)
             throw new common_1.NotFoundException('文件不存在');
-        if (document.libraryType === 'public') {
+        if ((0, library_type_1.isPublicLibrary)(document.libraryType)) {
             if (!this.authService.isAdmin())
                 throw new common_1.ForbiddenException('只有管理员才能删除公共库文件');
         }
@@ -804,7 +805,7 @@ let DocumentsService = class DocumentsService {
     async getLibraryScopeSummary(groupId) {
         this.assertAdminPublicLibraryOnly(groupId);
         const documents = await this.listDocuments(groupId);
-        const publicDocuments = documents.filter((document) => document.libraryType === 'public').length;
+        const publicDocuments = documents.filter((document) => (0, library_type_1.isPublicLibrary)(document.libraryType)).length;
         const privateDocuments = documents.filter((document) => document.libraryType === 'private').length;
         const scopeMode = groupId == null ? 'public_only' : 'public_plus_current_group_private';
         return {

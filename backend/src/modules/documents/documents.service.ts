@@ -13,14 +13,15 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { FileStorageService } from './file-storage.service';
 import { TextExtractionService } from './text-extraction.service';
 import { EmbeddingService } from './embedding.service';
+import { LibraryType, LIBRARY_TYPES, isPublicLibrary } from './library-type';
 
 class ImportDocumentDto {
   @IsString()
   @MinLength(2)
   title!: string;
 
-  @IsIn(['public', 'private'])
-  libraryType!: 'public' | 'private';
+  @IsIn(LIBRARY_TYPES)
+  libraryType!: LibraryType;
 
   @IsOptional()
   @IsString()
@@ -35,7 +36,7 @@ class ImportDocumentDto {
 type DocumentRecord = {
   id: string;
   title: string;
-  libraryType: 'public' | 'private';
+  libraryType: LibraryType;
   sourcePath: string;
   fileName: string;
   uploadedBy: string;
@@ -66,7 +67,7 @@ type DocumentChunkRecord = {
   id: string;
   documentId: string;
   groupId: string | null;
-  libraryType: 'public' | 'private';
+  libraryType: LibraryType;
   title: string;
   chapterTitle: string;
   articleRef: string;
@@ -108,7 +109,7 @@ export class DocumentsService {
   }
 
   private assertAdminCanAccessDocument(document: DocumentRecord) {
-    if (!this.authService.isAdmin() || document.libraryType === 'public') {
+    if (!this.authService.isAdmin() || isPublicLibrary(document.libraryType)) {
       return;
     }
 
@@ -171,8 +172,8 @@ export class DocumentsService {
       {
         id: 'doc-1',
         title: '某区财政专项资金管理办法',
-        libraryType: 'public',
-        sourcePath: '/policies/public/fiscal-rules.pdf',
+        libraryType: 'regulation',
+        sourcePath: '/policies/regulation/fiscal-rules.pdf',
         fileName: 'fiscal-rules.pdf',
         uploadedBy: 'user-1',
         chunkCount: 4,
@@ -248,7 +249,7 @@ export class DocumentsService {
         id: 'chunk-1',
         documentId: 'doc-1',
         groupId: null,
-        libraryType: 'public',
+        libraryType: 'regulation',
         title: '某区财政专项资金管理办法',
         chapterTitle: '第一章 适用范围',
         articleRef: '第三条',
@@ -261,7 +262,7 @@ export class DocumentsService {
         id: 'chunk-2',
         documentId: 'doc-1',
         groupId: null,
-        libraryType: 'public',
+        libraryType: 'regulation',
         title: '某区财政专项资金管理办法',
         chapterTitle: '第二章 审批与执行',
         articleRef: '第七条',
@@ -274,7 +275,7 @@ export class DocumentsService {
         id: 'chunk-3',
         documentId: 'doc-1',
         groupId: null,
-        libraryType: 'public',
+        libraryType: 'regulation',
         title: '某区财政专项资金管理办法',
         chapterTitle: '第三章 证据与归档',
         articleRef: '第十二条',
@@ -287,7 +288,7 @@ export class DocumentsService {
         id: 'chunk-4',
         documentId: 'doc-1',
         groupId: null,
-        libraryType: 'public',
+        libraryType: 'regulation',
         title: '某区财政专项资金管理办法',
         chapterTitle: '第四章 监督与整改',
         articleRef: '第十六条',
@@ -372,10 +373,9 @@ export class DocumentsService {
     });
 
     return entities.map((entity) => this.toDocumentRecord(entity)).filter((document) => {
-      if (document.libraryType === 'public') {
+      if (isPublicLibrary(document.libraryType)) {
         return true;
       }
-
       return groupId != null && document.groupId === groupId;
     });
   }
@@ -441,7 +441,7 @@ export class DocumentsService {
         return false;
       }
 
-      if (chunk.libraryType === 'public') {
+      if (isPublicLibrary(chunk.libraryType)) {
         return true;
       }
 
@@ -691,7 +691,7 @@ export class DocumentsService {
     throw new BadRequestException('仅支持上传 pdf、docx、xlsx、png、jpg、jpeg 文件');
   }
 
-  private saveUploadedFile(file: Express.Multer.File, libraryType: 'public' | 'private', documentId: string, groupId?: string) {
+  private saveUploadedFile(file: Express.Multer.File, libraryType: LibraryType, documentId: string, groupId?: string) {
     return this.fileStorageService.saveFile({
       file,
       libraryType,
@@ -750,7 +750,7 @@ export class DocumentsService {
     await this.ensurePersistedDocumentSeedData();
 
     if (this.authService.isAdmin()) {
-      if (dto.libraryType !== 'public' || dto.groupId != null) {
+      if (!isPublicLibrary(dto.libraryType) || dto.groupId != null) {
         throw new ForbiddenException('管理员仅可导入公共库文件，不能写入项目组私有库');
       }
     }
@@ -832,7 +832,7 @@ export class DocumentsService {
       targetType: 'document',
       targetId: document.id,
       groupId: document.groupId,
-      summary: document.libraryType === 'public' ? '导入了公共库文档' : '导入了项目组私有文档',
+      summary: isPublicLibrary(document.libraryType) ? '导入了公共库文档' : '导入了项目组私有文档',
       detail: {
         title: document.title,
         libraryType: document.libraryType,
@@ -876,7 +876,7 @@ export class DocumentsService {
     const document = await this.persistedDocumentRepository.findOne({ where: { id: documentId, deletedAt: IsNull() } });
     if (!document) throw new NotFoundException('文件不存在');
 
-    if (document.libraryType === 'public') {
+    if (isPublicLibrary(document.libraryType)) {
       if (!this.authService.isAdmin()) throw new ForbiddenException('只有管理员才能删除公共库文件');
     } else {
       if (!document.teamId) throw new ForbiddenException('无法确认文件所属项目组');
@@ -912,7 +912,7 @@ export class DocumentsService {
   async getLibraryScopeSummary(groupId?: string) {
     this.assertAdminPublicLibraryOnly(groupId);
     const documents = await this.listDocuments(groupId);
-    const publicDocuments = documents.filter((document) => document.libraryType === 'public').length;
+    const publicDocuments = documents.filter((document) => isPublicLibrary(document.libraryType)).length;
     const privateDocuments = documents.filter((document) => document.libraryType === 'private').length;
     const scopeMode = groupId == null ? 'public_only' : 'public_plus_current_group_private';
 

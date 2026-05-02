@@ -1,3 +1,4 @@
+import { LibraryType } from './library-type';
 export type SavedFileRecord = {
     sourcePath: string;
     originalName: string;
@@ -13,7 +14,7 @@ export declare class FileStorageService {
     private writeStoredFile;
     saveFile(options: {
         file: Express.Multer.File;
-        libraryType: 'public' | 'private';
+        libraryType: LibraryType;
         documentId: string;
         groupId?: string;
     }): SavedFileRecord;

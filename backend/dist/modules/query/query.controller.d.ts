@@ -41,7 +41,7 @@ export declare class QueryController {
         citations: {
             documentId: string;
             title: string;
-            libraryType: "public" | "private";
+            libraryType: import("../documents/library-type").LibraryType;
             score: number;
             matchedChunk: string;
             reason: string;

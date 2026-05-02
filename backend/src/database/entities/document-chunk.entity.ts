@@ -11,8 +11,8 @@ export class DocumentChunkEntity {
   @Column({ name: 'team_id', type: 'varchar', length: 64, nullable: true })
   teamId!: string | null;
 
-  @Column({ name: 'library_type', type: 'varchar', length: 16 })
-  libraryType!: 'public' | 'private';
+  @Column({ name: 'library_type', type: 'varchar', length: 32 })
+  libraryType!: 'regulation' | 'local_policy' | 'national_case' | 'local_case' | 'industry' | 'private';
 
   @Column({ name: 'title', type: 'varchar', length: 255 })
   title!: string;

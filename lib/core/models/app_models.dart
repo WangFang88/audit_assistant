@@ -864,12 +864,15 @@ class ArchitectureTargets {
 
 String _mapLibraryType(String value) {
   switch (value) {
-    case 'public':
-      return '公共库';
-    case 'private':
-      return '私有库';
-    default:
-      return value;
+    case 'regulation': return '法规库';
+    case 'local_policy': return '地方政策库';
+    case 'national_case': return '全国案例库';
+    case 'local_case': return '地方案例库';
+    case 'industry': return '行业专题库';
+    case 'private': return '私有库';
+    // 兼容旧数据
+    case 'public': return '法规库';
+    default: return value;
   }
 }
 

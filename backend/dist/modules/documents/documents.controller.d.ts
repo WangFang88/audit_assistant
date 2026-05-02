@@ -5,7 +5,7 @@ export declare class DocumentsController {
     listDocuments(groupId?: string): Promise<{
         id: string;
         title: string;
-        libraryType: "public" | "private";
+        libraryType: import("./library-type").LibraryType;
         sourcePath: string;
         fileName: string;
         uploadedBy: string;
@@ -34,7 +34,7 @@ export declare class DocumentsController {
         id: string;
         documentId: string;
         groupId: string | null;
-        libraryType: "public" | "private";
+        libraryType: import("./library-type").LibraryType;
         title: string;
         chapterTitle: string;
         articleRef: string;
@@ -48,7 +48,7 @@ export declare class DocumentsController {
         notes: string;
         id: string;
         title: string;
-        libraryType: "public" | "private";
+        libraryType: import("./library-type").LibraryType;
         sourcePath: string;
         fileName: string;
         uploadedBy: string;

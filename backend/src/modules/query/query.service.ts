@@ -5,6 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { DocumentsService } from '../documents/documents.service';
 import { EmbeddingService } from '../documents/embedding.service';
+import { LibraryType, isPublicLibrary } from '../documents/library-type';
 import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { TeamAgentsService } from '../team-agents/team-agents.service';
@@ -27,7 +28,7 @@ class QueryRequestDto {
 type CitationRecord = {
   documentId: string;
   title: string;
-  libraryType: 'public' | 'private';
+  libraryType: LibraryType;
   score: number;
   matchedChunk: string;
   reason: string;
@@ -127,7 +128,7 @@ export class QueryService {
       : tokens.length === 0
       ? '\u8303\u56f4\u4f18\u5148 + \u8bed\u4e49\u91cd\u6392'
       : '\u5173\u952e\u8bcd + \u8bed\u4e49\u878d\u5408';
-    const publicHits = candidates.filter((c) => c.libraryType === 'public').length;
+    const publicHits = candidates.filter((c) => isPublicLibrary(c.libraryType)).length;
     const privateHits = candidates.filter((c) => c.libraryType === 'private').length;
 
     if (!options?.skipAccounting) {

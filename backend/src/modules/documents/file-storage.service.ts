@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
+import { LibraryType, isPublicLibrary } from './library-type';
 
 export type SavedFileRecord = {
   sourcePath: string;
@@ -72,17 +73,18 @@ export class FileStorageService {
 
   saveFile(options: {
     file: Express.Multer.File;
-    libraryType: 'public' | 'private';
+    libraryType: LibraryType;
     documentId: string;
     groupId?: string;
   }) {
-    const folder = options.libraryType === 'private'
+    const isPrivate = !isPublicLibrary(options.libraryType);
+    const folder = isPrivate
       ? join(this.getUploadRoot(), 'teams', options.groupId ?? 'unknown', options.documentId)
-      : join(this.getUploadRoot(), 'public', options.documentId);
+      : join(this.getUploadRoot(), options.libraryType, options.documentId);
     const normalizedFileName = this.normalizeOriginalFileName(options.file.originalname || 'upload.bin');
-    const logicalPath = options.libraryType === 'private'
+    const logicalPath = isPrivate
       ? `/files/teams/${options.groupId}/${options.documentId}/original${extname(this.sanitizeFileName(normalizedFileName)) || '.bin'}`
-      : `/files/public/${options.documentId}/original${extname(this.sanitizeFileName(normalizedFileName)) || '.bin'}`;
+      : `/files/${options.libraryType}/${options.documentId}/original${extname(this.sanitizeFileName(normalizedFileName)) || '.bin'}`;
 
     return this.writeStoredFile(folder, options.file, logicalPath);
   }

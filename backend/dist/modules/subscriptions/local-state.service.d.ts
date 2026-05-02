@@ -1,3 +1,4 @@
+import { LibraryType } from '../documents/library-type';
 type PersistedGroupRecord = {
     id: string;
     name: string;
@@ -18,7 +19,7 @@ type PersistedMemberRecord = {
 type PersistedDocumentRecord = {
     id: string;
     title: string;
-    libraryType: 'public' | 'private';
+    libraryType: LibraryType;
     sourcePath: string;
     chunkCount: number;
     indexStatus: 'ready' | 'processing' | 'queued';
@@ -36,7 +37,7 @@ type PersistedChunkRecord = {
     id: string;
     documentId: string;
     groupId: string | null;
-    libraryType: 'public' | 'private';
+    libraryType: LibraryType;
     title: string;
     chapterTitle: string;
     articleRef: string;

@@ -42,7 +42,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
 
   Future<void> _showUploadDialog() async {
     final titleController = TextEditingController();
-    String libraryType = (widget.isAdmin || widget.groupId == null) ? '公共库' : '私有库';
+    String libraryType = (widget.isAdmin || widget.groupId == null) ? 'regulation' : 'private';
     PlatformFile? selectedFile;
 
     final confirmed = await showDialog<bool>(
@@ -61,8 +61,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
                 initialValue: libraryType,
                 decoration: const InputDecoration(labelText: '库类型', isDense: true),
                 items: const [
-                  DropdownMenuItem(value: '公共库', child: Text('公共库')),
-                  DropdownMenuItem(value: '私有库', child: Text('私有库')),
+                  DropdownMenuItem(value: 'private', child: Text('私有库')),
                 ],
                 onChanged: (v) => setDialogState(() => libraryType = v!),
               ),
@@ -101,7 +100,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
         title: title,
         libraryType: libraryType,
         file: selectedFile!,
-        groupId: libraryType == '私有库' ? widget.groupId : null,
+        groupId: libraryType == 'private' ? widget.groupId : null,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.notes)));
