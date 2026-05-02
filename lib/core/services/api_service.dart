@@ -27,7 +27,12 @@ class ApiService {
     }
     if (kIsWeb) {
       final origin = getWebOrigin();
-      return origin.isNotEmpty ? '$origin/api' : 'http://localhost:3000/api';
+      // Dev: Flutter runs on a different port than the backend (3000).
+      // If not already on :3000, point directly to localhost:3000.
+      if (origin.isNotEmpty && !origin.contains('localhost') && !origin.contains('127.0.0.1')) {
+        return '$origin/api'; // production: same origin
+      }
+      return 'http://localhost:3000/api'; // development fallback
     }
     return 'http://localhost:3000/api';
   }
