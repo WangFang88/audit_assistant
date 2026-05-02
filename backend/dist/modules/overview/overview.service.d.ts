@@ -66,6 +66,7 @@ export declare class OverviewService {
             id: string;
             title: string;
             libraryType: import("../documents/library-type").LibraryType;
+            region: string | null;
             sourcePath: string;
             fileName: string;
             uploadedBy: string;
@@ -203,7 +204,7 @@ export declare class OverviewService {
         recentAuditEvents: import("../../database/repositories/audit-event.repository").AuditEventSnapshot[];
         conversations: {
             id: string;
-            type: "group" | "direct" | "agent";
+            type: "agent" | "group" | "direct";
             title: string;
             groupId: string | null;
             isTeamAgent: boolean;

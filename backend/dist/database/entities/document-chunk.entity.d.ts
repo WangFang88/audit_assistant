@@ -3,6 +3,7 @@ export declare class DocumentChunkEntity {
     documentId: string;
     teamId: string | null;
     libraryType: 'regulation' | 'local_policy' | 'national_case' | 'local_case' | 'industry' | 'private';
+    region: string | null;
     title: string;
     chapterTitle: string | null;
     articleRef: string | null;

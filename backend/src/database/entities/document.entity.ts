@@ -20,6 +20,9 @@ export class DocumentEntity {
   @Column({ name: 'library_type', type: 'varchar', length: 32 })
   libraryType!: 'regulation' | 'local_policy' | 'national_case' | 'local_case' | 'industry' | 'private';
 
+  @Column({ name: 'region', type: 'varchar', length: 64, nullable: true })
+  region!: string | null;
+
   @Column({ name: 'team_id', type: 'varchar', length: 64, nullable: true })
   teamId!: string | null;
 

@@ -31,6 +31,10 @@ __decorate([
     __metadata("design:type", String)
 ], DocumentChunkEntity.prototype, "libraryType", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'region', type: 'varchar', length: 64, nullable: true }),
+    __metadata("design:type", Object)
+], DocumentChunkEntity.prototype, "region", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'title', type: 'varchar', length: 255 }),
     __metadata("design:type", String)
 ], DocumentChunkEntity.prototype, "title", void 0);

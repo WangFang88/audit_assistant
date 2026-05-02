@@ -1783,6 +1783,7 @@ String get _activeConversationType {
     final titleController = TextEditingController();
     final rawTextController = TextEditingController();
     String libraryType = _isAdmin || _activeGroupId == null ? 'regulation' : 'private';
+    String? region;
     PlatformFile? selectedFile;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
@@ -1860,9 +1861,19 @@ String get _activeConversationType {
                       if (_isCurrentUserLeader && _activeGroupId != null)
                         const DropdownMenuItem(value: 'private', child: Text('私有库')),
                     ],
-                    onChanged: (value) => setDialogState(() => libraryType = value ?? libraryType),
+                    onChanged: (value) => setDialogState(() {
+                      libraryType = value ?? libraryType;
+                      region = null;
+                    }),
                     decoration: const InputDecoration(labelText: '入库范围'),
                   ),
+                  if (libraryType == 'local_policy' || libraryType == 'local_case') ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      decoration: const InputDecoration(labelText: '地区（可选，如：北京、上海）'),
+                      onChanged: (v) => region = v.trim().isEmpty ? null : v.trim(),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   TextField(
                     controller: rawTextController,
@@ -1907,6 +1918,7 @@ String get _activeConversationType {
         title: title,
         libraryType: libraryType,
         file: selectedFile!,
+        region: region,
         rawText: rawTextController.text.trim().isEmpty ? null : rawTextController.text.trim(),
         groupId: libraryType == 'private' ? _activeGroupId : null,
       );

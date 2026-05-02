@@ -39,6 +39,10 @@ __decorate([
     __metadata("design:type", String)
 ], DocumentEntity.prototype, "libraryType", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'region', type: 'varchar', length: 64, nullable: true }),
+    __metadata("design:type", Object)
+], DocumentEntity.prototype, "region", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'team_id', type: 'varchar', length: 64, nullable: true }),
     __metadata("design:type", Object)
 ], DocumentEntity.prototype, "teamId", void 0);

@@ -43,6 +43,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
   Future<void> _showUploadDialog() async {
     final titleController = TextEditingController();
     String libraryType = (widget.isAdmin || widget.groupId == null) ? 'regulation' : 'private';
+    String? region;
     PlatformFile? selectedFile;
 
     final confirmed = await showDialog<bool>(
@@ -55,15 +56,30 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
               controller: titleController,
               decoration: const InputDecoration(labelText: '文档标题', isDense: true),
             ),
-            if (!widget.isAdmin) ...[
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: libraryType,
+              decoration: const InputDecoration(labelText: '库类型', isDense: true),
+              items: [
+                if (widget.isAdmin) ...[
+                  const DropdownMenuItem(value: 'regulation', child: Text('法规库')),
+                  const DropdownMenuItem(value: 'local_policy', child: Text('地方政策库')),
+                  const DropdownMenuItem(value: 'national_case', child: Text('全国案例库')),
+                  const DropdownMenuItem(value: 'local_case', child: Text('地方案例库')),
+                  const DropdownMenuItem(value: 'industry', child: Text('行业专题库')),
+                ] else
+                  const DropdownMenuItem(value: 'private', child: Text('私有库')),
+              ],
+              onChanged: (v) => setDialogState(() {
+                libraryType = v!;
+                region = null;
+              }),
+            ),
+            if (libraryType == 'local_policy' || libraryType == 'local_case') ...[
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: libraryType,
-                decoration: const InputDecoration(labelText: '库类型', isDense: true),
-                items: const [
-                  DropdownMenuItem(value: 'private', child: Text('私有库')),
-                ],
-                onChanged: (v) => setDialogState(() => libraryType = v!),
+              TextField(
+                decoration: const InputDecoration(labelText: '地区（可选，如：北京）', isDense: true),
+                onChanged: (v) => region = v.trim().isEmpty ? null : v.trim(),
               ),
             ],
             const SizedBox(height: 12),
@@ -100,6 +116,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
         title: title,
         libraryType: libraryType,
         file: selectedFile!,
+        region: region,
         groupId: libraryType == 'private' ? widget.groupId : null,
       );
       if (!mounted) return;

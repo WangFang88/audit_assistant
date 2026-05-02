@@ -5,6 +5,7 @@ export declare class DocumentEntity {
     filePath: string;
     fileType: string;
     libraryType: 'regulation' | 'local_policy' | 'national_case' | 'local_case' | 'industry' | 'private';
+    region: string | null;
     teamId: string | null;
     uploadedBy: string;
     uploadSource: string | null;

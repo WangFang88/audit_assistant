@@ -14,6 +14,9 @@ export class DocumentChunkEntity {
   @Column({ name: 'library_type', type: 'varchar', length: 32 })
   libraryType!: 'regulation' | 'local_policy' | 'national_case' | 'local_case' | 'industry' | 'private';
 
+  @Column({ name: 'region', type: 'varchar', length: 64, nullable: true })
+  region!: string | null;
+
   @Column({ name: 'title', type: 'varchar', length: 255 })
   title!: string;
 

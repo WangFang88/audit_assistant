@@ -6,6 +6,7 @@ export declare class DocumentsController {
         id: string;
         title: string;
         libraryType: import("./library-type").LibraryType;
+        region: string | null;
         sourcePath: string;
         fileName: string;
         uploadedBy: string;
@@ -35,6 +36,7 @@ export declare class DocumentsController {
         documentId: string;
         groupId: string | null;
         libraryType: import("./library-type").LibraryType;
+        region: string | null;
         title: string;
         chapterTitle: string;
         articleRef: string;
@@ -49,6 +51,7 @@ export declare class DocumentsController {
         id: string;
         title: string;
         libraryType: import("./library-type").LibraryType;
+        region: string | null;
         sourcePath: string;
         fileName: string;
         uploadedBy: string;

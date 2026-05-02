@@ -488,15 +488,18 @@ class ApiService {
     required String title,
     required String libraryType,
     required PlatformFile file,
+    String? region,
     String? rawText,
     String? groupId,
   }) async {
-    final backendLibraryType = libraryType == '公共库' ? 'public' : 'private';
     final response = await _multipartRequestWithRefresh((headers) async {
       final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/documents/import'));
       request.headers.addAll(headers);
       request.fields['title'] = title;
-      request.fields['libraryType'] = backendLibraryType;
+      request.fields['libraryType'] = libraryType;
+      if (region != null && region.isNotEmpty) {
+        request.fields['region'] = region;
+      }
       if (rawText != null && rawText.isNotEmpty) {
         request.fields['rawText'] = rawText;
       }

@@ -25,6 +25,10 @@ class ImportDocumentDto {
 
   @IsOptional()
   @IsString()
+  region?: string;
+
+  @IsOptional()
+  @IsString()
   @MinLength(20)
   rawText?: string;
 
@@ -37,6 +41,7 @@ type DocumentRecord = {
   id: string;
   title: string;
   libraryType: LibraryType;
+  region: string | null;
   sourcePath: string;
   fileName: string;
   uploadedBy: string;
@@ -68,6 +73,7 @@ type DocumentChunkRecord = {
   documentId: string;
   groupId: string | null;
   libraryType: LibraryType;
+  region: string | null;
   title: string;
   chapterTitle: string;
   articleRef: string;
@@ -121,6 +127,7 @@ export class DocumentsService {
       id: entity.id,
       title: entity.title,
       libraryType: entity.libraryType,
+      region: entity.region ?? null,
       sourcePath: entity.filePath,
       fileName: entity.fileName,
       uploadedBy: entity.uploadedBy,
@@ -144,6 +151,7 @@ export class DocumentsService {
       documentId: entity.documentId,
       groupId: entity.teamId,
       libraryType: entity.libraryType,
+      region: entity.region ?? null,
       title: entity.title,
       chapterTitle: entity.chapterTitle ?? '',
       articleRef: entity.articleRef ?? '',
@@ -173,6 +181,7 @@ export class DocumentsService {
         id: 'doc-1',
         title: '某区财政专项资金管理办法',
         libraryType: 'regulation',
+        region: null,
         sourcePath: '/policies/regulation/fiscal-rules.pdf',
         fileName: 'fiscal-rules.pdf',
         uploadedBy: 'user-1',
@@ -192,6 +201,7 @@ export class DocumentsService {
         id: 'doc-2',
         title: '某区财政局内部采购管理制度',
         libraryType: 'private',
+        region: null,
         sourcePath: '/groups/group-1/purchase-guideline.docx',
         fileName: 'purchase-guideline.docx',
         uploadedBy: 'user-2',
@@ -211,6 +221,7 @@ export class DocumentsService {
         id: 'doc-3',
         title: '某医院设备管理台账扫描件',
         libraryType: 'private',
+        region: null,
         sourcePath: '/groups/group-1/equipment-scan.pdf',
         fileName: 'equipment-scan.pdf',
         uploadedBy: 'user-2',
@@ -250,6 +261,7 @@ export class DocumentsService {
         documentId: 'doc-1',
         groupId: null,
         libraryType: 'regulation',
+        region: null,
         title: '某区财政专项资金管理办法',
         chapterTitle: '第一章 适用范围',
         articleRef: '第三条',
@@ -263,6 +275,7 @@ export class DocumentsService {
         documentId: 'doc-1',
         groupId: null,
         libraryType: 'regulation',
+        region: null,
         title: '某区财政专项资金管理办法',
         chapterTitle: '第二章 审批与执行',
         articleRef: '第七条',
@@ -276,6 +289,7 @@ export class DocumentsService {
         documentId: 'doc-1',
         groupId: null,
         libraryType: 'regulation',
+        region: null,
         title: '某区财政专项资金管理办法',
         chapterTitle: '第三章 证据与归档',
         articleRef: '第十二条',
@@ -289,6 +303,7 @@ export class DocumentsService {
         documentId: 'doc-1',
         groupId: null,
         libraryType: 'regulation',
+        region: null,
         title: '某区财政专项资金管理办法',
         chapterTitle: '第四章 监督与整改',
         articleRef: '第十六条',
@@ -302,6 +317,7 @@ export class DocumentsService {
         documentId: 'doc-2',
         groupId: 'group-1',
         libraryType: 'private',
+        region: null,
         title: '某区财政局内部采购管理制度',
         chapterTitle: '第一章 适用范围',
         articleRef: '第三条',
@@ -315,6 +331,7 @@ export class DocumentsService {
         documentId: 'doc-2',
         groupId: 'group-1',
         libraryType: 'private',
+        region: null,
         title: '某区财政局内部采购管理制度',
         chapterTitle: '第二章 审批与执行',
         articleRef: '第七条',
@@ -328,6 +345,7 @@ export class DocumentsService {
         documentId: 'doc-2',
         groupId: 'group-1',
         libraryType: 'private',
+        region: null,
         title: '某区财政局内部采购管理制度',
         chapterTitle: '第三章 证据与归档',
         articleRef: '第十二条',
@@ -341,6 +359,7 @@ export class DocumentsService {
         documentId: 'doc-2',
         groupId: 'group-1',
         libraryType: 'private',
+        region: null,
         title: '某区财政局内部采购管理制度',
         chapterTitle: '第四章 监督与整改',
         articleRef: '第十六条',
@@ -536,6 +555,7 @@ export class DocumentsService {
         documentId: document.id,
         groupId: document.groupId,
         libraryType: document.libraryType,
+        region: document.region,
         title: document.title,
         chapterTitle: currentChapter || ('第' + (index + 1) + '段'),
         articleRef: articleMatch?.[0] ?? ('第' + (index + 1) + '条'),
@@ -661,6 +681,7 @@ export class DocumentsService {
       documentId: document.id,
       groupId: document.groupId,
       libraryType: document.libraryType,
+      region: document.region,
       title: document.title,
       chapterTitle: blueprint.chapterTitle,
       articleRef: blueprint.articleRef,
@@ -708,6 +729,7 @@ export class DocumentsService {
       filePath: document.sourcePath,
       fileType: document.fileType,
       libraryType: document.libraryType,
+      region: document.region,
       teamId: document.groupId,
       uploadedBy: document.uploadedBy,
       uploadSource: 'manual-upload',
@@ -730,6 +752,7 @@ export class DocumentsService {
       documentId: chunk.documentId,
       teamId: chunk.groupId,
       libraryType: chunk.libraryType,
+      region: chunk.region,
       title: chunk.title,
       chapterTitle: chunk.chapterTitle,
       articleRef: chunk.articleRef,
@@ -775,6 +798,7 @@ export class DocumentsService {
       id: documentId,
       title: dto.title,
       libraryType: dto.libraryType,
+      region: dto.region ?? null,
       sourcePath: storedFile.sourcePath,
       fileName: storedFile.originalName,
       uploadedBy,

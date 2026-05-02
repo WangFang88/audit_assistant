@@ -13,6 +13,7 @@ import { LibraryType } from './library-type';
 declare class ImportDocumentDto {
     title: string;
     libraryType: LibraryType;
+    region?: string;
     rawText?: string;
     groupId?: string;
 }
@@ -20,6 +21,7 @@ type DocumentRecord = {
     id: string;
     title: string;
     libraryType: LibraryType;
+    region: string | null;
     sourcePath: string;
     fileName: string;
     uploadedBy: string;
@@ -49,6 +51,7 @@ type DocumentChunkRecord = {
     documentId: string;
     groupId: string | null;
     libraryType: LibraryType;
+    region: string | null;
     title: string;
     chapterTitle: string;
     articleRef: string;
@@ -99,6 +102,7 @@ export declare class DocumentsService {
         id: string;
         title: string;
         libraryType: LibraryType;
+        region: string | null;
         sourcePath: string;
         fileName: string;
         uploadedBy: string;
