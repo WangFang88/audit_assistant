@@ -5,9 +5,10 @@ import '../../core/models/app_models.dart';
 import '../../core/services/api_service.dart';
 
 class MobileDocsPage extends StatefulWidget {
-  const MobileDocsPage({super.key, required this.apiService, this.groupId});
+  const MobileDocsPage({super.key, required this.apiService, this.groupId, this.isAdmin = false});
   final ApiService apiService;
   final String? groupId;
+  final bool isAdmin;
 
   @override
   State<MobileDocsPage> createState() => _MobileDocsPageState();
@@ -41,7 +42,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
 
   Future<void> _showUploadDialog() async {
     final titleController = TextEditingController();
-    String libraryType = widget.groupId != null ? '私有库' : '公共库';
+    String libraryType = (widget.isAdmin || widget.groupId == null) ? '公共库' : '私有库';
     PlatformFile? selectedFile;
 
     final confirmed = await showDialog<bool>(
@@ -54,16 +55,18 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
               controller: titleController,
               decoration: const InputDecoration(labelText: '文档标题', isDense: true),
             ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: libraryType,
-              decoration: const InputDecoration(labelText: '库类型', isDense: true),
-              items: const [
-                DropdownMenuItem(value: '公共库', child: Text('公共库')),
-                DropdownMenuItem(value: '私有库', child: Text('私有库')),
-              ],
-              onChanged: (v) => setDialogState(() => libraryType = v!),
-            ),
+            if (!widget.isAdmin) ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: libraryType,
+                decoration: const InputDecoration(labelText: '库类型', isDense: true),
+                items: const [
+                  DropdownMenuItem(value: '公共库', child: Text('公共库')),
+                  DropdownMenuItem(value: '私有库', child: Text('私有库')),
+                ],
+                onChanged: (v) => setDialogState(() => libraryType = v!),
+              ),
+            ],
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () async {

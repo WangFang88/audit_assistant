@@ -80,33 +80,36 @@ class MobileShell extends StatefulWidget {
 class _MobileShellState extends State<MobileShell> {
   int _index = 0;
 
+  bool get _isAdmin => widget.user.role == 'admin' || widget.user.role == '管理员';
+
   @override
   Widget build(BuildContext context) {
     final pages = [
       MobileHomePage(apiService: widget.apiService, user: widget.user),
       MobileChatPage(apiService: widget.apiService, user: widget.user),
-      MobileDocsPage(apiService: widget.apiService),
-      MobileGroupsPage(apiService: widget.apiService, user: widget.user),
+      MobileDocsPage(apiService: widget.apiService, isAdmin: _isAdmin),
+      if (!_isAdmin) MobileGroupsPage(apiService: widget.apiService, user: widget.user),
       MobileAccountPage(apiService: widget.apiService, user: widget.user, onLogout: widget.onLogout),
     ];
 
+    final destinations = [
+      const NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: '工作台'),
+      const NavigationDestination(icon: Icon(Icons.chat_outlined), selectedIcon: Icon(Icons.chat), label: '协作'),
+      const NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: '资料库'),
+      if (!_isAdmin) const NavigationDestination(icon: Icon(Icons.group_outlined), selectedIcon: Icon(Icons.group), label: '项目组'),
+      const NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: '我的'),
+    ];
+
+    // 确保 _index 不越界
+    final safeIndex = _index.clamp(0, pages.length - 1);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('小嘉审计助手'),
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: IndexedStack(index: _index, children: pages),
+      appBar: AppBar(title: const Text('小嘉审计助手'), centerTitle: true, elevation: 0),
+      body: IndexedStack(index: safeIndex, children: pages),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
+        selectedIndex: safeIndex,
         onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: '工作台'),
-          NavigationDestination(icon: Icon(Icons.chat_outlined), selectedIcon: Icon(Icons.chat), label: '协作'),
-          NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: '资料库'),
-          NavigationDestination(icon: Icon(Icons.group_outlined), selectedIcon: Icon(Icons.group), label: '项目组'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: '我的'),
-        ],
+        destinations: destinations,
       ),
     );
   }
