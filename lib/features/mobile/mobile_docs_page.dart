@@ -57,23 +57,28 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
               decoration: const InputDecoration(labelText: '文档标题', isDense: true),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: libraryType,
+            InputDecorator(
               decoration: const InputDecoration(labelText: '库类型', isDense: true),
-              items: [
-                if (widget.isAdmin) ...[
-                  const DropdownMenuItem(value: 'regulation', child: Text('法规库')),
-                  const DropdownMenuItem(value: 'local_policy', child: Text('地方政策库')),
-                  const DropdownMenuItem(value: 'national_case', child: Text('全国案例库')),
-                  const DropdownMenuItem(value: 'local_case', child: Text('地方案例库')),
-                  const DropdownMenuItem(value: 'industry', child: Text('行业专题库')),
-                ] else
-                  const DropdownMenuItem(value: 'private', child: Text('私有库')),
-              ],
-              onChanged: (v) => setDialogState(() {
-                libraryType = v!;
-                region = null;
-              }),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: libraryType,
+                  isDense: true,
+                  items: [
+                    if (widget.isAdmin) ...[
+                      const DropdownMenuItem(value: 'regulation', child: Text('法规库')),
+                      const DropdownMenuItem(value: 'local_policy', child: Text('地方政策库')),
+                      const DropdownMenuItem(value: 'national_case', child: Text('全国案例库')),
+                      const DropdownMenuItem(value: 'local_case', child: Text('地方案例库')),
+                      const DropdownMenuItem(value: 'industry', child: Text('行业专题库')),
+                    ] else
+                      const DropdownMenuItem(value: 'private', child: Text('私有库')),
+                  ],
+                  onChanged: (v) => setDialogState(() {
+                    libraryType = v!;
+                    region = null;
+                  }),
+                ),
+              ),
             ),
             if (libraryType == 'local_policy' || libraryType == 'local_case') ...[
               const SizedBox(height: 12),
