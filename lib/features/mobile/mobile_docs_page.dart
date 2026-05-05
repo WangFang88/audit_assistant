@@ -170,7 +170,7 @@ class _DocTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isPrivate = doc.libraryType == 'private';
+    final isPrivate = doc.libraryType == '私有库';
     return Card(
       child: ListTile(
         leading: Icon(
@@ -179,7 +179,7 @@ class _DocTile extends StatelessWidget {
         ),
         title: Text(doc.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
         subtitle: Text(
-          '${isPrivate ? "私有库" : "公共库"} · ${doc.indexStatus}',
+          '${doc.libraryType} · ${doc.indexStatus}',
           style: theme.textTheme.bodySmall,
         ),
         trailing: Container(
