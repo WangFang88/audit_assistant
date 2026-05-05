@@ -58,7 +58,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              initialValue: libraryType,
+              value: libraryType,
               decoration: const InputDecoration(labelText: '库类型', isDense: true),
               items: [
                 if (widget.isAdmin) ...[

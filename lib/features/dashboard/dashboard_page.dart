@@ -1849,7 +1849,7 @@ String get _activeConversationType {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    initialValue: libraryType,
+                    value: libraryType,
                     items: [
                       if (_isAdmin) ...[
                         const DropdownMenuItem(value: 'regulation', child: Text('法规库')),
