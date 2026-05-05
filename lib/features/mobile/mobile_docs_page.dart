@@ -42,7 +42,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
 
   Future<void> _showUploadDialog() async {
     final titleController = TextEditingController();
-    String libraryType = (widget.isAdmin || widget.groupId == null) ? 'regulation' : 'private';
+    String libraryType = widget.isAdmin ? 'regulation' : 'private';
     String? region;
     PlatformFile? selectedFile;
 
