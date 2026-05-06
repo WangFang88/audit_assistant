@@ -455,16 +455,25 @@ export class DocumentsService {
       order: { chunkIndex: 'ASC', createdAt: 'ASC' },
     });
 
+    const activeAccess = this.authService.isAdmin()
+      ? null
+      : await this.subscriptionsService.getActiveLibraryAccess();
+
+    const canAccess = (libraryType: string, region: string | null) => {
+      if (activeAccess === null) return true; // admin
+      if (libraryType === 'regulation' || libraryType === 'national_case') return true;
+      if (libraryType === 'private') return false; // handled by groupId filter below
+      return activeAccess.some(
+        (a) => a.libraryType === libraryType && (a.region === null || a.region === region),
+      );
+    };
+
     return entities.map((entity) => this.toChunkRecord(entity)).filter((chunk) => {
-      if (chunk.indexStatus !== 'ready') {
-        return false;
+      if (chunk.indexStatus !== 'ready') return false;
+      if (!isPublicLibrary(chunk.libraryType)) {
+        return groupId != null && chunk.groupId === groupId;
       }
-
-      if (isPublicLibrary(chunk.libraryType)) {
-        return true;
-      }
-
-      return groupId != null && chunk.groupId === groupId;
+      return canAccess(chunk.libraryType, chunk.region ?? null);
     });
   }
 
