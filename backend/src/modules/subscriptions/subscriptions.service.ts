@@ -346,6 +346,10 @@ export class SubscriptionsService {
     industry: '行业专题库',
   };
 
+  async hasActiveSubscription(): Promise<boolean> {
+    return (await this.getActiveSubscriptionOrder()) !== null;
+  }
+
   async getActiveLibraryAccess(userId?: string): Promise<LibraryAccessEntity[]> {
     const uid = userId ?? this.authService.me().id;
     const now = new Date();

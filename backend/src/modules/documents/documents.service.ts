@@ -394,10 +394,14 @@ export class DocumentsService {
     const activeAccess = this.authService.isAdmin()
       ? null
       : await this.subscriptionsService.getActiveLibraryAccess();
+    const hasSubscription = this.authService.isAdmin()
+      ? true
+      : await this.subscriptionsService.hasActiveSubscription();
 
     const canAccess = (libraryType: string, region: string | null) => {
       if (activeAccess === null) return true;
       if (libraryType === 'regulation') return true;
+      if (libraryType === 'national_case') return hasSubscription;
       if (libraryType === 'private') return false;
       return activeAccess.some(
         (a) => a.libraryType === libraryType && (a.region === null || a.region === region),
@@ -485,10 +489,14 @@ export class DocumentsService {
     const activeAccess = this.authService.isAdmin()
       ? null
       : await this.subscriptionsService.getActiveLibraryAccess();
+    const hasSubscription = this.authService.isAdmin()
+      ? true
+      : await this.subscriptionsService.hasActiveSubscription();
 
     const canAccess = (libraryType: string, region: string | null) => {
       if (activeAccess === null) return true; // admin
       if (libraryType === 'regulation') return true;
+      if (libraryType === 'national_case') return hasSubscription;
       if (libraryType === 'private') return false; // handled by groupId filter below
       return activeAccess.some(
         (a) => a.libraryType === libraryType && (a.region === null || a.region === region),
