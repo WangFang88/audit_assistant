@@ -1901,9 +1901,15 @@ String get _activeConversationType {
                   ],
                   if (libraryType == 'local_policy' || libraryType == 'local_case') ...[
                     const SizedBox(height: 12),
-                    TextField(
-                      decoration: const InputDecoration(labelText: '地区（可选，如：北京、上海）'),
-                      onChanged: (v) => region = v.trim().isEmpty ? null : v.trim(),
+                    Autocomplete<String>(
+                      optionsBuilder: (v) => v.text.isEmpty ? _kRegions : _kRegions.where((r) => r.contains(v.text)),
+                      onSelected: (v) => setDialogState(() => region = v),
+                      fieldViewBuilder: (ctx2, ctrl, fn, _) => TextField(
+                        controller: ctrl,
+                        focusNode: fn,
+                        decoration: const InputDecoration(labelText: '地区（可选）'),
+                        onChanged: (v) => region = v.trim().isEmpty ? null : v.trim(),
+                      ),
                     ),
                   ],
                   const SizedBox(height: 12),
@@ -3920,6 +3926,8 @@ class _SubscriptionPlanRow extends StatelessWidget {
   }
 }
 
+const _kRegions = ['北京', '上海', '广东', '浙江', '江苏', '四川', '湖北', '湖南', '山东', '河南', '河北', '陕西', '福建', '安徽', '江西', '辽宁', '吉林', '黑龙江', '云南', '贵州', '广西', '内蒙古', '新疆', '西藏', '甘肃', '青海', '宁夏', '海南', '重庆', '天津'];
+
 class _LibraryAccessSection extends StatefulWidget {
   const _LibraryAccessSection({required this.libraryAccess, required this.subscribing, required this.onBuy});
   final List<LibraryAccessItem> libraryAccess;
@@ -3946,7 +3954,6 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
   Future<void> _showBuyDialog(String libraryType, String label) async {
     String? region;
     bool buyAll = false;
-    const regions = ['北京', '上海', '广东', '浙江', '江苏', '四川', '湖北', '湖南', '山东', '河南', '河北', '陕西', '福建', '安徽', '江西', '辽宁', '吉林', '黑龙江', '云南', '贵州', '广西', '内蒙古', '新疆', '西藏', '甘肃', '青海', '宁夏', '海南', '重庆', '天津'];
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -3962,8 +3969,8 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
             if (!buyAll)
               Autocomplete<String>(
                 optionsBuilder: (v) => v.text.isEmpty
-                    ? regions
-                    : regions.where((r) => r.contains(v.text)),
+                    ? _kRegions
+                    : _kRegions.where((r) => r.contains(v.text)),
                 onSelected: (v) => region = v,
                 fieldViewBuilder: (ctx2, ctrl, fn, _) => TextField(
                   controller: ctrl,
