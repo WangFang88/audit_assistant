@@ -46,6 +46,7 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _documentsLoading = false;
   bool _subscribing = false;
   String? _error;
+  String? _queryScope;
   DashboardOverview? _overview;
   QueryResult? _result;
   List<ConversationSummary> _conversations = const [];
@@ -602,6 +603,7 @@ String get _activeConversationType {
         question: question,
         groupId: searchGroupId,
         agentId: _overview?.activeTeamAgent?.id,
+        queryScope: _queryScope,
       );
       if (!mounted) {
         return;
@@ -2310,10 +2312,10 @@ String get _activeConversationType {
 
   Widget _buildFeatureCards(BuildContext context, {required bool compact}) {
     final cards = [
-      _FeatureCardData(icon: Icons.gavel_outlined, color: const Color(0xFF1D4ED8), title: '法条查询', subtitle: '国家法律与政策文件'),
-      _FeatureCardData(icon: Icons.library_books_outlined, color: const Color(0xFF0891B2), title: '资料库问答', subtitle: '自建/购买资料智能问答'),
-      _FeatureCardData(icon: Icons.cases_outlined, color: const Color(0xFF7C3AED), title: '案例参考', subtitle: '全国/地方审计案例'),
-      _FeatureCardData(icon: Icons.checklist_outlined, color: const Color(0xFF059669), title: '风险排查', subtitle: '结合法条案例生成检查点'),
+      _FeatureCardData(icon: Icons.gavel_outlined, color: const Color(0xFF1D4ED8), title: '法条查询', subtitle: '国家法律与政策文件', queryScope: 'regulation'),
+      _FeatureCardData(icon: Icons.library_books_outlined, color: const Color(0xFF0891B2), title: '资料库问答', subtitle: '自建/购买资料智能问答', queryScope: 'material'),
+      _FeatureCardData(icon: Icons.cases_outlined, color: const Color(0xFF7C3AED), title: '案例参考', subtitle: '全国/地方审计案例', queryScope: 'case'),
+      _FeatureCardData(icon: Icons.checklist_outlined, color: const Color(0xFF059669), title: '风险排查', subtitle: '结合法条案例生成检查点', queryScope: 'risk'),
     ];
 
     if (compact) {
@@ -2338,6 +2340,7 @@ String get _activeConversationType {
   Widget _buildFeatureCard(BuildContext context, _FeatureCardData data) {
     return InkWell(
       onTap: () {
+        setState(() => _queryScope = data.queryScope);
         _questionController.text = '请检索与${data.title}相关的内容。';
       },
       borderRadius: BorderRadius.circular(12),
@@ -3625,11 +3628,12 @@ String get _activeConversationType {
 }
 
 class _FeatureCardData {
-  const _FeatureCardData({required this.icon, required this.color, required this.title, required this.subtitle});
+  const _FeatureCardData({required this.icon, required this.color, required this.title, required this.subtitle, required this.queryScope});
   final IconData icon;
   final Color color;
   final String title;
   final String subtitle;
+  final String queryScope;
 }
 
 class _GroupBundle {
