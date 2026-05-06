@@ -2348,7 +2348,7 @@ String get _activeConversationType {
               _buildQuotaRow(context, '今日查询', subscription.dailyQueriesUsed, subscription.dailyQueriesLimit),
               const SizedBox(height: 10),
               OutlinedButton(
-                onPressed: () => setState(() => _selectedIndex = 4),
+                onPressed: () => setState(() => _selectedIndex = _isAdmin ? 1 : 2),
                 style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
                 child: Text('${subscription.planName} · 查看套餐', style: const TextStyle(fontSize: 12)),
               ),
