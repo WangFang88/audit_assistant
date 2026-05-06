@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TeamMemberEntity } from '../../database/entities/team-member.entity';
 import { AuthService } from '../auth/auth.service';
-import { CreateSubscriptionOrderDto, SubscriptionsService } from './subscriptions.service';
+import { BuyLibraryAccessDto, CreateSubscriptionOrderDto, SubscriptionsService } from './subscriptions.service';
 
 @Controller('subscriptions')
 export class SubscriptionsController {
@@ -24,5 +24,10 @@ export class SubscriptionsController {
   @Post('orders')
   async createOrder(@Body() dto: CreateSubscriptionOrderDto) {
     return this.subscriptionsService.createSubscriptionOrder(dto);
+  }
+
+  @Post('library-access')
+  async buyLibraryAccess(@Body() dto: BuyLibraryAccessDto) {
+    return this.subscriptionsService.buyLibraryAccess(dto);
   }
 }

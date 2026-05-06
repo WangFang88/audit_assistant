@@ -1,9 +1,10 @@
 import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { IsIn } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 import { QueryLogEntity } from '../../database/entities/query-log.entity';
 import { SubscriptionEntity } from '../../database/entities/subscription.entity';
+import { LibraryAccessEntity } from '../../database/entities/library-access.entity';
 import { formatCst } from '../../utils/date';
 import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
@@ -12,6 +13,16 @@ import { LocalStateService } from './local-state.service';
 class CreateSubscriptionOrderDto {
   @IsIn(['weekly', 'monthly', 'yearly'])
   planType!: 'weekly' | 'monthly' | 'yearly';
+}
+
+class BuyLibraryAccessDto {
+  @IsIn(['local_policy', 'local_case', 'industry'])
+  libraryType!: 'local_policy' | 'local_case' | 'industry';
+
+  // null = 全部地区，否则指定地区如 'beijing'
+  @IsOptional()
+  @IsString()
+  region?: string;
 }
 
 type UsageSnapshot = {
@@ -31,6 +42,8 @@ export class SubscriptionsService {
     private readonly subscriptionRepo: Repository<SubscriptionEntity>,
     @InjectRepository(QueryLogEntity)
     private readonly queryLogRepo: Repository<QueryLogEntity>,
+    @InjectRepository(LibraryAccessEntity)
+    private readonly libraryAccessRepo: Repository<LibraryAccessEntity>,
     @Inject(forwardRef(() => AuthService)) private readonly authService: AuthService,
     private readonly auditService: AuditService,
   ) {}
@@ -320,6 +333,58 @@ export class SubscriptionsService {
     return { activationMode: 'simulation', message: `${this.getPlanLabel(dto.planType)}已模拟开通。` };
   }
 
+  private readonly libraryAccessPrices: Record<'local_policy' | 'local_case' | 'industry', { region: string; all: string }> = {
+    local_policy: { region: '50.00', all: '200.00' },
+    local_case:   { region: '50.00', all: '200.00' },
+    industry:     { region: '80.00', all: '300.00' },
+  };
+
+  private readonly libraryAccessLabels: Record<string, string> = {
+    local_policy: '地方政策库',
+    local_case: '地方案例库',
+    industry: '行业专题库',
+  };
+
+  async getActiveLibraryAccess(userId?: string): Promise<LibraryAccessEntity[]> {
+    const uid = userId ?? this.authService.me().id;
+    const now = new Date();
+    const all = await this.libraryAccessRepo.findBy({ userId: uid });
+    return all.filter((a) => a.expiredAt > now);
+  }
+
+  async canAccessLibrary(libraryType: string, region: string | null): Promise<boolean> {
+    if (this.isAdmin()) return true;
+    if (libraryType === 'regulation') return true;
+    const active = await this.getActiveLibraryAccess();
+    return active.some(
+      (a) => a.libraryType === libraryType && (a.region === null || a.region === region),
+    );
+  }
+
+  async buyLibraryAccess(dto: BuyLibraryAccessDto) {
+    if (this.isAdmin()) throw new BadRequestException('管理员无需购买');
+    const user = this.authService.me();
+    const prices = this.libraryAccessPrices[dto.libraryType];
+    const amount = dto.region ? prices.region : prices.all;
+    const now = new Date();
+    const expiredAt = this.addDays(now, 365);
+    const id = `la-${Date.now()}`;
+    await this.libraryAccessRepo.save(
+      this.libraryAccessRepo.create({ id, userId: user.id, libraryType: dto.libraryType, region: dto.region ?? null, amount, paidAt: now, expiredAt }),
+    );
+    const label = `${this.libraryAccessLabels[dto.libraryType]}${dto.region ? `（${dto.region}）` : '（全部地区）'}`;
+    await this.auditService.recordEvent({
+      eventType: 'subscription.activate',
+      actorUserId: user.id,
+      actorName: user.name,
+      targetType: 'library_access',
+      targetId: id,
+      summary: `购买了${label}访问权限`,
+      detail: { libraryType: dto.libraryType, region: dto.region ?? null, amount, activationMode: 'simulation' },
+    });
+    return { message: `${label}访问权限已开通（1年）。` };
+  }
+
   async getOverview(actualGroupCount?: number, actualPrivateDocuments?: number) {
     const plan = await this.getCurrentPlan();
     const latestOrder = await this.getLatestSubscriptionOrder();
@@ -337,6 +402,7 @@ export class SubscriptionsService {
     });
 
     const allOrders = await this.getUserSubscriptionOrders();
+    const activeLibraryAccess = await this.getActiveLibraryAccess();
 
     return {
       currentPlanId: plan.id,
@@ -367,8 +433,15 @@ export class SubscriptionsService {
       ],
       plans: this.plans,
       pricing: { weekly: '¥70 / 周', monthly: '¥200 / 月', yearly: '¥2000 / 年' },
+      libraryAccess: activeLibraryAccess.map((a) => ({
+        id: a.id,
+        libraryType: a.libraryType,
+        region: a.region,
+        expiredAt: formatCst(a.expiredAt, false),
+      })),
+      libraryAccessPrices: this.libraryAccessPrices,
     };
   }
 }
 
-export { CreateSubscriptionOrderDto };
+export { CreateSubscriptionOrderDto, BuyLibraryAccessDto };

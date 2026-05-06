@@ -4,6 +4,7 @@ import { DatabaseSupportModule } from '../../database/database-support.module';
 import { AuthModule } from '../auth/auth.module';
 import { AuditModule } from '../audit/audit.module';
 import { QueryLogEntity } from '../../database/entities/query-log.entity';
+import { LibraryAccessEntity } from '../../database/entities/library-access.entity';
 import { SubscriptionEntity } from '../../database/entities/subscription.entity';
 import { TeamMemberEntity } from '../../database/entities/team-member.entity';
 import { LocalStateService } from './local-state.service';
@@ -11,7 +12,7 @@ import { SubscriptionsController } from './subscriptions.controller';
 import { SubscriptionsService } from './subscriptions.service';
 
 @Module({
-  imports: [DatabaseSupportModule, AuditModule, forwardRef(() => AuthModule), TypeOrmModule.forFeature([TeamMemberEntity, SubscriptionEntity, QueryLogEntity])],
+  imports: [DatabaseSupportModule, AuditModule, forwardRef(() => AuthModule), TypeOrmModule.forFeature([TeamMemberEntity, SubscriptionEntity, QueryLogEntity, LibraryAccessEntity])],
   controllers: [SubscriptionsController],
   providers: [LocalStateService, SubscriptionsService],
   exports: [LocalStateService, SubscriptionsService],

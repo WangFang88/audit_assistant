@@ -543,6 +543,7 @@ class SubscriptionOverview {
     required this.latestOrder,
     required this.effectiveOrder,
     required this.orderHistory,
+    required this.libraryAccess,
   });
 
   final String planId;
@@ -568,6 +569,7 @@ class SubscriptionOverview {
   final SubscriptionOrderSummary? latestOrder;
   final SubscriptionOrderSummary? effectiveOrder;
   final List<SubscriptionOrderSummary> orderHistory;
+  final List<LibraryAccessItem> libraryAccess;
 
   factory SubscriptionOverview.fromJson(Map<String, dynamic> json) {
     final usage = json['usage'] as Map<String, dynamic>? ?? const {};
@@ -610,6 +612,10 @@ class SubscriptionOverview {
           .whereType<Map<String, dynamic>>()
           .map(SubscriptionOrderSummary.fromJson)
           .toList(),
+      libraryAccess: (json['libraryAccess'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(LibraryAccessItem.fromJson)
+          .toList(),
       groupsUsed: groups['used'] as int? ?? 0,
       groupsLimit: groups['limit'] as int? ?? 0,
       privateDocumentsUsed: privateDocuments['used'] as int? ?? 0,
@@ -618,6 +624,20 @@ class SubscriptionOverview {
       dailyQueriesLimit: dailyQueries['limit'] as int? ?? 0,
     );
   }
+}
+
+class LibraryAccessItem {
+  const LibraryAccessItem({required this.id, required this.libraryType, required this.region, required this.expiredAt});
+  final String id;
+  final String libraryType;
+  final String? region;
+  final String expiredAt;
+  factory LibraryAccessItem.fromJson(Map<String, dynamic> json) => LibraryAccessItem(
+    id: json['id'] as String? ?? '',
+    libraryType: json['libraryType'] as String? ?? '',
+    region: json['region'] as String?,
+    expiredAt: json['expiredAt'] as String? ?? '',
+  );
 }
 
 class SubscriptionOrderSummary {

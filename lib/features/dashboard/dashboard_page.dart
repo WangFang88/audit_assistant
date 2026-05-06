@@ -1213,6 +1213,25 @@ String get _activeConversationType {
     );
   }
 
+  Future<void> _buyLibraryAccess(String libraryType, String? region) async {
+    if (_isAdmin) return;
+    setState(() { _subscribing = true; _error = null; });
+    try {
+      await widget.apiService.buyLibraryAccess(libraryType: libraryType, region: region);
+      await _loadDashboard(preferredGroupId: _activeGroupId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('知识库访问权限已开通。')));
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = '购买失败，请重试。');
+    } finally {
+      if (mounted) setState(() => _subscribing = false);
+    }
+  }
+
   Future<void> _showMemberInfoDialog(GroupMember member) async {
     final isCurrentUser = member.userId == widget.currentUser.id;
     await showDialog<void>(
@@ -3463,6 +3482,18 @@ String get _activeConversationType {
         onSubscribe: _subscribe,
       ),
 
+      // 知识库访问权限
+      const SizedBox(height: 20),
+      Text('知识库访问权限', style: Theme.of(context).textTheme.titleSmall),
+      const SizedBox(height: 4),
+      Text('法规库默认可用，以下库需单独购买（1年有效期）', style: Theme.of(context).textTheme.bodySmall),
+      const SizedBox(height: 12),
+      _LibraryAccessSection(
+        libraryAccess: s.libraryAccess,
+        subscribing: _subscribing,
+        onBuy: _buyLibraryAccess,
+      ),
+
       // 历史记录
       if (s.orderHistory.isNotEmpty) ...[
         const SizedBox(height: 20),
@@ -3881,6 +3912,93 @@ class _SubscriptionPlanRow extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _LibraryAccessSection extends StatefulWidget {
+  const _LibraryAccessSection({required this.libraryAccess, required this.subscribing, required this.onBuy});
+  final List<LibraryAccessItem> libraryAccess;
+  final bool subscribing;
+  final void Function(String libraryType, String? region) onBuy;
+
+  @override
+  State<_LibraryAccessSection> createState() => _LibraryAccessSectionState();
+}
+
+class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
+  static const _libs = [
+    ('local_policy', '地方政策库', '¥50/地区 · ¥200/全部'),
+    ('local_case', '地方案例库', '¥50/地区 · ¥200/全部'),
+    ('industry', '行业专题库', '¥80/地区 · ¥300/全部'),
+  ];
+
+  bool _hasAccess(String libraryType, String? region) {
+    return widget.libraryAccess.any(
+      (a) => a.libraryType == libraryType && (a.region == null || a.region == region),
+    );
+  }
+
+  Future<void> _showBuyDialog(String libraryType, String label) async {
+    String? region;
+    bool buyAll = false;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, set) => AlertDialog(
+          title: Text('购买 $label'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            CheckboxListTile(
+              title: const Text('购买全部地区'),
+              value: buyAll,
+              onChanged: (v) => set(() { buyAll = v!; if (buyAll) region = null; }),
+              contentPadding: EdgeInsets.zero,
+            ),
+            if (!buyAll)
+              TextField(
+                decoration: const InputDecoration(labelText: '地区（如：北京、上海）', isDense: true),
+                onChanged: (v) => region = v.trim().isEmpty ? null : v.trim(),
+              ),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('购买'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed == true) widget.onBuy(libraryType, buyAll ? null : region);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: _libs.map((lib) {
+        final (type, label, price) = lib;
+        final hasAccess = _hasAccess(type, null);
+        final accessItem = widget.libraryAccess.where((a) => a.libraryType == type).toList();
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            title: Text(label),
+            subtitle: Text(
+              hasAccess
+                  ? '已购（全部地区）到期：${accessItem.first.expiredAt}'
+                  : accessItem.isNotEmpty
+                      ? '已购地区：${accessItem.map((a) => a.region ?? '全部').join('、')}'
+                      : price,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            trailing: OutlinedButton(
+              onPressed: widget.subscribing ? null : () => _showBuyDialog(type, label),
+              child: const Text('购买'),
             ),
           ),
         );
