@@ -1,11 +1,16 @@
 import { Repository } from 'typeorm';
 import { QueryLogEntity } from '../../database/entities/query-log.entity';
 import { SubscriptionEntity } from '../../database/entities/subscription.entity';
+import { LibraryAccessEntity } from '../../database/entities/library-access.entity';
 import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { LocalStateService } from './local-state.service';
 declare class CreateSubscriptionOrderDto {
     planType: 'weekly' | 'monthly' | 'yearly';
+}
+declare class BuyLibraryAccessDto {
+    libraryType: 'local_policy' | 'local_case' | 'industry';
+    region?: string;
 }
 type UsageSnapshot = {
     groups: number;
@@ -18,9 +23,10 @@ export declare class SubscriptionsService {
     private readonly localStateService;
     private readonly subscriptionRepo;
     private readonly queryLogRepo;
+    private readonly libraryAccessRepo;
     private readonly authService;
     private readonly auditService;
-    constructor(localStateService: LocalStateService, subscriptionRepo: Repository<SubscriptionEntity>, queryLogRepo: Repository<QueryLogEntity>, authService: AuthService, auditService: AuditService);
+    constructor(localStateService: LocalStateService, subscriptionRepo: Repository<SubscriptionEntity>, queryLogRepo: Repository<QueryLogEntity>, libraryAccessRepo: Repository<LibraryAccessEntity>, authService: AuthService, auditService: AuditService);
     private readonly currentPlanId;
     private readonly trialDays;
     private readonly planPrices;
@@ -131,6 +137,13 @@ export declare class SubscriptionsService {
         activationMode: string;
         message: string;
     }>;
+    private readonly libraryAccessPrices;
+    private readonly libraryAccessLabels;
+    getActiveLibraryAccess(userId?: string): Promise<LibraryAccessEntity[]>;
+    canAccessLibrary(libraryType: string, region: string | null): Promise<boolean>;
+    buyLibraryAccess(dto: BuyLibraryAccessDto): Promise<{
+        message: string;
+    }>;
     getOverview(actualGroupCount?: number, actualPrivateDocuments?: number): Promise<{
         currentPlanId: string;
         trialEndsAt: string;
@@ -233,6 +246,16 @@ export declare class SubscriptionsService {
             monthly: string;
             yearly: string;
         };
+        libraryAccess: {
+            id: string;
+            libraryType: string;
+            region: string | null;
+            expiredAt: string;
+        }[];
+        libraryAccessPrices: Record<"local_policy" | "local_case" | "industry", {
+            region: string;
+            all: string;
+        }>;
     }>;
 }
-export { CreateSubscriptionOrderDto };
+export { CreateSubscriptionOrderDto, BuyLibraryAccessDto };

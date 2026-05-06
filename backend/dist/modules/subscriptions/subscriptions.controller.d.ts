@@ -1,7 +1,7 @@
 import { Repository } from 'typeorm';
 import { TeamMemberEntity } from '../../database/entities/team-member.entity';
 import { AuthService } from '../auth/auth.service';
-import { CreateSubscriptionOrderDto, SubscriptionsService } from './subscriptions.service';
+import { BuyLibraryAccessDto, CreateSubscriptionOrderDto, SubscriptionsService } from './subscriptions.service';
 export declare class SubscriptionsController {
     private readonly subscriptionsService;
     private readonly authService;
@@ -11,7 +11,7 @@ export declare class SubscriptionsController {
         currentPlanId: string;
         trialEndsAt: string;
         trialDays: number;
-        status: "admin-preview" | "trial" | "active" | "expired";
+        status: "active" | "admin-preview" | "trial" | "expired";
         statusLabel: string;
         latestOrder: {
             id: string;
@@ -109,9 +109,22 @@ export declare class SubscriptionsController {
             monthly: string;
             yearly: string;
         };
+        libraryAccess: {
+            id: string;
+            libraryType: string;
+            region: string | null;
+            expiredAt: string;
+        }[];
+        libraryAccessPrices: Record<"local_policy" | "local_case" | "industry", {
+            region: string;
+            all: string;
+        }>;
     }>;
     createOrder(dto: CreateSubscriptionOrderDto): Promise<{
         activationMode: string;
+        message: string;
+    }>;
+    buyLibraryAccess(dto: BuyLibraryAccessDto): Promise<{
         message: string;
     }>;
 }

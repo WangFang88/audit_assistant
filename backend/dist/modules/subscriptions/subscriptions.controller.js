@@ -33,6 +33,9 @@ let SubscriptionsController = class SubscriptionsController {
     async createOrder(dto) {
         return this.subscriptionsService.createSubscriptionOrder(dto);
     }
+    async buyLibraryAccess(dto) {
+        return this.subscriptionsService.buyLibraryAccess(dto);
+    }
 };
 exports.SubscriptionsController = SubscriptionsController;
 __decorate([
@@ -48,6 +51,13 @@ __decorate([
     __metadata("design:paramtypes", [subscriptions_service_1.CreateSubscriptionOrderDto]),
     __metadata("design:returntype", Promise)
 ], SubscriptionsController.prototype, "createOrder", null);
+__decorate([
+    (0, common_1.Post)('library-access'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [subscriptions_service_1.BuyLibraryAccessDto]),
+    __metadata("design:returntype", Promise)
+], SubscriptionsController.prototype, "buyLibraryAccess", null);
 exports.SubscriptionsController = SubscriptionsController = __decorate([
     (0, common_1.Controller)('subscriptions'),
     __param(2, (0, typeorm_1.InjectRepository)(team_member_entity_1.TeamMemberEntity)),

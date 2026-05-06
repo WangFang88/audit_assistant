@@ -13,6 +13,7 @@ const database_support_module_1 = require("../../database/database-support.modul
 const auth_module_1 = require("../auth/auth.module");
 const audit_module_1 = require("../audit/audit.module");
 const query_log_entity_1 = require("../../database/entities/query-log.entity");
+const library_access_entity_1 = require("../../database/entities/library-access.entity");
 const subscription_entity_1 = require("../../database/entities/subscription.entity");
 const team_member_entity_1 = require("../../database/entities/team-member.entity");
 const local_state_service_1 = require("./local-state.service");
@@ -23,7 +24,7 @@ let SubscriptionsModule = class SubscriptionsModule {
 exports.SubscriptionsModule = SubscriptionsModule;
 exports.SubscriptionsModule = SubscriptionsModule = __decorate([
     (0, common_1.Module)({
-        imports: [database_support_module_1.DatabaseSupportModule, audit_module_1.AuditModule, (0, common_1.forwardRef)(() => auth_module_1.AuthModule), typeorm_1.TypeOrmModule.forFeature([team_member_entity_1.TeamMemberEntity, subscription_entity_1.SubscriptionEntity, query_log_entity_1.QueryLogEntity])],
+        imports: [database_support_module_1.DatabaseSupportModule, audit_module_1.AuditModule, (0, common_1.forwardRef)(() => auth_module_1.AuthModule), typeorm_1.TypeOrmModule.forFeature([team_member_entity_1.TeamMemberEntity, subscription_entity_1.SubscriptionEntity, query_log_entity_1.QueryLogEntity, library_access_entity_1.LibraryAccessEntity])],
         controllers: [subscriptions_controller_1.SubscriptionsController],
         providers: [local_state_service_1.LocalStateService, subscriptions_service_1.SubscriptionsService],
         exports: [local_state_service_1.LocalStateService, subscriptions_service_1.SubscriptionsService],

@@ -12,13 +12,14 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateSubscriptionOrderDto = exports.SubscriptionsService = void 0;
+exports.BuyLibraryAccessDto = exports.CreateSubscriptionOrderDto = exports.SubscriptionsService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const class_validator_1 = require("class-validator");
 const query_log_entity_1 = require("../../database/entities/query-log.entity");
 const subscription_entity_1 = require("../../database/entities/subscription.entity");
+const library_access_entity_1 = require("../../database/entities/library-access.entity");
 const date_1 = require("../../utils/date");
 const audit_service_1 = require("../audit/audit.service");
 const auth_service_1 = require("../auth/auth.service");
@@ -30,11 +31,24 @@ __decorate([
     (0, class_validator_1.IsIn)(['weekly', 'monthly', 'yearly']),
     __metadata("design:type", String)
 ], CreateSubscriptionOrderDto.prototype, "planType", void 0);
+class BuyLibraryAccessDto {
+}
+exports.BuyLibraryAccessDto = BuyLibraryAccessDto;
+__decorate([
+    (0, class_validator_1.IsIn)(['local_policy', 'local_case', 'industry']),
+    __metadata("design:type", String)
+], BuyLibraryAccessDto.prototype, "libraryType", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], BuyLibraryAccessDto.prototype, "region", void 0);
 let SubscriptionsService = class SubscriptionsService {
-    constructor(localStateService, subscriptionRepo, queryLogRepo, authService, auditService) {
+    constructor(localStateService, subscriptionRepo, queryLogRepo, libraryAccessRepo, authService, auditService) {
         this.localStateService = localStateService;
         this.subscriptionRepo = subscriptionRepo;
         this.queryLogRepo = queryLogRepo;
+        this.libraryAccessRepo = libraryAccessRepo;
         this.authService = authService;
         this.auditService = auditService;
         this.currentPlanId = 'free';
@@ -105,6 +119,16 @@ let SubscriptionsService = class SubscriptionsService {
                 },
             },
         ];
+        this.libraryAccessPrices = {
+            local_policy: { region: '50.00', all: '200.00' },
+            local_case: { region: '50.00', all: '200.00' },
+            industry: { region: '80.00', all: '300.00' },
+        };
+        this.libraryAccessLabels = {
+            local_policy: '地方政策库',
+            local_case: '地方案例库',
+            industry: '行业专题库',
+        };
     }
     isAdmin() {
         return this.authService.me().role === 'admin';
@@ -293,6 +317,42 @@ let SubscriptionsService = class SubscriptionsService {
         });
         return { activationMode: 'simulation', message: `${this.getPlanLabel(dto.planType)}已模拟开通。` };
     }
+    async getActiveLibraryAccess(userId) {
+        const uid = userId ?? this.authService.me().id;
+        const now = new Date();
+        const all = await this.libraryAccessRepo.findBy({ userId: uid });
+        return all.filter((a) => a.expiredAt > now);
+    }
+    async canAccessLibrary(libraryType, region) {
+        if (this.isAdmin())
+            return true;
+        if (libraryType === 'regulation')
+            return true;
+        const active = await this.getActiveLibraryAccess();
+        return active.some((a) => a.libraryType === libraryType && (a.region === null || a.region === region));
+    }
+    async buyLibraryAccess(dto) {
+        if (this.isAdmin())
+            throw new common_1.BadRequestException('管理员无需购买');
+        const user = this.authService.me();
+        const prices = this.libraryAccessPrices[dto.libraryType];
+        const amount = dto.region ? prices.region : prices.all;
+        const now = new Date();
+        const expiredAt = this.addDays(now, 365);
+        const id = `la-${Date.now()}`;
+        await this.libraryAccessRepo.save(this.libraryAccessRepo.create({ id, userId: user.id, libraryType: dto.libraryType, region: dto.region ?? null, amount, paidAt: now, expiredAt }));
+        const label = `${this.libraryAccessLabels[dto.libraryType]}${dto.region ? `（${dto.region}）` : '（全部地区）'}`;
+        await this.auditService.recordEvent({
+            eventType: 'subscription.activate',
+            actorUserId: user.id,
+            actorName: user.name,
+            targetType: 'library_access',
+            targetId: id,
+            summary: `购买了${label}访问权限`,
+            detail: { libraryType: dto.libraryType, region: dto.region ?? null, amount, activationMode: 'simulation' },
+        });
+        return { message: `${label}访问权限已开通（1年）。` };
+    }
     async getOverview(actualGroupCount, actualPrivateDocuments) {
         const plan = await this.getCurrentPlan();
         const latestOrder = await this.getLatestSubscriptionOrder();
@@ -308,6 +368,7 @@ let SubscriptionsService = class SubscriptionsService {
             expiredAt: (0, date_1.formatCst)(o.expiredAt, false),
         });
         const allOrders = await this.getUserSubscriptionOrders();
+        const activeLibraryAccess = await this.getActiveLibraryAccess();
         return {
             currentPlanId: plan.id,
             trialEndsAt: this.getCurrentUserTrialEndsAt(),
@@ -337,6 +398,13 @@ let SubscriptionsService = class SubscriptionsService {
             ],
             plans: this.plans,
             pricing: { weekly: '¥70 / 周', monthly: '¥200 / 月', yearly: '¥2000 / 年' },
+            libraryAccess: activeLibraryAccess.map((a) => ({
+                id: a.id,
+                libraryType: a.libraryType,
+                region: a.region,
+                expiredAt: (0, date_1.formatCst)(a.expiredAt, false),
+            })),
+            libraryAccessPrices: this.libraryAccessPrices,
         };
     }
 };
@@ -345,8 +413,10 @@ exports.SubscriptionsService = SubscriptionsService = __decorate([
     (0, common_1.Injectable)(),
     __param(1, (0, typeorm_1.InjectRepository)(subscription_entity_1.SubscriptionEntity)),
     __param(2, (0, typeorm_1.InjectRepository)(query_log_entity_1.QueryLogEntity)),
-    __param(3, (0, common_1.Inject)((0, common_1.forwardRef)(() => auth_service_1.AuthService))),
+    __param(3, (0, typeorm_1.InjectRepository)(library_access_entity_1.LibraryAccessEntity)),
+    __param(4, (0, common_1.Inject)((0, common_1.forwardRef)(() => auth_service_1.AuthService))),
     __metadata("design:paramtypes", [local_state_service_1.LocalStateService,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         auth_service_1.AuthService,

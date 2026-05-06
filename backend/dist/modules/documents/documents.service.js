@@ -688,10 +688,9 @@ let DocumentsService = class DocumentsService {
             }
         }
         if (dto.libraryType === 'private') {
-            if (!dto.groupId) {
-                throw new common_1.BadRequestException('私有库导入必须指定项目组');
+            if (dto.groupId) {
+                await this.groupsService.assertIsLeader(dto.groupId);
             }
-            await this.groupsService.assertIsLeader(dto.groupId);
             const currentPrivateDocuments = await this.countVisiblePrivateDocuments();
             await this.subscriptionsService.assertCanImportPrivateDocument(currentPrivateDocuments);
         }

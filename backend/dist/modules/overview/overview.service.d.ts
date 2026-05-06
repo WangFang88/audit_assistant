@@ -200,11 +200,21 @@ export declare class OverviewService {
                 monthly: string;
                 yearly: string;
             };
+            libraryAccess: {
+                id: string;
+                libraryType: string;
+                region: string | null;
+                expiredAt: string;
+            }[];
+            libraryAccessPrices: Record<"local_policy" | "local_case" | "industry", {
+                region: string;
+                all: string;
+            }>;
         };
         recentAuditEvents: import("../../database/repositories/audit-event.repository").AuditEventSnapshot[];
         conversations: {
             id: string;
-            type: "agent" | "group" | "direct";
+            type: "group" | "direct" | "agent";
             title: string;
             groupId: string | null;
             isTeamAgent: boolean;

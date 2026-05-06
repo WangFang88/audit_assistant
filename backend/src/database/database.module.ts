@@ -9,6 +9,7 @@ import { DocumentExtractionJobEntity } from './entities/document-extraction-job.
 import { MessageEntity } from './entities/message.entity';
 import { QueryLogEntity } from './entities/query-log.entity';
 import { SubscriptionEntity } from './entities/subscription.entity';
+import { LibraryAccessEntity } from './entities/library-access.entity';
 import { TeamAgentEntity } from './entities/team-agent.entity';
 import { TeamMemberEntity } from './entities/team-member.entity';
 import { TeamEntity } from './entities/team.entity';
@@ -28,6 +29,7 @@ const entities = [
   MessageEntity,
   SubscriptionEntity,
   QueryLogEntity,
+  LibraryAccessEntity,
 ];
 
 @Module({
