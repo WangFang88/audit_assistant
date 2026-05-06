@@ -3566,7 +3566,7 @@ String get _activeConversationType {
       const SizedBox(height: 12),
       _LibraryAccessSection(
         libraryAccess: s.libraryAccess,
-        documents: _documents,
+        apiService: widget.apiService,
         subscribing: _subscribing,
         onBuy: _buyLibraryAccess,
       ),
@@ -4001,9 +4001,9 @@ class _SubscriptionPlanRow extends StatelessWidget {
 const _kRegions = ['北京', '上海', '广东', '浙江', '江苏', '四川', '湖北', '湖南', '山东', '河南', '河北', '陕西', '福建', '安徽', '江西', '辽宁', '吉林', '黑龙江', '云南', '贵州', '广西', '内蒙古', '新疆', '西藏', '甘肃', '青海', '宁夏', '海南', '重庆', '天津'];
 
 class _LibraryAccessSection extends StatefulWidget {
-  const _LibraryAccessSection({required this.libraryAccess, required this.documents, required this.subscribing, required this.onBuy});
+  const _LibraryAccessSection({required this.libraryAccess, required this.apiService, required this.subscribing, required this.onBuy});
   final List<LibraryAccessItem> libraryAccess;
-  final List<KnowledgeDocument> documents;
+  final ApiService apiService;
   final bool subscribing;
   final void Function(String libraryType, String? region) onBuy;
 
@@ -4034,11 +4034,11 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
     bool buyAll = false;
     final isIndustry = libraryType == 'industry';
     final optionLabel = isIndustry ? '行业' : '地区';
-    final availableOptions = widget.documents
-        .where((d) => d.libraryType == _libTypeLabel(libraryType) && (d.region?.isNotEmpty ?? false))
-        .map((d) => d.region!)
-        .toSet()
-        .toList();
+    List<String> availableOptions = [];
+    try {
+      final regions = await widget.apiService.getLibraryRegions();
+      availableOptions = regions[libraryType] ?? [];
+    } catch (_) {}
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(

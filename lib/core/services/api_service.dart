@@ -247,6 +247,14 @@ class ApiService {
     _decodeMap(response);
   }
 
+  Future<Map<String, List<String>>> getLibraryRegions() async {
+    final response = await _requestWithRefresh(
+      (headers) => _client.get(Uri.parse('$_baseUrl/documents/library-regions'), headers: headers),
+    );
+    final json = _decodeMap(response);
+    return json.map((k, v) => MapEntry(k, (v as List).cast<String>()));
+  }
+
   Future<void> buyLibraryAccess({required String libraryType, String? region}) async {
     final response = await _requestWithRefresh(
       (headers) => _client.post(

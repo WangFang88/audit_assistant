@@ -11,6 +11,11 @@ export class DocumentsController {
     return this.documentsService.listDocuments(groupId);
   }
 
+  @Get('library-regions')
+  async getLibraryRegions() {
+    return this.documentsService.getLibraryRegions();
+  }
+
   @Get('extract-jobs')
   async listExtractionJobs(@Query('groupId') groupId?: string) {
     return this.documentsService.listExtractionJobs(groupId);

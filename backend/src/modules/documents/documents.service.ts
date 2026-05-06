@@ -412,6 +412,20 @@ export class DocumentsService {
     });
   }
 
+  async getLibraryRegions(): Promise<Record<string, string[]>> {
+    const entities = await this.persistedDocumentRepository.find({
+      where: { deletedAt: IsNull() },
+      select: ['libraryType', 'region'],
+    });
+    const result: Record<string, Set<string>> = {};
+    for (const e of entities) {
+      if (e.region && ['local_policy', 'local_case', 'industry'].includes(e.libraryType)) {
+        (result[e.libraryType] ??= new Set()).add(e.region);
+      }
+    }
+    return Object.fromEntries(Object.entries(result).map(([k, v]) => [k, [...v]]));
+  }
+
   async countPrivateDocuments(groupIds: string[]): Promise<number> {
     if (groupIds.length === 0) return 0;
     return this.persistedDocumentRepository.countBy({ libraryType: 'private', teamId: In(groupIds), deletedAt: IsNull() });
