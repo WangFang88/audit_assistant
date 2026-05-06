@@ -2163,11 +2163,11 @@ String get _activeConversationType {
           // 品牌头部
           _buildHeroSection(context, user, subscription, compact: true),
           const SizedBox(height: 16),
-          // 大输入框
-          _buildMainSearchBox(context, activeContext, compact: true),
-          const SizedBox(height: 20),
           // 四个功能卡片 2x2
           _buildFeatureCards(context, compact: true),
+          const SizedBox(height: 20),
+          // 大输入框
+          _buildMainSearchBox(context, activeContext, compact: true),
           const SizedBox(height: 20),
           // 项目信息
           _buildSidePanel(context, groups, subscription, compact: true),
@@ -2200,9 +2200,9 @@ String get _activeConversationType {
               children: [
                 _buildHeroSection(context, user, subscription, compact: false),
                 const SizedBox(height: 20),
-                _buildMainSearchBox(context, activeContext, compact: false),
-                const SizedBox(height: 20),
                 _buildFeatureCards(context, compact: false),
+                const SizedBox(height: 20),
+                _buildMainSearchBox(context, activeContext, compact: false),
                 const SizedBox(height: 24),
                 _buildDocumentPanel(documents, extractJobs),
               ],
