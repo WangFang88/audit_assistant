@@ -16,8 +16,8 @@ class CreateSubscriptionOrderDto {
 }
 
 class BuyLibraryAccessDto {
-  @IsIn(['local_policy', 'local_case', 'industry'])
-  libraryType!: 'local_policy' | 'local_case' | 'industry';
+  @IsIn(['local_policy', 'local_case', 'industry', 'national_case'])
+  libraryType!: 'local_policy' | 'local_case' | 'industry' | 'national_case';
 
   // null = 全部地区，否则指定地区如 'beijing'
   @IsOptional()
@@ -333,10 +333,11 @@ export class SubscriptionsService {
     return { activationMode: 'simulation', message: `${this.getPlanLabel(dto.planType)}已模拟开通。` };
   }
 
-  private readonly libraryAccessPrices: Record<'local_policy' | 'local_case' | 'industry', { region: string; all: string }> = {
-    local_policy: { region: '50.00', all: '200.00' },
-    local_case:   { region: '50.00', all: '200.00' },
-    industry:     { region: '80.00', all: '300.00' },
+  private readonly libraryAccessPrices: Record<'local_policy' | 'local_case' | 'industry' | 'national_case', { region: string; all: string }> = {
+    local_policy:  { region: '50.00',  all: '200.00' },
+    local_case:    { region: '50.00',  all: '200.00' },
+    industry:      { region: '80.00',  all: '300.00' },
+    national_case: { region: '100.00', all: '100.00' },
   };
 
   private readonly libraryAccessLabels: Record<string, string> = {

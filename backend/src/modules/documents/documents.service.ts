@@ -397,7 +397,7 @@ export class DocumentsService {
 
     const canAccess = (libraryType: string, region: string | null) => {
       if (activeAccess === null) return true;
-      if (libraryType === 'regulation' || libraryType === 'national_case') return true;
+      if (libraryType === 'regulation') return true;
       if (libraryType === 'private') return false;
       return activeAccess.some(
         (a) => a.libraryType === libraryType && (a.region === null || a.region === region),
@@ -488,7 +488,7 @@ export class DocumentsService {
 
     const canAccess = (libraryType: string, region: string | null) => {
       if (activeAccess === null) return true; // admin
-      if (libraryType === 'regulation' || libraryType === 'national_case') return true;
+      if (libraryType === 'regulation') return true;
       if (libraryType === 'private') return false; // handled by groupId filter below
       return activeAccess.some(
         (a) => a.libraryType === libraryType && (a.region === null || a.region === region),
