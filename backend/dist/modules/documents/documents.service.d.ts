@@ -84,6 +84,7 @@ export declare class DocumentsService {
     private buildImportedChunkId;
     private ensurePersistedDocumentSeedData;
     listDocuments(groupId?: string): Promise<DocumentRecord[]>;
+    getLibraryRegions(): Promise<Record<string, string[]>>;
     countPrivateDocuments(groupIds: string[]): Promise<number>;
     countVisiblePrivateDocuments(): Promise<number>;
     listExtractionJobs(groupId?: string): Promise<ExtractJobRecord[]>;

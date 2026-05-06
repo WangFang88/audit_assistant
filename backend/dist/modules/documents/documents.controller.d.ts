@@ -22,6 +22,7 @@ export declare class DocumentsController {
         vectorStoreTarget: "pgvector";
         pipelineStage: "indexed" | "extracting" | "ocr" | "chunking" | "vectorizing" | "queued";
     }[]>;
+    getLibraryRegions(): Promise<Record<string, string[]>>;
     listExtractionJobs(groupId?: string): Promise<{
         id: string;
         documentId: string;

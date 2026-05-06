@@ -75,7 +75,7 @@ export class QueryService {
 
     const scopeLibraryTypes: Record<string, LibraryType[]> = {
       regulation: ['regulation', 'local_policy'],
-      material:   ['private', 'industry'],
+      material:   ['private', 'industry', 'local_policy', 'local_case'],
       case:       ['national_case', 'local_case'],
       risk:       ['regulation', 'local_policy', 'national_case', 'local_case', 'private', 'industry'],
     };

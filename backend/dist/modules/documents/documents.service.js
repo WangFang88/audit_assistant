@@ -361,6 +361,19 @@ let DocumentsService = class DocumentsService {
             return canAccess(document.libraryType, document.region ?? null);
         });
     }
+    async getLibraryRegions() {
+        const entities = await this.persistedDocumentRepository.find({
+            where: { deletedAt: (0, typeorm_2.IsNull)() },
+            select: ['libraryType', 'region'],
+        });
+        const result = {};
+        for (const e of entities) {
+            if (e.region && ['local_policy', 'local_case', 'industry'].includes(e.libraryType)) {
+                (result[e.libraryType] ??= new Set()).add(e.region);
+            }
+        }
+        return Object.fromEntries(Object.entries(result).map(([k, v]) => [k, [...v]]));
+    }
     async countPrivateDocuments(groupIds) {
         if (groupIds.length === 0)
             return 0;

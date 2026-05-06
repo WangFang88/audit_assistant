@@ -23,6 +23,9 @@ let DocumentsController = class DocumentsController {
     async listDocuments(groupId) {
         return this.documentsService.listDocuments(groupId);
     }
+    async getLibraryRegions() {
+        return this.documentsService.getLibraryRegions();
+    }
     async listExtractionJobs(groupId) {
         return this.documentsService.listExtractionJobs(groupId);
     }
@@ -47,6 +50,12 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], DocumentsController.prototype, "listDocuments", null);
+__decorate([
+    (0, common_1.Get)('library-regions'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], DocumentsController.prototype, "getLibraryRegions", null);
 __decorate([
     (0, common_1.Get)('extract-jobs'),
     __param(0, (0, common_1.Query)('groupId')),
