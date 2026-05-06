@@ -2370,7 +2370,7 @@ String get _activeConversationType {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          e.summary,
+                          '${e.actorName} · ${e.summary}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall,
