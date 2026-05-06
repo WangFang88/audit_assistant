@@ -18,6 +18,7 @@ const document_extraction_job_entity_1 = require("./entities/document-extraction
 const message_entity_1 = require("./entities/message.entity");
 const query_log_entity_1 = require("./entities/query-log.entity");
 const subscription_entity_1 = require("./entities/subscription.entity");
+const library_access_entity_1 = require("./entities/library-access.entity");
 const team_agent_entity_1 = require("./entities/team-agent.entity");
 const team_member_entity_1 = require("./entities/team-member.entity");
 const team_entity_1 = require("./entities/team.entity");
@@ -36,6 +37,7 @@ const entities = [
     message_entity_1.MessageEntity,
     subscription_entity_1.SubscriptionEntity,
     query_log_entity_1.QueryLogEntity,
+    library_access_entity_1.LibraryAccessEntity,
 ];
 let DatabaseModule = class DatabaseModule {
 };

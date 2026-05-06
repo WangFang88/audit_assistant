@@ -3946,6 +3946,7 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
   Future<void> _showBuyDialog(String libraryType, String label) async {
     String? region;
     bool buyAll = false;
+    const regions = ['北京', '上海', '广东', '浙江', '江苏', '四川', '湖北', '湖南', '山东', '河南', '河北', '陕西', '福建', '安徽', '江西', '辽宁', '吉林', '黑龙江', '云南', '贵州', '广西', '内蒙古', '新疆', '西藏', '甘肃', '青海', '宁夏', '海南', '重庆', '天津'];
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -3959,17 +3960,22 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
               contentPadding: EdgeInsets.zero,
             ),
             if (!buyAll)
-              TextField(
-                decoration: const InputDecoration(labelText: '地区（如：北京、上海）', isDense: true),
-                onChanged: (v) => region = v.trim().isEmpty ? null : v.trim(),
+              Autocomplete<String>(
+                optionsBuilder: (v) => v.text.isEmpty
+                    ? regions
+                    : regions.where((r) => r.contains(v.text)),
+                onSelected: (v) => region = v,
+                fieldViewBuilder: (ctx2, ctrl, fn, _) => TextField(
+                  controller: ctrl,
+                  focusNode: fn,
+                  decoration: const InputDecoration(labelText: '选择地区', isDense: true),
+                  onChanged: (v) => region = v.trim().isEmpty ? null : v.trim(),
+                ),
               ),
           ]),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('购买'),
-            ),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('购买')),
           ],
         ),
       ),
