@@ -1869,7 +1869,7 @@ String get _activeConversationType {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: libraryType,
+                    initialValue: libraryType,
                     items: [
                       if (_isAdmin) ...[
                         const DropdownMenuItem(value: 'regulation', child: Text('法规库')),
@@ -1890,7 +1890,7 @@ String get _activeConversationType {
                   if (libraryType == 'private' && _activeGroupId != null) ...[
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: privateScope,
+                      initialValue: privateScope,
                       decoration: const InputDecoration(labelText: '私有库范围'),
                       items: const [
                         DropdownMenuItem(value: 'personal', child: Text('个人私有库（仅自己可见）')),
