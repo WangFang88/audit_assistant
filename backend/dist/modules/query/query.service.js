@@ -40,6 +40,11 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], QueryRequestDto.prototype, "agentId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['regulation', 'material', 'case', 'risk']),
+    __metadata("design:type", String)
+], QueryRequestDto.prototype, "queryScope", void 0);
 let QueryService = class QueryService {
     constructor(authService, documentsService, embeddingService, groupsService, subscriptionsService, teamAgentsService, qwenService, auditService) {
         this.authService = authService;
@@ -66,6 +71,16 @@ let QueryService = class QueryService {
         const group = resolvedGroupId ? await this.groupsService.getGroupById(resolvedGroupId) : null;
         const teamAgent = resolvedGroupId ? await this.teamAgentsService.getVisibleAgentByGroupId(resolvedGroupId) : null;
         const readyChunks = await this.documentsService.getReadyChunks(resolvedGroupId);
+        const scopeLibraryTypes = {
+            regulation: ['regulation', 'local_policy'],
+            material: ['private', 'industry'],
+            case: ['national_case', 'local_case'],
+            risk: ['regulation', 'local_policy', 'national_case', 'local_case', 'private', 'industry'],
+        };
+        const allowedTypes = dto.queryScope ? scopeLibraryTypes[dto.queryScope] : null;
+        const filteredChunks = allowedTypes
+            ? readyChunks.filter((c) => allowedTypes.includes(c.libraryType))
+            : readyChunks;
         const scopeSummary = await this.documentsService.getLibraryScopeSummary(resolvedGroupId);
         const lowerQuestion = dto.question.toLowerCase();
         const tokens = Array.from(new Set(lowerQuestion
@@ -73,7 +88,7 @@ let QueryService = class QueryService {
             .map((token) => token.trim())
             .filter((token) => token.length >= 2)));
         const questionEmbedding = await this.embeddingService.embed(dto.question);
-        const candidates = readyChunks
+        const candidates = filteredChunks
             .map((chunk) => {
             const keywordHits = chunk.keywords.filter((kw) => lowerQuestion.includes(kw.toLowerCase())).length;
             const contentHits = tokens.filter((t) => chunk.content.includes(t)).length;
@@ -186,7 +201,7 @@ let QueryService = class QueryService {
             retrievalStats: {
                 queryMode,
                 tokenCount: tokens.length,
-                candidateChunks: readyChunks.length,
+                candidateChunks: filteredChunks.length,
                 returnedCitations: candidates.length,
                 publicLibraryHits: publicHits,
                 privateLibraryHits: privateHits,

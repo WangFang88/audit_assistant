@@ -11,6 +11,7 @@ declare class QueryRequestDto {
     question: string;
     groupId?: string;
     agentId?: string;
+    queryScope?: 'regulation' | 'material' | 'case' | 'risk';
 }
 type CitationRecord = {
     documentId: string;

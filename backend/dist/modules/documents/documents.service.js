@@ -342,11 +342,23 @@ let DocumentsService = class DocumentsService {
             where: { deletedAt: (0, typeorm_2.IsNull)() },
             order: { uploadedAt: 'ASC' },
         });
-        return entities.map((entity) => this.toDocumentRecord(entity)).filter((document) => {
-            if ((0, library_type_1.isPublicLibrary)(document.libraryType)) {
+        const activeAccess = this.authService.isAdmin()
+            ? null
+            : await this.subscriptionsService.getActiveLibraryAccess();
+        const canAccess = (libraryType, region) => {
+            if (activeAccess === null)
                 return true;
+            if (libraryType === 'regulation' || libraryType === 'national_case')
+                return true;
+            if (libraryType === 'private')
+                return false;
+            return activeAccess.some((a) => a.libraryType === libraryType && (a.region === null || a.region === region));
+        };
+        return entities.map((entity) => this.toDocumentRecord(entity)).filter((document) => {
+            if (!(0, library_type_1.isPublicLibrary)(document.libraryType)) {
+                return groupId != null && document.groupId === groupId;
             }
-            return groupId != null && document.groupId === groupId;
+            return canAccess(document.libraryType, document.region ?? null);
         });
     }
     async countPrivateDocuments(groupIds) {
@@ -397,14 +409,25 @@ let DocumentsService = class DocumentsService {
         const entities = await this.persistedChunkRepository.find({
             order: { chunkIndex: 'ASC', createdAt: 'ASC' },
         });
-        return entities.map((entity) => this.toChunkRecord(entity)).filter((chunk) => {
-            if (chunk.indexStatus !== 'ready') {
-                return false;
-            }
-            if ((0, library_type_1.isPublicLibrary)(chunk.libraryType)) {
+        const activeAccess = this.authService.isAdmin()
+            ? null
+            : await this.subscriptionsService.getActiveLibraryAccess();
+        const canAccess = (libraryType, region) => {
+            if (activeAccess === null)
                 return true;
+            if (libraryType === 'regulation' || libraryType === 'national_case')
+                return true;
+            if (libraryType === 'private')
+                return false;
+            return activeAccess.some((a) => a.libraryType === libraryType && (a.region === null || a.region === region));
+        };
+        return entities.map((entity) => this.toChunkRecord(entity)).filter((chunk) => {
+            if (chunk.indexStatus !== 'ready')
+                return false;
+            if (!(0, library_type_1.isPublicLibrary)(chunk.libraryType)) {
+                return groupId != null && chunk.groupId === groupId;
             }
-            return groupId != null && chunk.groupId === groupId;
+            return canAccess(chunk.libraryType, chunk.region ?? null);
         });
     }
     async listDocumentChunks(documentId) {

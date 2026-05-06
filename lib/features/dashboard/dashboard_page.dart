@@ -2306,6 +2306,53 @@ String get _activeConversationType {
           label: Text(_searching ? '检索中…' : '开始审计问答'),
           style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
         ),
+        if (_error != null) ...[
+          const SizedBox(height: 12),
+          Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13)),
+        ],
+        if (_result != null) ...[
+          const SizedBox(height: 16),
+          _buildQueryResult(context, _result!),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildQueryResult(BuildContext context, QueryResult result) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (result.answer.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(result.answer, style: const TextStyle(fontSize: 14)),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (result.citations.isNotEmpty) ...[
+          Text('参考来源（${result.citations.length}）', style: theme.textTheme.labelMedium),
+          const SizedBox(height: 6),
+          ...result.citations.map((c) => Card(
+            margin: const EdgeInsets.only(bottom: 6),
+            child: ListTile(
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              title: Text(c.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              subtitle: Text(
+                '${c.libraryType}${c.chapterTitle.isNotEmpty ? ' · ${c.chapterTitle}' : ''}${c.articleRef.isNotEmpty ? ' ${c.articleRef}' : ''}\n${c.matchedChunk}',
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12),
+              ),
+              trailing: Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.primary, fontSize: 12)),
+            ),
+          )),
+        ],
       ],
     );
   }
