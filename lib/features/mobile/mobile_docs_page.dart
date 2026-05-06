@@ -43,6 +43,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
   Future<void> _showUploadDialog() async {
     final titleController = TextEditingController();
     String libraryType = widget.isAdmin ? 'regulation' : 'private';
+    String privateScope = 'group';
     String? region;
     PlatformFile? selectedFile;
 
@@ -80,6 +81,23 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
                 ),
               ),
             ),
+            if (libraryType == 'private' && widget.groupId != null) ...[
+              const SizedBox(height: 12),
+              InputDecorator(
+                decoration: const InputDecoration(labelText: '私有库范围', isDense: true),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: privateScope,
+                    isDense: true,
+                    items: const [
+                      DropdownMenuItem(value: 'personal', child: Text('个人私有库')),
+                      DropdownMenuItem(value: 'group', child: Text('项目组私有库')),
+                    ],
+                    onChanged: (v) => setDialogState(() => privateScope = v!),
+                  ),
+                ),
+              ),
+            ],
             if (libraryType == 'local_policy' || libraryType == 'local_case') ...[
               const SizedBox(height: 12),
               TextField(
@@ -122,7 +140,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
         libraryType: libraryType,
         file: selectedFile!,
         region: region,
-        groupId: libraryType == 'private' ? widget.groupId : null,
+        groupId: libraryType == 'private' && privateScope == 'group' ? widget.groupId : null,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.notes)));

@@ -1783,6 +1783,7 @@ String get _activeConversationType {
     final titleController = TextEditingController();
     final rawTextController = TextEditingController();
     String libraryType = _isAdmin || _activeGroupId == null ? 'regulation' : 'private';
+    String privateScope = 'group'; // 'personal' | 'group'
     String? region;
     PlatformFile? selectedFile;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -1867,6 +1868,18 @@ String get _activeConversationType {
                     }),
                     decoration: const InputDecoration(labelText: '入库范围'),
                   ),
+                  if (libraryType == 'private' && _activeGroupId != null) ...[
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: privateScope,
+                      decoration: const InputDecoration(labelText: '私有库范围'),
+                      items: const [
+                        DropdownMenuItem(value: 'personal', child: Text('个人私有库（仅自己可见）')),
+                        DropdownMenuItem(value: 'group', child: Text('项目组私有库（组内成员可检索）')),
+                      ],
+                      onChanged: (v) => setDialogState(() => privateScope = v ?? privateScope),
+                    ),
+                  ],
                   if (libraryType == 'local_policy' || libraryType == 'local_case') ...[
                     const SizedBox(height: 12),
                     TextField(
@@ -1920,7 +1933,7 @@ String get _activeConversationType {
         file: selectedFile!,
         region: region,
         rawText: rawTextController.text.trim().isEmpty ? null : rawTextController.text.trim(),
-        groupId: libraryType == 'private' ? _activeGroupId : null,
+        groupId: libraryType == 'private' && privateScope == 'group' ? _activeGroupId : null,
       );
       if (!mounted) {
         return;
