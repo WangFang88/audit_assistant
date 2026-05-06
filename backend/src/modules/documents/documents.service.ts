@@ -391,11 +391,24 @@ export class DocumentsService {
       order: { uploadedAt: 'ASC' },
     });
 
+    const activeAccess = this.authService.isAdmin()
+      ? null
+      : await this.subscriptionsService.getActiveLibraryAccess();
+
+    const canAccess = (libraryType: string, region: string | null) => {
+      if (activeAccess === null) return true;
+      if (libraryType === 'regulation' || libraryType === 'national_case') return true;
+      if (libraryType === 'private') return false;
+      return activeAccess.some(
+        (a) => a.libraryType === libraryType && (a.region === null || a.region === region),
+      );
+    };
+
     return entities.map((entity) => this.toDocumentRecord(entity)).filter((document) => {
-      if (isPublicLibrary(document.libraryType)) {
-        return true;
+      if (!isPublicLibrary(document.libraryType)) {
+        return groupId != null && document.groupId === groupId;
       }
-      return groupId != null && document.groupId === groupId;
+      return canAccess(document.libraryType, document.region ?? null);
     });
   }
 
