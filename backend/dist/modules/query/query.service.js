@@ -73,7 +73,7 @@ let QueryService = class QueryService {
         const readyChunks = await this.documentsService.getReadyChunks(resolvedGroupId);
         const scopeLibraryTypes = {
             regulation: ['regulation', 'local_policy'],
-            material: ['private', 'industry'],
+            material: ['private', 'industry', 'local_policy', 'local_case'],
             case: ['national_case', 'local_case'],
             risk: ['regulation', 'local_policy', 'national_case', 'local_case', 'private', 'industry'],
         };
