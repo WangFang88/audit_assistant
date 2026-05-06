@@ -3981,7 +3981,9 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
   Future<void> _showBuyDialog(String libraryType, String label) async {
     String? region;
     bool buyAll = false;
-    final availableRegions = widget.documents
+    final isIndustry = libraryType == 'industry';
+    final optionLabel = isIndustry ? '行业' : '地区';
+    final availableOptions = widget.documents
         .where((d) => d.libraryType == _libTypeLabel(libraryType) && (d.region?.isNotEmpty ?? false))
         .map((d) => d.region!)
         .toSet()
@@ -3993,7 +3995,7 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
           title: Text('购买 $label'),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             CheckboxListTile(
-              title: const Text('购买全部地区'),
+              title: Text('购买全部$optionLabel'),
               value: buyAll,
               onChanged: (v) => set(() { buyAll = v!; if (buyAll) region = null; }),
               contentPadding: EdgeInsets.zero,
@@ -4001,13 +4003,13 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
             if (!buyAll)
               Autocomplete<String>(
                 optionsBuilder: (v) => v.text.isEmpty
-                    ? availableRegions
-                    : availableRegions.where((r) => r.contains(v.text)),
+                    ? availableOptions
+                    : availableOptions.where((r) => r.contains(v.text)),
                 onSelected: (v) => region = v,
                 fieldViewBuilder: (ctx2, ctrl, fn, _) => TextField(
                   controller: ctrl,
                   focusNode: fn,
-                  decoration: const InputDecoration(labelText: '选择地区', isDense: true),
+                  decoration: InputDecoration(labelText: '选择$optionLabel', isDense: true),
                   onChanged: (v) => region = v.trim().isEmpty ? null : v.trim(),
                 ),
               ),
