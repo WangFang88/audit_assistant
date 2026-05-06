@@ -111,6 +111,26 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
                 ),
               ),
             ],
+            if (libraryType == 'industry') ...[
+              const SizedBox(height: 12),
+              Autocomplete<String>(
+                optionsBuilder: (v) {
+                  final history = _docs
+                      .where((d) => d.libraryType == '行业专题库' && (d.region?.isNotEmpty ?? false))
+                      .map((d) => d.region!)
+                      .toSet()
+                      .toList();
+                  return v.text.isEmpty ? history : history.where((r) => r.contains(v.text));
+                },
+                onSelected: (v) => setDialogState(() => region = v),
+                fieldViewBuilder: (ctx2, ctrl, fn, _) => TextField(
+                  controller: ctrl,
+                  focusNode: fn,
+                  decoration: const InputDecoration(labelText: '行业（可选，如：医疗、建筑）', isDense: true),
+                  onChanged: (v) => region = v.trim().isEmpty ? null : v.trim(),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () async {

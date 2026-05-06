@@ -1912,6 +1912,26 @@ String get _activeConversationType {
                       ),
                     ),
                   ],
+                  if (libraryType == 'industry') ...[
+                    const SizedBox(height: 12),
+                    Autocomplete<String>(
+                      optionsBuilder: (v) {
+                        final history = _documents
+                            .where((d) => d.libraryType == '行业专题库' && (d.region?.isNotEmpty ?? false))
+                            .map((d) => d.region!)
+                            .toSet()
+                            .toList();
+                        return v.text.isEmpty ? history : history.where((r) => r.contains(v.text));
+                      },
+                      onSelected: (v) => setDialogState(() => region = v),
+                      fieldViewBuilder: (ctx2, ctrl, fn, _) => TextField(
+                        controller: ctrl,
+                        focusNode: fn,
+                        decoration: const InputDecoration(labelText: '行业（可选，如：医疗、建筑）'),
+                        onChanged: (v) => region = v.trim().isEmpty ? null : v.trim(),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   TextField(
                     controller: rawTextController,

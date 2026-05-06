@@ -108,6 +108,7 @@ class KnowledgeDocument {
     required this.pipelineStage,
     required this.sourcePath,
     required this.uploadedAt,
+    this.region,
   });
 
   final String id;
@@ -124,6 +125,7 @@ class KnowledgeDocument {
   final String pipelineStage;
   final String sourcePath;
   final String uploadedAt;
+  final String? region;
 
   factory KnowledgeDocument.fromJson(Map<String, dynamic> json) {
     return KnowledgeDocument(
@@ -141,6 +143,7 @@ class KnowledgeDocument {
       pipelineStage: _mapPipelineStage(json['pipelineStage'] as String? ?? ''),
       sourcePath: json['sourcePath'] as String? ?? '',
       uploadedAt: json['uploadedAt'] as String? ?? '',
+      region: json['region'] as String?,
     );
   }
 }
