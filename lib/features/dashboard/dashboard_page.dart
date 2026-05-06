@@ -3516,6 +3516,7 @@ String get _activeConversationType {
       const SizedBox(height: 12),
       _LibraryAccessSection(
         libraryAccess: s.libraryAccess,
+        documents: _documents,
         subscribing: _subscribing,
         onBuy: _buyLibraryAccess,
       ),
@@ -3949,8 +3950,9 @@ class _SubscriptionPlanRow extends StatelessWidget {
 const _kRegions = ['北京', '上海', '广东', '浙江', '江苏', '四川', '湖北', '湖南', '山东', '河南', '河北', '陕西', '福建', '安徽', '江西', '辽宁', '吉林', '黑龙江', '云南', '贵州', '广西', '内蒙古', '新疆', '西藏', '甘肃', '青海', '宁夏', '海南', '重庆', '天津'];
 
 class _LibraryAccessSection extends StatefulWidget {
-  const _LibraryAccessSection({required this.libraryAccess, required this.subscribing, required this.onBuy});
+  const _LibraryAccessSection({required this.libraryAccess, required this.documents, required this.subscribing, required this.onBuy});
   final List<LibraryAccessItem> libraryAccess;
+  final List<KnowledgeDocument> documents;
   final bool subscribing;
   final void Function(String libraryType, String? region) onBuy;
 
@@ -3965,6 +3967,11 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
     ('industry', '行业专题库', '¥80/地区 · ¥300/全部'),
   ];
 
+  String _libTypeLabel(String type) {
+    const map = {'local_policy': '地方政策库', 'local_case': '地方案例库', 'industry': '行业专题库'};
+    return map[type] ?? type;
+  }
+
   bool _hasAccess(String libraryType, String? region) {
     return widget.libraryAccess.any(
       (a) => a.libraryType == libraryType && (a.region == null || a.region == region),
@@ -3974,6 +3981,11 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
   Future<void> _showBuyDialog(String libraryType, String label) async {
     String? region;
     bool buyAll = false;
+    final availableRegions = widget.documents
+        .where((d) => d.libraryType == _libTypeLabel(libraryType) && (d.region?.isNotEmpty ?? false))
+        .map((d) => d.region!)
+        .toSet()
+        .toList();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -3989,8 +4001,8 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
             if (!buyAll)
               Autocomplete<String>(
                 optionsBuilder: (v) => v.text.isEmpty
-                    ? _kRegions
-                    : _kRegions.where((r) => r.contains(v.text)),
+                    ? availableRegions
+                    : availableRegions.where((r) => r.contains(v.text)),
                 onSelected: (v) => region = v,
                 fieldViewBuilder: (ctx2, ctrl, fn, _) => TextField(
                   controller: ctrl,
