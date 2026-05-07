@@ -86,6 +86,9 @@ class _MobileHomePageState extends State<MobileHomePage> {
           // Hero
           _HeroCard(user: widget.user, subscription: sub),
           const SizedBox(height: 16),
+          // Feature cards 2x2
+          _FeatureGrid(onTap: (title) => _questionController.text = '请检索与$title相关的内容。'),
+          const SizedBox(height: 16),
           // Search box
           TextField(
             controller: _questionController,
@@ -105,9 +108,6 @@ class _MobileHomePageState extends State<MobileHomePage> {
             label: Text(_searching ? '检索中…' : '开始审计问答'),
             style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
           ),
-          const SizedBox(height: 20),
-          // Feature cards 2x2
-          _FeatureGrid(onTap: (title) => _questionController.text = '请检索与$title相关的内容。'),
           const SizedBox(height: 20),
           // Result
           if (_result != null) _ResultCard(result: _result!),
