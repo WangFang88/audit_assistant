@@ -117,10 +117,8 @@ let QueryService = class QueryService {
             case: ['national_case', 'local_case'],
             risk: ['regulation', 'local_policy', 'private', 'industry'],
         };
-        const allowedTypes = dto.queryScope ? scopeLibraryTypes[dto.queryScope] : null;
-        const filteredChunks = allowedTypes
-            ? readyChunks.filter((c) => allowedTypes.includes(c.libraryType))
-            : readyChunks;
+        const allowedTypes = dto.queryScope ? scopeLibraryTypes[dto.queryScope] : scopeLibraryTypes.regulation;
+        const filteredChunks = readyChunks.filter((c) => allowedTypes.includes(c.libraryType));
         const scopeSummary = await this.documentsService.getLibraryScopeSummary(resolvedGroupId);
         const lowerQuestion = dto.question.toLowerCase();
         const tokens = Array.from(new Set(lowerQuestion
