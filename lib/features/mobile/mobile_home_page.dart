@@ -47,13 +47,15 @@ class _MobileHomePageState extends State<MobileHomePage> {
     }
   }
 
+  String? _queryScope;
+
   Future<void> _search() async {
     final q = _questionController.text.trim();
     if (q.isEmpty) return;
     FocusScope.of(context).unfocus();
     setState(() { _searching = true; _result = null; });
     try {
-      final result = await widget.apiService.search(question: q);
+      final result = await widget.apiService.search(question: q, queryScope: _queryScope);
       if (!mounted) return;
       setState(() { _result = result; });
     } catch (e) {
@@ -87,7 +89,9 @@ class _MobileHomePageState extends State<MobileHomePage> {
           _HeroCard(user: widget.user, subscription: sub),
           const SizedBox(height: 16),
           // Feature cards 2x2
-          _FeatureGrid(onTap: (title) => _questionController.text = '请检索与$title相关的内容。'),
+          _FeatureGrid(onTap: (scope, hint) {
+            setState(() { _queryScope = scope; _questionController.text = hint; });
+          }),
           const SizedBox(height: 16),
           // Search box
           TextField(
@@ -157,13 +161,13 @@ class _HeroCard extends StatelessWidget {
 
 class _FeatureGrid extends StatelessWidget {
   const _FeatureGrid({required this.onTap});
-  final void Function(String title) onTap;
+  final void Function(String scope, String hint) onTap;
 
   static const _cards = [
-    (Icons.gavel_outlined, Color(0xFF1D4ED8), '法条查询', '国家法律与政策文件'),
-    (Icons.library_books_outlined, Color(0xFF0891B2), '资料库问答', '自建/购买资料智能问答'),
-    (Icons.cases_outlined, Color(0xFF7C3AED), '案例参考', '全国/地方审计案例'),
-    (Icons.checklist_outlined, Color(0xFF059669), '风险排查', '结合法条案例生成检查点'),
+    (Icons.gavel_outlined, Color(0xFF1D4ED8), '法条查询', '国家法律与政策文件', 'regulation', '请检索与法条查询相关的制度依据。'),
+    (Icons.library_books_outlined, Color(0xFF0891B2), '资料库问答', '自建/购买资料智能问答', 'material', '请检索项目组资料库中的相关内容。'),
+    (Icons.cases_outlined, Color(0xFF7C3AED), '案例参考', '全国/地方审计案例', 'case', '请检索与此问题相关的审计案例。'),
+    (Icons.checklist_outlined, Color(0xFF059669), '风险排查', '结合法条案例生成检查点', 'risk', '请结合法条和案例生成风险检查点。'),
   ];
 
   @override
@@ -176,9 +180,9 @@ class _FeatureGrid extends StatelessWidget {
       mainAxisSpacing: 12,
       childAspectRatio: 1.7,
       children: _cards.map((c) {
-        final (icon, color, title, subtitle) = c;
+        final (icon, color, title, subtitle, scope, hint) = c;
         return InkWell(
-          onTap: () => onTap(title),
+          onTap: () => onTap(scope, hint),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(12),
