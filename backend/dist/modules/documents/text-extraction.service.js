@@ -24,6 +24,9 @@ let TextExtractionService = class TextExtractionService {
         if (fileType === 'docx') {
             return this.extractDocx(buffer);
         }
+        if (fileType === 'xlsx') {
+            return this.extractXlsx(buffer);
+        }
         return '';
     }
     async extractPdf(buffer) {
@@ -35,6 +38,19 @@ let TextExtractionService = class TextExtractionService {
         const mammoth = require('mammoth');
         const result = await mammoth.extractRawText({ buffer });
         return result.value ?? '';
+    }
+    extractXlsx(buffer) {
+        const XLSX = require('xlsx');
+        const workbook = XLSX.read(buffer, { type: 'buffer' });
+        const texts = [];
+        workbook.SheetNames.forEach((sheetName) => {
+            const sheet = workbook.Sheets[sheetName];
+            const csv = XLSX.utils.sheet_to_csv(sheet);
+            if (csv.trim()) {
+                texts.push(`[工作表: ${sheetName}]\n${csv}`);
+            }
+        });
+        return texts.join('\n\n');
     }
 };
 exports.TextExtractionService = TextExtractionService;

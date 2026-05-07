@@ -214,7 +214,7 @@ export declare class OverviewService {
         recentAuditEvents: import("../../database/repositories/audit-event.repository").AuditEventSnapshot[];
         conversations: {
             id: string;
-            type: "group" | "direct" | "agent";
+            type: "group" | "agent" | "direct";
             title: string;
             groupId: string | null;
             isTeamAgent: boolean;

@@ -3,4 +3,5 @@ export declare class TextExtractionService {
     extractText(sourcePath: string, fileType: string): Promise<string>;
     private extractPdf;
     private extractDocx;
+    private extractXlsx;
 }

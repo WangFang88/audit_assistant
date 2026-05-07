@@ -22,7 +22,11 @@ export class TextExtractionService {
       return this.extractDocx(buffer);
     }
 
-    // xlsx / image: return empty, caller will use OCR path
+    if (fileType === 'xlsx') {
+      return this.extractXlsx(buffer);
+    }
+
+    // image: return empty, caller will use OCR path
     return '';
   }
 
@@ -38,5 +42,22 @@ export class TextExtractionService {
     const mammoth = require('mammoth');
     const result = await mammoth.extractRawText({ buffer });
     return result.value ?? '';
+  }
+
+  private extractXlsx(buffer: Buffer): string {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const XLSX = require('xlsx');
+    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    const texts: string[] = [];
+
+    workbook.SheetNames.forEach((sheetName: string) => {
+      const sheet = workbook.Sheets[sheetName];
+      const csv = XLSX.utils.sheet_to_csv(sheet);
+      if (csv.trim()) {
+        texts.push(`[工作表: ${sheetName}]\n${csv}`);
+      }
+    });
+
+    return texts.join('\n\n');
   }
 }
