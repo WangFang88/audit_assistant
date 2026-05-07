@@ -232,6 +232,10 @@ class ApiService {
 
     final json = _decodeMap(response);
     print('[DEBUG Frontend] similarCases count: ${(json['similarCases'] as List?)?.length ?? 0}');
+    if ((json['similarCases'] as List?)?.isNotEmpty ?? false) {
+      final firstCase = (json['similarCases'] as List)[0];
+      print('[DEBUG Frontend] First case matchedChunk: ${firstCase['matchedChunk']}');
+    }
     final result = QueryResult.fromJson(json);
     print('[DEBUG Frontend] QueryResult.similarCases count: ${result.similarCases.length}');
     return result;
