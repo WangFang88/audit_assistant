@@ -250,7 +250,7 @@ class _GroupDetailPageState extends State<_GroupDetailPage> {
     try {
       await widget.apiService.createDirectConversation(targetUserId: member.userId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已创建与 ${member.name} 的私聊')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已创建与 ${member.name} 的私聊，请前往"协作"标签查看')));
       Navigator.pop(context);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('发起私聊失败：$e')));
