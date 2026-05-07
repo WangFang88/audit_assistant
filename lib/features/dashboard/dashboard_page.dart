@@ -4013,7 +4013,6 @@ class _LibraryAccessSection extends StatefulWidget {
 
 class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
   static const _libs = [
-    ('national_case', '全国案例库', '¥100/次'),
     ('local_policy', '地方政策库', '¥50/地区 · ¥200/全部'),
     ('local_case', '地方案例库', '¥50/地区 · ¥200/全部'),
     ('industry', '行业专题库', '¥80/地区 · ¥300/全部'),
