@@ -246,6 +246,17 @@ class _GroupDetailPageState extends State<_GroupDetailPage> {
     }
   }
 
+  Future<void> _startDirectChat(GroupMember member) async {
+    try {
+      await widget.apiService.createDirectConversation(targetUserId: member.userId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已创建与 ${member.name} 的私聊')));
+      Navigator.pop(context);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('发起私聊失败：$e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -308,6 +319,16 @@ class _GroupDetailPageState extends State<_GroupDetailPage> {
                             child: Text(m.role, style: TextStyle(fontSize: 11,
                                 color: m.role == '组长' ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface)),
                           ),
+                          if (!isMe && !_isAdmin) ...[
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                              onPressed: () => _startDirectChat(m),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              tooltip: '私聊',
+                            ),
+                          ],
                           if (canRemove) ...[
                             const SizedBox(width: 4),
                             IconButton(

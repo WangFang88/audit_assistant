@@ -253,7 +253,7 @@ export declare class SubscriptionsService {
             region: string | null;
             expiredAt: string;
         }[];
-        libraryAccessPrices: Record<"local_policy" | "national_case" | "local_case" | "industry", {
+        libraryAccessPrices: Record<"local_policy" | "local_case" | "industry" | "national_case", {
             region: string;
             all: string;
         }>;
