@@ -67,10 +67,12 @@ class _MobileChatPageState extends State<MobileChatPage> {
   Future<void> _send() async {
     final text = _messageController.text.trim();
     if (text.isEmpty || _selectedId == null) return;
+    final conv = _conversations.firstWhere((c) => c.id == _selectedId);
+    final type = conv.type == '群聊' ? 'group' : conv.type == '项目组Agent' ? 'agent' : 'direct';
     _messageController.clear();
     setState(() { _sending = true; });
     try {
-      await widget.apiService.sendMessage(conversationId: _selectedId!, content: text, conversationType: 'direct');
+      await widget.apiService.sendMessage(conversationId: _selectedId!, content: text, conversationType: type);
       await _poll();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('发送失败：$e')));
