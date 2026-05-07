@@ -41,6 +41,8 @@ type CitationRecord = {
   pageLabel: string;
 };
 
+type ReadyChunkRecord = Awaited<ReturnType<DocumentsService['getReadyChunks']>>[number];
+
 @Injectable()
 export class QueryService {
   constructor(
@@ -53,6 +55,62 @@ export class QueryService {
     private readonly qwenService: QwenService,
     private readonly auditService: AuditService,
   ) {}
+
+  private buildCandidates({
+    chunks,
+    lowerQuestion,
+    tokens,
+    questionEmbedding,
+    limit,
+  }: {
+    chunks: ReadyChunkRecord[];
+    lowerQuestion: string;
+    tokens: string[];
+    questionEmbedding: number[] | null;
+    limit: number;
+  }): CitationRecord[] {
+    return chunks
+      .map((chunk) => {
+        const keywordHits = chunk.keywords.filter((kw) => lowerQuestion.includes(kw.toLowerCase())).length;
+        const contentHits = tokens.filter((t) => chunk.content.includes(t)).length;
+        const scopeBoost = chunk.libraryType === 'private' ? 0.05 : 0.02;
+
+        let score: number;
+        if (questionEmbedding && chunk.embedding) {
+          const cosine = this.embeddingService.cosineSimilarity(questionEmbedding, chunk.embedding);
+          score = Math.min(0.99, (cosine + 1) / 2 + keywordHits * 0.03 + scopeBoost);
+        } else {
+          const articleTokens = tokens.filter((t) => /第.+条|第.+章/.test(t));
+          const evidenceTokens = tokens.filter((t) =>
+            ['合同', '发票', '验收', '付款', '凭证', '依据', '归档'].includes(t),
+          );
+          const articleHits = articleTokens.filter((t) => chunk.articleRef.includes(t) || chunk.chapterTitle.includes(t)).length;
+          const evidenceHits = evidenceTokens.filter((t) => chunk.content.includes(t)).length;
+          const semanticBoost = contentHits > 0 ? 0.16 + Math.min(0.1, contentHits * 0.03) : 0.04;
+          score = Math.min(0.99, 0.42 + keywordHits * 0.14 + semanticBoost + articleHits * 0.1 + evidenceHits * 0.08 + scopeBoost);
+        }
+
+        const matchedSignals = keywordHits + contentHits;
+        const hasVector = questionEmbedding && chunk.embedding;
+        return {
+          documentId: chunk.documentId,
+          title: chunk.title,
+          libraryType: chunk.libraryType,
+          score,
+          matchedChunk: chunk.chapterTitle + ' ' + chunk.articleRef + '：' + chunk.content,
+          reason: hasVector
+            ? '向量相似度 ' + ((score - scopeBoost) * 100).toFixed(1) + '%，命中 ' + matchedSignals + ' 个关键词。'
+            : matchedSignals > 0
+            ? '已命中 ' + matchedSignals + ' 个关键词/条款号，基于关键词混合召回。'
+            : '当前文本块通过范围过滤进入候选集。',
+          articleRef: chunk.articleRef,
+          chapterTitle: chunk.chapterTitle,
+          pageLabel: chunk.pageLabel,
+        };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+  }
 
   async search(dto: QueryRequestDto, options?: { skipAccounting?: boolean }) {
     if (this.authService.isAdmin() && (dto.groupId != null || dto.agentId != null)) {
@@ -96,47 +154,30 @@ export class QueryService {
 
     const questionEmbedding = await this.embeddingService.embed(dto.question);
 
-    const candidates: CitationRecord[] = filteredChunks
-      .map((chunk) => {
-        const keywordHits = chunk.keywords.filter((kw) => lowerQuestion.includes(kw.toLowerCase())).length;
-        const contentHits = tokens.filter((t) => chunk.content.includes(t)).length;
-        const scopeBoost = chunk.libraryType === 'private' ? 0.05 : 0.02;
+    const candidates = this.buildCandidates({
+      chunks: filteredChunks,
+      lowerQuestion,
+      tokens,
+      questionEmbedding,
+      limit: 6,
+    });
 
-        let score: number;
-        if (questionEmbedding && chunk.embedding) {
-          const cosine = this.embeddingService.cosineSimilarity(questionEmbedding, chunk.embedding);
-          score = Math.min(0.99, (cosine + 1) / 2 + keywordHits * 0.03 + scopeBoost);
-        } else {
-          const articleTokens = tokens.filter((t) => /\u7b2c.+\u6761|\u7b2c.+\u7ae0/.test(t));
-          const evidenceTokens = tokens.filter((t) =>
-            ['\u5408\u540c', '\u53d1\u7968', '\u9a8c\u6536', '\u4ed8\u6b3e', '\u51ed\u8bc1', '\u4f9d\u636e', '\u5f52\u6863'].includes(t),
-          );
-          const articleHits = articleTokens.filter((t) => chunk.articleRef.includes(t) || chunk.chapterTitle.includes(t)).length;
-          const evidenceHits = evidenceTokens.filter((t) => chunk.content.includes(t)).length;
-          const semanticBoost = contentHits > 0 ? 0.16 + Math.min(0.1, contentHits * 0.03) : 0.04;
-          score = Math.min(0.99, 0.42 + keywordHits * 0.14 + semanticBoost + articleHits * 0.1 + evidenceHits * 0.08 + scopeBoost);
-        }
-
-        const matchedSignals = keywordHits + contentHits;
-        const hasVector = questionEmbedding && chunk.embedding;
-        return {
-          documentId: chunk.documentId,
-          title: chunk.title,
-          libraryType: chunk.libraryType,
-          score,
-          matchedChunk: chunk.chapterTitle + ' ' + chunk.articleRef + '\uff1a' + chunk.content,
-          reason: hasVector
-            ? '\u5411\u91cf\u76f8\u4f3c\u5ea6 ' + ((score - scopeBoost) * 100).toFixed(1) + '%\uff0c\u547d\u4e2d ' + matchedSignals + ' \u4e2a\u5173\u952e\u8bcd\u3002'
-            : matchedSignals > 0
-            ? '\u5df2\u547d\u4e2d ' + matchedSignals + ' \u4e2a\u5173\u952e\u8bcd/\u6761\u6b3e\u53f7\uff0c\u57fa\u4e8e\u5173\u952e\u8bcd\u6df7\u5408\u53ec\u56de\u3002'
-            : '\u5f53\u524d\u6587\u672c\u5757\u901a\u8fc7\u8303\u56f4\u8fc7\u6ee4\u8fdb\u5165\u5019\u9009\u96c6\u3002',
-          articleRef: chunk.articleRef,
-          chapterTitle: chunk.chapterTitle,
-          pageLabel: chunk.pageLabel,
-        };
-      })
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 6);
+    const shouldFetchSimilarCases = dto.queryScope == null || ['regulation', 'material', 'risk'].includes(dto.queryScope);
+    const similarCaseChunks = shouldFetchSimilarCases
+      ? readyChunks.filter((chunk) => ['national_case', 'local_case'].includes(chunk.libraryType))
+      : [];
+    const similarCases = shouldFetchSimilarCases
+      ? this.buildCandidates({
+          chunks: similarCaseChunks,
+          lowerQuestion,
+          tokens,
+          questionEmbedding,
+          limit: 6,
+        })
+          .filter((citation) => citation.score >= 0.55)
+          .filter((citation) => !candidates.some((item) => item.documentId === citation.documentId && item.matchedChunk === citation.matchedChunk))
+          .slice(0, 3)
+      : [];
 
     const queryMode = questionEmbedding
       ? '\u5411\u91cf\u68c0\u7d22 + \u5173\u952e\u8bcd\u878d\u5408'
@@ -235,6 +276,7 @@ export class QueryService {
       },
       answer,
       citations: candidates,
+      similarCases,
       explanation:
         '\u8be5\u67e5\u8be2\u94fe\u8def\u5df2\u4ece\u56fa\u5b9a\u793a\u4f8b\u547d\u4e2d\u8fc7\u6e21\u5230\u57fa\u4e8e\u6301\u4e45\u5316 chunk \u7684\u68c0\u7d22\u9aa8\u67b6\uff1a\u5148\u8fc7\u6ee4\u8303\u56f4\uff0c\u518d\u5bf9\u6587\u672c\u5757\u6267\u884c\u5173\u952e\u8bcd\u4e0e\u8bed\u4e49\u7ebf\u7d22\u5339\u914d\uff0c\u6700\u540e\u8fd4\u56de\u53ef\u6eaf\u6e90\u7684\u5019\u9009\u6761\u6b3e\u3002',
     };

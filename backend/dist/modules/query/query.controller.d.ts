@@ -49,6 +49,17 @@ export declare class QueryController {
             chapterTitle: string;
             pageLabel: string;
         }[];
+        similarCases: {
+            documentId: string;
+            title: string;
+            libraryType: import("../documents/library-type").LibraryType;
+            score: number;
+            matchedChunk: string;
+            reason: string;
+            articleRef: string;
+            chapterTitle: string;
+            pageLabel: string;
+        }[];
         explanation: string;
     }>;
 }

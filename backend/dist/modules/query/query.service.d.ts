@@ -34,6 +34,7 @@ export declare class QueryService {
     private readonly qwenService;
     private readonly auditService;
     constructor(authService: AuthService, documentsService: DocumentsService, embeddingService: EmbeddingService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, teamAgentsService: TeamAgentsService, qwenService: QwenService, auditService: AuditService);
+    private buildCandidates;
     search(dto: QueryRequestDto, options?: {
         skipAccounting?: boolean;
     }): Promise<{
@@ -73,6 +74,7 @@ export declare class QueryService {
         };
         answer: string;
         citations: CitationRecord[];
+        similarCases: CitationRecord[];
         explanation: string;
     }>;
 }

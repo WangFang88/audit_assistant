@@ -229,13 +229,34 @@ class _ResultCard extends StatelessWidget {
           ),
           if (result.citations.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text('引用条款 (${result.citations.length})', style: theme.textTheme.labelMedium),
+            Text('参考来源 (${result.citations.length})', style: theme.textTheme.labelMedium),
             const SizedBox(height: 8),
             ...result.citations.take(3).map((c) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(c.title, style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text(c.matchedChunk, style: theme.textTheme.bodySmall, maxLines: 3, overflow: TextOverflow.ellipsis),
+                ]),
+              ),
+            )),
+          ],
+          if (result.similarCases.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text('相关审计案例 (${result.similarCases.length})', style: theme.textTheme.labelMedium),
+            const SizedBox(height: 8),
+            ...result.similarCases.take(2).map((c) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.35),
                   border: Border.all(color: theme.colorScheme.outlineVariant),
                   borderRadius: BorderRadius.circular(8),
                 ),

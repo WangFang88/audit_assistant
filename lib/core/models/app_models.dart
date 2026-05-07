@@ -231,6 +231,7 @@ class QueryResult {
     required this.pipeline,
     required this.retrievalStats,
     required this.citations,
+    required this.similarCases,
     required this.scope,
     required this.ragMeta,
     required this.agentMode,
@@ -242,6 +243,7 @@ class QueryResult {
   final List<String> pipeline;
   final QueryRetrievalStats retrievalStats;
   final List<QueryCitation> citations;
+  final List<QueryCitation> similarCases;
   final QueryScope scope;
   final QueryRagMeta ragMeta;
   final bool agentMode;
@@ -258,6 +260,10 @@ class QueryResult {
         json['retrievalStats'] as Map<String, dynamic>? ?? const {},
       ),
       citations: (json['citations'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(QueryCitation.fromJson)
+          .toList(),
+      similarCases: (json['similarCases'] as List<dynamic>? ?? const [])
           .whereType<Map<String, dynamic>>()
           .map(QueryCitation.fromJson)
           .toList(),

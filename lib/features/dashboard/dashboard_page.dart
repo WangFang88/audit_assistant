@@ -2352,6 +2352,26 @@ String get _activeConversationType {
               trailing: Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.primary, fontSize: 12)),
             ),
           )),
+          const SizedBox(height: 12),
+        ],
+        if (result.similarCases.isNotEmpty) ...[
+          Text('相关审计案例（${result.similarCases.length}）', style: theme.textTheme.labelMedium),
+          const SizedBox(height: 6),
+          ...result.similarCases.map((c) => Card(
+            margin: const EdgeInsets.only(bottom: 6),
+            child: ListTile(
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              title: Text(c.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              subtitle: Text(
+                '${c.libraryType}${c.chapterTitle.isNotEmpty ? ' · ${c.chapterTitle}' : ''}${c.articleRef.isNotEmpty ? ' ${c.articleRef}' : ''}\n${c.matchedChunk}',
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12),
+              ),
+              trailing: Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.secondary, fontSize: 12)),
+            ),
+          )),
         ],
       ],
     );

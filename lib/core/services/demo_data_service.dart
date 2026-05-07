@@ -122,6 +122,28 @@ class DemoDataService {
         privateLibraryHits: 1,
       ),
       citations: citations,
+      similarCases: const [
+        QueryCitation(
+          title: '某区学校食堂采购审计案例',
+          libraryType: '全国案例库',
+          score: 0.84,
+          matchedChunk: '问题表现：采购审批不完整、验收资料缺失，导致审计中无法完整还原采购流程。',
+          reason: '与当前问题在采购审批与审计取证方面具有较高相似度。',
+          articleRef: '案例要点一',
+          chapterTitle: '问题定性',
+          pageLabel: '第 3 页',
+        ),
+        QueryCitation(
+          title: '某医院设备采购审计整改案例',
+          libraryType: '地方案例库',
+          score: 0.79,
+          matchedChunk: '审计发现合同、验收、付款凭证未形成闭环留痕，整改要求补齐全流程证据。',
+          reason: '与当前问题在合同、验收和付款留痕方面具有相似风险。',
+          articleRef: '案例要点二',
+          chapterTitle: '整改情况',
+          pageLabel: '第 5 页',
+        ),
+      ],
       scope: const QueryScope(
         label: '公共库 + 当前项目组私有库',
         groupName: '某区财政局审计组',
