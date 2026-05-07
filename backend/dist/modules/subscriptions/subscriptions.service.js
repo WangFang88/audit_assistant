@@ -35,7 +35,7 @@ class BuyLibraryAccessDto {
 }
 exports.BuyLibraryAccessDto = BuyLibraryAccessDto;
 __decorate([
-    (0, class_validator_1.IsIn)(['local_policy', 'local_case', 'industry']),
+    (0, class_validator_1.IsIn)(['local_policy', 'local_case', 'industry', 'national_case']),
     __metadata("design:type", String)
 ], BuyLibraryAccessDto.prototype, "libraryType", void 0);
 __decorate([
@@ -123,6 +123,7 @@ let SubscriptionsService = class SubscriptionsService {
             local_policy: { region: '50.00', all: '200.00' },
             local_case: { region: '50.00', all: '200.00' },
             industry: { region: '80.00', all: '300.00' },
+            national_case: { region: '100.00', all: '100.00' },
         };
         this.libraryAccessLabels = {
             local_policy: '地方政策库',
@@ -316,6 +317,9 @@ let SubscriptionsService = class SubscriptionsService {
             detail: { planType: dto.planType, amount: this.planPrices[dto.planType], expiredAt: this.formatDateTime(expiredAt), activationMode: 'simulation' },
         });
         return { activationMode: 'simulation', message: `${this.getPlanLabel(dto.planType)}已模拟开通。` };
+    }
+    async hasActiveSubscription() {
+        return (await this.getActiveSubscriptionOrder()) !== null;
     }
     async getActiveLibraryAccess(userId) {
         const uid = userId ?? this.authService.me().id;

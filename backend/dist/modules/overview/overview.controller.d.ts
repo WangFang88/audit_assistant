@@ -194,7 +194,7 @@ export declare class OverviewController {
                 region: string | null;
                 expiredAt: string;
             }[];
-            libraryAccessPrices: Record<"local_policy" | "local_case" | "industry", {
+            libraryAccessPrices: Record<"local_policy" | "national_case" | "local_case" | "industry", {
                 region: string;
                 all: string;
             }>;

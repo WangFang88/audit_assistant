@@ -345,11 +345,16 @@ let DocumentsService = class DocumentsService {
         const activeAccess = this.authService.isAdmin()
             ? null
             : await this.subscriptionsService.getActiveLibraryAccess();
+        const hasSubscription = this.authService.isAdmin()
+            ? true
+            : await this.subscriptionsService.hasActiveSubscription();
         const canAccess = (libraryType, region) => {
             if (activeAccess === null)
                 return true;
-            if (libraryType === 'regulation' || libraryType === 'national_case')
+            if (libraryType === 'regulation')
                 return true;
+            if (libraryType === 'national_case')
+                return hasSubscription;
             if (libraryType === 'private')
                 return false;
             return activeAccess.some((a) => a.libraryType === libraryType && (a.region === null || a.region === region));
@@ -425,11 +430,16 @@ let DocumentsService = class DocumentsService {
         const activeAccess = this.authService.isAdmin()
             ? null
             : await this.subscriptionsService.getActiveLibraryAccess();
+        const hasSubscription = this.authService.isAdmin()
+            ? true
+            : await this.subscriptionsService.hasActiveSubscription();
         const canAccess = (libraryType, region) => {
             if (activeAccess === null)
                 return true;
-            if (libraryType === 'regulation' || libraryType === 'national_case')
+            if (libraryType === 'regulation')
                 return true;
+            if (libraryType === 'national_case')
+                return hasSubscription;
             if (libraryType === 'private')
                 return false;
             return activeAccess.some((a) => a.libraryType === libraryType && (a.region === null || a.region === region));

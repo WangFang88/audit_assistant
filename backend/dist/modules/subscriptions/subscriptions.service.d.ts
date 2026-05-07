@@ -9,7 +9,7 @@ declare class CreateSubscriptionOrderDto {
     planType: 'weekly' | 'monthly' | 'yearly';
 }
 declare class BuyLibraryAccessDto {
-    libraryType: 'local_policy' | 'local_case' | 'industry';
+    libraryType: 'local_policy' | 'local_case' | 'industry' | 'national_case';
     region?: string;
 }
 type UsageSnapshot = {
@@ -139,6 +139,7 @@ export declare class SubscriptionsService {
     }>;
     private readonly libraryAccessPrices;
     private readonly libraryAccessLabels;
+    hasActiveSubscription(): Promise<boolean>;
     getActiveLibraryAccess(userId?: string): Promise<LibraryAccessEntity[]>;
     canAccessLibrary(libraryType: string, region: string | null): Promise<boolean>;
     buyLibraryAccess(dto: BuyLibraryAccessDto): Promise<{
@@ -252,7 +253,7 @@ export declare class SubscriptionsService {
             region: string | null;
             expiredAt: string;
         }[];
-        libraryAccessPrices: Record<"local_policy" | "local_case" | "industry", {
+        libraryAccessPrices: Record<"local_policy" | "national_case" | "local_case" | "industry", {
             region: string;
             all: string;
         }>;
