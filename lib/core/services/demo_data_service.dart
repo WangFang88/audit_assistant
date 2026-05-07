@@ -210,6 +210,7 @@ class DemoDataService {
       latestOrder: null,
       effectiveOrder: null,
       orderHistory: [],
+      libraryAccess: [],
     );
   }
 }
