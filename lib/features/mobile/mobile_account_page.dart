@@ -328,8 +328,142 @@ class _PurchasePageState extends State<_PurchasePage> {
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                 : Text('立即购买 ${_price(_selected)}'),
           ),
+          const SizedBox(height: 24),
+          Text('知识库访问权限', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Text('法规库默认可用，以下库需单独购买（1年有效期）', style: theme.textTheme.bodySmall),
+          const SizedBox(height: 12),
+          _LibraryAccessSection(
+            libraryAccess: s.libraryAccess,
+            apiService: widget.apiService,
+            subscribing: _buying,
+            onBuy: _buyLibraryAccess,
+          ),
         ],
       ),
+    );
+  }
+
+  Future<void> _buyLibraryAccess(String libraryType, String? region) async {
+    setState(() => _buying = true);
+    try {
+      await widget.apiService.buyLibraryAccess(libraryType: libraryType, region: region);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('购买成功！')));
+      Navigator.pop(context);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('购买失败：$e')));
+    } finally {
+      if (mounted) setState(() => _buying = false);
+    }
+  }
+}
+
+class _LibraryAccessSection extends StatefulWidget {
+  const _LibraryAccessSection({required this.libraryAccess, required this.apiService, required this.subscribing, required this.onBuy});
+  final List<LibraryAccessItem> libraryAccess;
+  final ApiService apiService;
+  final bool subscribing;
+  final void Function(String libraryType, String? region) onBuy;
+
+  @override
+  State<_LibraryAccessSection> createState() => _LibraryAccessSectionState();
+}
+
+class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
+  static const _libs = [
+    ('national_case', '全国案例库', '¥100/次'),
+    ('local_policy', '地方政策库', '¥50/地区 · ¥200/全部'),
+    ('local_case', '地方案例库', '¥50/地区 · ¥200/全部'),
+    ('industry', '行业专题库', '¥80/地区 · ¥300/全部'),
+  ];
+
+  String _libTypeLabel(String type) {
+    const map = {'national_case': '全国案例库', 'local_policy': '地方政策库', 'local_case': '地方案例库', 'industry': '行业专题库'};
+    return map[type] ?? type;
+  }
+
+  bool _hasAccess(String libraryType, String? region) {
+    return widget.libraryAccess.any((a) => a.libraryType == libraryType && (a.region == null || a.region == region));
+  }
+
+  Future<void> _showBuyDialog(String libraryType, String label) async {
+    String? region;
+    bool buyAll = false;
+    final isIndustry = libraryType == 'industry';
+    final isNationalCase = libraryType == 'national_case';
+    final optionLabel = isIndustry ? '行业' : '地区';
+    List<String> availableOptions = [];
+    if (!isNationalCase) {
+      try {
+        final regions = await widget.apiService.getLibraryRegions();
+        availableOptions = regions[libraryType] ?? [];
+      } catch (_) {}
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, set) => AlertDialog(
+          title: Text('购买 $label'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            if (!isNationalCase) ...[
+              CheckboxListTile(
+                title: Text('购买全部$optionLabel'),
+                value: buyAll,
+                onChanged: (v) => set(() { buyAll = v!; if (buyAll) region = null; }),
+                contentPadding: EdgeInsets.zero,
+              ),
+              if (!buyAll)
+                Autocomplete<String>(
+                  optionsBuilder: (v) => v.text.isEmpty ? availableOptions : availableOptions.where((r) => r.contains(v.text)),
+                  onSelected: (v) => region = v,
+                  fieldViewBuilder: (ctx2, ctrl, fn, _) => TextField(
+                    controller: ctrl,
+                    focusNode: fn,
+                    decoration: InputDecoration(labelText: '选择$optionLabel', isDense: true),
+                    onChanged: (v) => region = v.trim().isEmpty ? null : v.trim(),
+                  ),
+                ),
+            ] else
+              const Text('全国案例库统一定价 ¥100'),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('购买')),
+          ],
+        ),
+      ),
+    );
+    if (confirmed == true) widget.onBuy(libraryType, buyAll ? null : region);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: _libs.map((lib) {
+        final (type, label, price) = lib;
+        final hasAccess = _hasAccess(type, null);
+        final accessItem = widget.libraryAccess.where((a) => a.libraryType == type).toList();
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            dense: true,
+            title: Text(label, style: const TextStyle(fontSize: 14)),
+            subtitle: Text(
+              hasAccess
+                  ? '已购（全部地区）到期：${accessItem.first.expiredAt}'
+                  : accessItem.isNotEmpty
+                      ? '已购地区：${accessItem.map((a) => a.region ?? '全部').join('、')}'
+                      : price,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            trailing: OutlinedButton(
+              onPressed: widget.subscribing ? null : () => _showBuyDialog(type, label),
+              child: const Text('购买', style: TextStyle(fontSize: 13)),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
