@@ -30,11 +30,9 @@ ThemeData buildAppTheme() {
     tertiary: infoColor,
     error: errorColor,
     surface: bgCard,
-    background: bgPage,
     onPrimary: Colors.white,
     onSecondary: Colors.white,
     onSurface: textPrimary,
-    onBackground: textPrimary,
     outline: dividerColor,
   );
 
@@ -62,7 +60,7 @@ ThemeData buildAppTheme() {
     // ==================== 卡片样式 ====================
     cardTheme: CardThemeData(
       elevation: 1,
-      shadowColor: Colors.black.withOpacity(0.04),
+      shadowColor: Colors.black.withValues(alpha: 0.04),
       color: bgCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),

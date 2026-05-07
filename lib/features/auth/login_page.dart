@@ -90,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.colorScheme.primary.withOpacity(0.05),
+              theme.colorScheme.primary.withValues(alpha: 0.05),
               theme.colorScheme.surface,
             ],
           ),
@@ -102,7 +102,7 @@ class _LoginPageState extends State<LoginPage> {
               constraints: const BoxConstraints(maxWidth: 420),
               child: Card(
                 elevation: 2,
-                shadowColor: Colors.black.withOpacity(0.08),
+                shadowColor: Colors.black.withValues(alpha: 0.08),
                 child: Padding(
                   padding: const EdgeInsets.all(40),
                   child: Column(
@@ -119,7 +119,7 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 8),
                       Text(
                         '浏览器访问、项目组协作、公共库与私有库统一检索',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 32),
@@ -145,7 +145,7 @@ class _LoginPageState extends State<LoginPage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.error.withOpacity(0.1),
+                            color: theme.colorScheme.error.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -180,7 +180,7 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 20),
                       Text(
                         '请先启动 backend 服务后登录',
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                         textAlign: TextAlign.center,
                       ),
                     ],

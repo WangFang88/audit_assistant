@@ -377,11 +377,6 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
     ('industry', '行业专题库', '¥80/地区 · ¥300/全部'),
   ];
 
-  String _libTypeLabel(String type) {
-    const map = {'national_case': '全国案例库', 'local_policy': '地方政策库', 'local_case': '地方案例库', 'industry': '行业专题库'};
-    return map[type] ?? type;
-  }
-
   bool _hasAccess(String libraryType, String? region) {
     return widget.libraryAccess.any((a) => a.libraryType == libraryType && (a.region == null || a.region == region));
   }

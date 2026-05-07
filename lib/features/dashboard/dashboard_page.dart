@@ -2240,7 +2240,7 @@ String get _activeConversationType {
       padding: EdgeInsets.all(compact ? 16 : 20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.75)],
+          colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.75)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -2259,17 +2259,17 @@ String get _activeConversationType {
                 const SizedBox(height: 2),
                 Text(
                   'AI 审计工作台',
-                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withOpacity(0.75), letterSpacing: 0.5),
+                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.75), letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '你好，${user.name} · $statusText',
-                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withOpacity(0.9)),
+                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.9)),
                 ),
               ],
             ),
           ),
-          Icon(Icons.balance_outlined, color: Colors.white.withOpacity(0.5), size: compact ? 32 : 40),
+          Icon(Icons.balance_outlined, color: Colors.white.withValues(alpha: 0.5), size: compact ? 32 : 40),
         ],
       ),
     );
@@ -2327,7 +2327,7 @@ String get _activeConversationType {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withOpacity(0.4),
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(result.answer, style: const TextStyle(fontSize: 14)),
@@ -2394,8 +2394,8 @@ String get _activeConversationType {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: data.color.withOpacity(0.06),
-          border: Border.all(color: data.color.withOpacity(0.2)),
+          color: data.color.withValues(alpha: 0.06),
+          border: Border.all(color: data.color.withValues(alpha: 0.2)),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -2406,7 +2406,7 @@ String get _activeConversationType {
             const SizedBox(height: 6),
             Text(data.title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: data.color)),
             const SizedBox(height: 2),
-            Text(data.subtitle, style: TextStyle(fontSize: 11, color: data.color.withOpacity(0.7))),
+            Text(data.subtitle, style: TextStyle(fontSize: 11, color: data.color.withValues(alpha: 0.7))),
           ],
         ),
       ),
@@ -2513,7 +2513,7 @@ String get _activeConversationType {
           LinearProgressIndicator(
             value: ratio,
             color: nearLimit ? theme.colorScheme.error : theme.colorScheme.primary,
-            backgroundColor: theme.colorScheme.surfaceVariant,
+            backgroundColor: theme.colorScheme.surfaceContainerHighest,
             minHeight: 4,
             borderRadius: BorderRadius.circular(2),
           ),
@@ -3238,7 +3238,7 @@ String get _activeConversationType {
                                             : Theme.of(context).colorScheme.primaryContainer,
                                         borderRadius: BorderRadius.circular(14),
                                         border: pending.status == _PendingChatMessageStatus.failed
-                                            ? Border.all(color: Theme.of(context).colorScheme.error.withOpacity(0.4))
+                                            ? Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.4))
                                             : null,
                                       ),
                                       child: Column(
@@ -4017,11 +4017,6 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
     ('local_case', '地方案例库', '¥50/地区 · ¥200/全部'),
     ('industry', '行业专题库', '¥80/地区 · ¥300/全部'),
   ];
-
-  String _libTypeLabel(String type) {
-    const map = {'local_policy': '地方政策库', 'local_case': '地方案例库', 'industry': '行业专题库'};
-    return map[type] ?? type;
-  }
 
   bool _hasAccess(String libraryType, String? region) {
     return widget.libraryAccess.any(
