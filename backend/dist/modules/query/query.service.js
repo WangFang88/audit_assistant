@@ -144,7 +144,7 @@ let QueryService = class QueryService {
             });
         }
         const fallbackAnswer = candidates.length === 0
-            ? '\u5f53\u524d\u8303\u56f4\u5185\u5c1a\u672a\u547d\u4e2d\u53ef\u7528\u6761\u6b3e\uff0c\u8bf7\u5c1d\u8bd5\u8865\u5145\u66f4\u660e\u786e\u7684\u5173\u952e\u8bcd\u3001\u6761\u6b3e\u53f7\u6216\u5207\u6362\u9879\u76ee\u7ec4\u540e\u91cd\u8bd5\u3002'
+            ? '未找到相关内容。建议：1) 尝试使用不同的关键词重新描述问题；2) 检查是否选择了正确的项目组或知识库范围；3) 确认相关文档是否已上传并完成索引。'
             : null;
         const qwenAnswer = fallbackAnswer == null
             ? await this.qwenService.generate(dto.question, candidates.map((c) => `【${c.title}】${c.matchedChunk}`))
