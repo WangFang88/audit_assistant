@@ -1773,6 +1773,116 @@ String get _activeConversationType {
     }
   }
 
+  Future<void> _showCaseDetailDialog(QueryCitation citation) async {
+    try {
+      final chunks = await widget.apiService.fetchDocumentChunks(citation.documentId);
+      if (!mounted) {
+        return;
+      }
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          final theme = Theme.of(dialogContext);
+          return AlertDialog(
+            title: Text(citation.title),
+            content: SizedBox(
+              width: 760,
+              child: chunks.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text('当前案例暂无可预览的完整内容。'),
+                    )
+                  : SizedBox(
+                      height: 620,
+                      child: ListView(
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.35),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: theme.colorScheme.outlineVariant),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    Chip(label: Text(citation.libraryType)),
+                                    if (citation.chapterTitle.isNotEmpty) Chip(label: Text(citation.chapterTitle)),
+                                    if (citation.articleRef.isNotEmpty) Chip(label: Text(citation.articleRef)),
+                                    Chip(label: Text('相关度 ${(citation.score * 100).toStringAsFixed(0)}%')),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                SelectableText(citation.matchedChunk, style: theme.textTheme.bodyMedium),
+                              ],
+                            ),
+                          ),
+                          ...chunks.map((chunk) => Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerLowest,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFDCE6F5)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    if (chunk.chapterTitle.isNotEmpty) Chip(label: Text(chunk.chapterTitle)),
+                                    if (chunk.articleRef.isNotEmpty) Chip(label: Text(chunk.articleRef)),
+                                    if (chunk.pageLabel.isNotEmpty) Chip(label: Text(chunk.pageLabel)),
+                                    if (chunk.indexStatus.isNotEmpty) Chip(label: Text(chunk.indexStatus)),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: SelectableText(chunk.content, style: theme.textTheme.bodyMedium),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    TextButton(
+                                      onPressed: () => _copyChunkContent(chunk.content),
+                                      child: const Text('复制文本块'),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          )),
+                        ],
+                      ),
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('关闭'),
+              ),
+            ],
+          );
+        },
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('加载案例详情失败：${error.message}')));
+    }
+  }
+
   Future<void> _showImportDocumentDialog() async {
     if (_activeGroupId == null && !_canImportPublicDocuments) {
       if (!mounted) {
@@ -2361,6 +2471,8 @@ String get _activeConversationType {
             margin: const EdgeInsets.only(bottom: 6),
             child: ListTile(
               dense: true,
+              enabled: c.documentId.isNotEmpty,
+              onTap: c.documentId.isEmpty ? null : () => _showCaseDetailDialog(c),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               title: Text(c.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
               subtitle: Text(
@@ -2369,7 +2481,14 @@ String get _activeConversationType {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 12),
               ),
-              trailing: Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.secondary, fontSize: 12)),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.secondary, fontSize: 12)),
+                  const SizedBox(width: 6),
+                  Icon(Icons.open_in_new, size: 16, color: theme.colorScheme.outline),
+                ],
+              ),
             ),
           )),
         ],

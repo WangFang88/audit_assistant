@@ -191,6 +191,7 @@ class DocumentChunkPreview {
 
 class QueryCitation {
   const QueryCitation({
+    required this.documentId,
     required this.title,
     required this.libraryType,
     required this.score,
@@ -201,6 +202,7 @@ class QueryCitation {
     required this.pageLabel,
   });
 
+  final String documentId;
   final String title;
   final String libraryType;
   final double score;
@@ -212,6 +214,7 @@ class QueryCitation {
 
   factory QueryCitation.fromJson(Map<String, dynamic> json) {
     return QueryCitation(
+      documentId: json['documentId'] as String? ?? '',
       title: json['title'] as String? ?? '',
       libraryType: _mapLibraryType(json['libraryType'] as String? ?? ''),
       score: (json['score'] as num?)?.toDouble() ?? 0,

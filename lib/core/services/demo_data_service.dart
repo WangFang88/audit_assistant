@@ -85,6 +85,7 @@ class DemoDataService {
 
     final citations = [
       QueryCitation(
+        documentId: procurement ? 'doc-private-procurement-1' : 'doc-regulation-fund-1',
         title: procurement ? '某区财政局内部采购管理制度' : '某区财政专项资金管理办法',
         libraryType: procurement ? '私有库' : '公共库',
         score: 0.93,
@@ -97,6 +98,7 @@ class DemoDataService {
         pageLabel: procurement ? '第 2 页' : '第 6 页',
       ),
       QueryCitation(
+        documentId: fund ? 'doc-regulation-fund-1' : 'doc-regulation-supervision-1',
         title: fund ? '某区财政专项资金管理办法' : '财政监督检查工作规范',
         libraryType: '公共库',
         score: 0.88,
@@ -124,6 +126,7 @@ class DemoDataService {
       citations: citations,
       similarCases: const [
         QueryCitation(
+          documentId: 'doc-case-school-canteen-1',
           title: '某区学校食堂采购审计案例',
           libraryType: '全国案例库',
           score: 0.84,
@@ -134,6 +137,7 @@ class DemoDataService {
           pageLabel: '第 3 页',
         ),
         QueryCitation(
+          documentId: 'doc-case-hospital-equipment-1',
           title: '某医院设备采购审计整改案例',
           libraryType: '地方案例库',
           score: 0.79,
