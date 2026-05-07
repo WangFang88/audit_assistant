@@ -4173,6 +4173,7 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
       final regions = await widget.apiService.getLibraryRegions();
       availableOptions = regions[libraryType] ?? [];
     } catch (_) {}
+    if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(

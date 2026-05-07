@@ -394,6 +394,7 @@ class _LibraryAccessSectionState extends State<_LibraryAccessSection> {
         availableOptions = regions[libraryType] ?? [];
       } catch (_) {}
     }
+    if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
