@@ -231,7 +231,10 @@ class ApiService {
     );
 
     final json = _decodeMap(response);
-    return QueryResult.fromJson(json);
+    print('[DEBUG Frontend] similarCases count: ${(json['similarCases'] as List?)?.length ?? 0}');
+    final result = QueryResult.fromJson(json);
+    print('[DEBUG Frontend] QueryResult.similarCases count: ${result.similarCases.length}');
+    return result;
   }
 
   Future<void> createSubscriptionOrder({required String planType}) async {
