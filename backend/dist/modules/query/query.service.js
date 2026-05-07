@@ -113,9 +113,9 @@ let QueryService = class QueryService {
         const readyChunks = await this.documentsService.getReadyChunks(resolvedGroupId);
         const scopeLibraryTypes = {
             regulation: ['regulation', 'private', 'local_policy'],
-            material: ['private', 'industry', 'local_policy', 'local_case'],
+            material: ['private', 'industry', 'local_policy'],
             case: ['national_case', 'local_case'],
-            risk: ['regulation', 'local_policy', 'national_case', 'local_case', 'private', 'industry'],
+            risk: ['regulation', 'local_policy', 'private', 'industry'],
         };
         const allowedTypes = dto.queryScope ? scopeLibraryTypes[dto.queryScope] : null;
         const filteredChunks = allowedTypes
