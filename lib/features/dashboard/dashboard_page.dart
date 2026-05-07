@@ -2430,6 +2430,7 @@ String get _activeConversationType {
 
   Widget _buildQueryResult(BuildContext context, QueryResult result) {
     final theme = Theme.of(context);
+    print('[DEBUG UI] Building query result, similarCases.length: ${result.similarCases.length}');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
