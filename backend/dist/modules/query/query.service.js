@@ -149,8 +149,6 @@ let QueryService = class QueryService {
             : [];
         console.log('[DEBUG] similarCaseCandidates:', similarCaseCandidates.map(c => ({ title: c.title, score: c.score })));
         const similarCases = similarCaseCandidates
-            .filter((citation) => citation.score >= 0.45)
-            .filter((citation) => !candidates.some((item) => item.documentId === citation.documentId && item.matchedChunk === citation.matchedChunk))
             .slice(0, 3);
         console.log('[DEBUG] similarCases after filtering:', similarCases.length);
         const queryMode = questionEmbedding
