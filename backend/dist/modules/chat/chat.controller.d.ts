@@ -4,7 +4,7 @@ export declare class ChatController {
     constructor(chatService: ChatService);
     listConversations(groupId?: string): Promise<{
         id: string;
-        type: "group" | "agent" | "direct";
+        type: "group" | "direct" | "agent";
         title: string;
         groupId: string | null;
         isTeamAgent: boolean;

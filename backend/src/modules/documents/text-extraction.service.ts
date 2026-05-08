@@ -35,14 +35,7 @@ export class TextExtractionService {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
       const pdfParseModule = require('pdf-parse');
-      this.logger.debug(`pdf-parse module type: ${typeof pdfParseModule}`);
-      this.logger.debug(`pdf-parse module keys: ${Object.keys(pdfParseModule).join(', ')}`);
-      this.logger.debug(`pdf-parse.default type: ${typeof pdfParseModule.default}`);
-
-      const parseFunction = typeof pdfParseModule === 'function' ? pdfParseModule : pdfParseModule.default;
-      this.logger.debug(`parseFunction type: ${typeof parseFunction}`);
-
-      const result = await parseFunction(buffer);
+      const result = await pdfParseModule.PDFParse(buffer);
       return result.text ?? '';
     } catch (err) {
       throw new Error(`PDF解析失败: ${err instanceof Error ? err.message : String(err)}`);

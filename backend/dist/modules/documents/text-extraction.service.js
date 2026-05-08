@@ -5,12 +5,16 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var TextExtractionService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TextExtractionService = void 0;
 const common_1 = require("@nestjs/common");
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
-let TextExtractionService = class TextExtractionService {
+let TextExtractionService = TextExtractionService_1 = class TextExtractionService {
+    constructor() {
+        this.logger = new common_1.Logger(TextExtractionService_1.name);
+    }
     getAbsolutePath(sourcePath) {
         const relative = sourcePath.replace(/^\/files\//, '');
         return (0, node_path_1.join)(process.cwd(), '.data', 'uploads', relative);
@@ -32,7 +36,11 @@ let TextExtractionService = class TextExtractionService {
     async extractPdf(buffer) {
         try {
             const pdfParseModule = require('pdf-parse');
+            this.logger.debug(`pdf-parse module type: ${typeof pdfParseModule}`);
+            this.logger.debug(`pdf-parse module keys: ${Object.keys(pdfParseModule).join(', ')}`);
+            this.logger.debug(`pdf-parse.default type: ${typeof pdfParseModule.default}`);
             const parseFunction = typeof pdfParseModule === 'function' ? pdfParseModule : pdfParseModule.default;
+            this.logger.debug(`parseFunction type: ${typeof parseFunction}`);
             const result = await parseFunction(buffer);
             return result.text ?? '';
         }
@@ -60,7 +68,7 @@ let TextExtractionService = class TextExtractionService {
     }
 };
 exports.TextExtractionService = TextExtractionService;
-exports.TextExtractionService = TextExtractionService = __decorate([
+exports.TextExtractionService = TextExtractionService = TextExtractionService_1 = __decorate([
     (0, common_1.Injectable)()
 ], TextExtractionService);
 //# sourceMappingURL=text-extraction.service.js.map
