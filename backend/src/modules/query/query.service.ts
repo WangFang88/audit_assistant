@@ -164,7 +164,6 @@ export class QueryService {
     const similarCaseChunks = shouldFetchSimilarCases
       ? readyChunks.filter((chunk) => ['national_case', 'local_case'].includes(chunk.libraryType))
       : [];
-    console.log('[DEBUG] similarCaseChunks count:', similarCaseChunks.length);
     const similarCaseCandidates = shouldFetchSimilarCases
       ? this.buildCandidates({
           chunks: similarCaseChunks,
@@ -174,10 +173,8 @@ export class QueryService {
           limit: 6,
         })
       : [];
-    console.log('[DEBUG] similarCaseCandidates:', similarCaseCandidates.map(c => ({ title: c.title, score: c.score })));
     const similarCases = similarCaseCandidates
       .slice(0, 3);
-    console.log('[DEBUG] similarCases after filtering:', similarCases.length);
 
     const queryMode = questionEmbedding
       ? '\u5411\u91cf\u68c0\u7d22 + \u5173\u952e\u8bcd\u878d\u5408'
