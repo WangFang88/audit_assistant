@@ -20,14 +20,18 @@ let QwenService = QwenService_1 = class QwenService {
         if (!this.apiKey)
             return null;
         const context = contextChunks.slice(0, 6).join('\n\n');
-        const prompt = `你是一名专业的审计助手。请根据以下知识库内容回答用户问题，回答要准确、简洁，并引用相关条款。
+        const prompt = `你是一名专业的审计助手。请根据以下知识库内容回答用户问题。
 
 知识库内容：
 ${context}
 
 用户问题：${question}
 
-请基于以上内容给出专业回答：`;
+请按以下结构回答：
+1. 问题分析：简要分析用户问题涉及的审计要点和关键问题
+2. 结论：基于知识库内容给出明确的结论和建议
+
+注意：引用条款和相关案例会在回答下方单独展示，无需在回答中重复列出。`;
         try {
             const res = await fetch(this.endpoint, {
                 method: 'POST',
