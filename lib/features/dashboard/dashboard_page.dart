@@ -9,6 +9,24 @@ import '../../core/services/api_service.dart';
 import '../../shared/widgets/section_card.dart';
 import '../payment/payment_page.dart';
 
+Map<String, String> _parseCaseChunk(String chunk) {
+  final lines = chunk.split('\n').where((l) => l.trim().isNotEmpty).toList();
+  if (lines.isEmpty) return {};
+
+  final lastLine = lines.last;
+  final fields = lastLine.split(',');
+
+  String getField(int index) => index < fields.length ? fields[index].trim() : '';
+
+  return {
+    'category': getField(fields.length - 5),
+    'subcategory': getField(fields.length - 4),
+    'problemType': getField(fields.length - 3),
+    'description': getField(fields.length - 2),
+    'basis': getField(fields.length - 1),
+  };
+}
+
 class DashboardPage extends StatefulWidget {
   const DashboardPage({
     super.key,
@@ -2468,30 +2486,41 @@ String get _activeConversationType {
         if (result.similarCases.isNotEmpty) ...[
           Text('相关审计案例（${result.similarCases.length}）', style: theme.textTheme.labelMedium),
           const SizedBox(height: 6),
-          ...result.similarCases.map((c) => Card(
-            margin: const EdgeInsets.only(bottom: 6),
-            child: ListTile(
-              dense: true,
-              enabled: c.documentId.isNotEmpty,
-              onTap: c.documentId.isEmpty ? null : () => _showCaseDetailDialog(c),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              title: Text(c.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-              subtitle: Text(
-                '${c.libraryType}${c.chapterTitle.isNotEmpty ? ' · ${c.chapterTitle}' : ''}${c.articleRef.isNotEmpty ? ' ${c.articleRef}' : ''}\n${c.matchedChunk}',
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12),
+          ...result.similarCases.map((c) {
+            final parsed = _parseCaseChunk(c.matchedChunk);
+            final description = parsed['description'] ?? '';
+            final basis = parsed['basis'] ?? '';
+            final problemType = parsed['problemType'] ?? '';
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 6),
+              child: ListTile(
+                dense: true,
+                enabled: c.documentId.isNotEmpty,
+                onTap: c.documentId.isEmpty ? null : () => _showCaseDetailDialog(c),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                title: Text(c.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                subtitle: Text(
+                  [
+                    if (problemType.isNotEmpty) '问题类型：$problemType',
+                    if (description.isNotEmpty) '问题描述：$description',
+                    if (basis.isNotEmpty) '定性依据：$basis',
+                  ].join('\n'),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.secondary, fontSize: 12)),
+                    const SizedBox(width: 6),
+                    Icon(Icons.open_in_new, size: 16, color: theme.colorScheme.outline),
+                  ],
+                ),
               ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.secondary, fontSize: 12)),
-                  const SizedBox(width: 6),
-                  Icon(Icons.open_in_new, size: 16, color: theme.colorScheme.outline),
-                ],
-              ),
-            ),
-          )),
+            );
+          }),
         ],
       ],
     );

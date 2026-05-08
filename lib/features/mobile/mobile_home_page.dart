@@ -4,6 +4,24 @@ import 'package:flutter/material.dart';
 import '../../core/models/app_models.dart';
 import '../../core/services/api_service.dart';
 
+Map<String, String> _parseCaseChunk(String chunk) {
+  final lines = chunk.split('\n').where((l) => l.trim().isNotEmpty).toList();
+  if (lines.isEmpty) return {};
+
+  final lastLine = lines.last;
+  final fields = lastLine.split(',');
+
+  String getField(int index) => index < fields.length ? fields[index].trim() : '';
+
+  return {
+    'category': getField(fields.length - 5),
+    'subcategory': getField(fields.length - 4),
+    'problemType': getField(fields.length - 3),
+    'description': getField(fields.length - 2),
+    'basis': getField(fields.length - 1),
+  };
+}
+
 class MobileHomePage extends StatefulWidget {
   const MobileHomePage({super.key, required this.apiService, required this.user});
   final ApiService apiService;
@@ -252,39 +270,55 @@ class _ResultCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text('相关审计案例 (${result.similarCases.length})', style: theme.textTheme.labelMedium),
             const SizedBox(height: 8),
-            ...result.similarCases.take(2).map((c) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: c.documentId.isEmpty
-                    ? null
-                    : () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => _CaseDetailPage(apiService: apiService, citation: c),
+            ...result.similarCases.take(2).map((c) {
+              final parsed = _parseCaseChunk(c.matchedChunk);
+              final description = parsed['description'] ?? '';
+              final basis = parsed['basis'] ?? '';
+              final problemType = parsed['problemType'] ?? '';
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: c.documentId.isEmpty
+                      ? null
+                      : () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => _CaseDetailPage(apiService: apiService, citation: c),
+                            ),
                           ),
-                        ),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.35),
-                    border: Border.all(color: theme.colorScheme.outlineVariant),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(
-                      children: [
-                        Expanded(child: Text(c.title, style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600))),
-                        const SizedBox(width: 8),
-                        Icon(Icons.chevron_right, size: 18, color: theme.colorScheme.outline),
-                      ],
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.35),
+                      border: Border.all(color: theme.colorScheme.outlineVariant),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(height: 4),
-                    Text(c.matchedChunk, style: theme.textTheme.bodySmall, maxLines: 3, overflow: TextOverflow.ellipsis),
-                  ]),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(
+                        children: [
+                          Expanded(child: Text(c.title, style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600))),
+                          const SizedBox(width: 8),
+                          Icon(Icons.chevron_right, size: 18, color: theme.colorScheme.outline),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        [
+                          if (problemType.isNotEmpty) '问题类型：$problemType',
+                          if (description.isNotEmpty) '问题描述：$description',
+                          if (basis.isNotEmpty) '定性依据：$basis',
+                        ].join('\n'),
+                        style: theme.textTheme.bodySmall,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ]),
+                  ),
                 ),
-              ),
-            )),
+              );
+            }),
           ],
         ]),
       ),
