@@ -2455,9 +2455,14 @@ String get _activeConversationType {
         color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           if (result.answer.isNotEmpty) ...[
             Container(
               padding: const EdgeInsets.all(12),
@@ -2488,11 +2493,18 @@ String get _activeConversationType {
               ),
             )),
           ],
-          if (result.citations.isNotEmpty && result.similarCases.isNotEmpty)
-            const SizedBox(height: 12),
+              ],
+            ),
+          ),
           if (result.similarCases.isNotEmpty) ...[
-            Text('相关审计案例（${result.similarCases.length}）', style: theme.textTheme.labelMedium),
-            const SizedBox(height: 6),
+            const SizedBox(width: 16),
+            Expanded(
+              flex: 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('相关审计案例（${result.similarCases.length}）', style: theme.textTheme.labelMedium),
+                  const SizedBox(height: 6),
           ...result.similarCases.map((c) {
             final parsed = _parseCaseChunk(c.matchedChunk);
             final description = parsed['description'] ?? '';
@@ -2528,6 +2540,9 @@ String get _activeConversationType {
               ),
             );
           }),
+                ],
+              ),
+            ),
           ],
         ],
       ),
