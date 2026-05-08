@@ -31,7 +31,8 @@ let TextExtractionService = class TextExtractionService {
     }
     async extractPdf(buffer) {
         const pdfParse = require('pdf-parse');
-        const result = await pdfParse(buffer);
+        const parseFunc = pdfParse.default || pdfParse;
+        const result = await parseFunc(buffer);
         return result.text ?? '';
     }
     async extractDocx(buffer) {

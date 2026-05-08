@@ -31,11 +31,14 @@ export class TextExtractionService {
   }
 
   private async extractPdf(buffer: Buffer): Promise<string> {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParse = require('pdf-parse');
-    const parseFunc = pdfParse.default || pdfParse;
-    const result = await parseFunc(buffer);
-    return result.text ?? '';
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const pdfParse = require('pdf-parse');
+      const result = await pdfParse(buffer);
+      return result.text ?? '';
+    } catch (err) {
+      throw new Error(`PDF解析失败: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   private async extractDocx(buffer: Buffer): Promise<string> {
