@@ -615,12 +615,13 @@ export class DocumentsService {
     let text = '';
     try {
       text = await this.textExtractionService.extractText(document.sourcePath, document.fileType);
-    } catch {
-      // extraction failed, return empty chunks (job will stay in processing state)
+    } catch (err) {
+      this.logger.warn(`文本提取失败 [${document.title}]: ${err}`);
       return [];
     }
 
     if (!text || text.trim().length < 20) {
+      this.logger.warn(`文本内容不足 [${document.title}]: 长度=${text.length}`);
       return [];
     }
 
