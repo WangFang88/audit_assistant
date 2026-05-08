@@ -72,6 +72,7 @@ export declare class DocumentsService {
     private readonly fileStorageService;
     private readonly textExtractionService;
     private readonly embeddingService;
+    private readonly logger;
     constructor(persistedDocumentRepository: Repository<DocumentEntity>, persistedChunkRepository: Repository<DocumentChunkEntity>, persistedExtractionJobRepository: Repository<DocumentExtractionJobEntity>, auditService: AuditService, authService: AuthService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, fileStorageService: FileStorageService, textExtractionService: TextExtractionService, embeddingService: EmbeddingService);
     private assertAdminPublicLibraryOnly;
     private assertAdminCanAccessDocument;

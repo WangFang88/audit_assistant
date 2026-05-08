@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var DocumentsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ImportDocumentDto = exports.DocumentsService = void 0;
 const common_1 = require("@nestjs/common");
@@ -57,7 +58,7 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "groupId", void 0);
-let DocumentsService = class DocumentsService {
+let DocumentsService = DocumentsService_1 = class DocumentsService {
     constructor(persistedDocumentRepository, persistedChunkRepository, persistedExtractionJobRepository, auditService, authService, groupsService, subscriptionsService, fileStorageService, textExtractionService, embeddingService) {
         this.persistedDocumentRepository = persistedDocumentRepository;
         this.persistedChunkRepository = persistedChunkRepository;
@@ -69,6 +70,7 @@ let DocumentsService = class DocumentsService {
         this.fileStorageService = fileStorageService;
         this.textExtractionService = textExtractionService;
         this.embeddingService = embeddingService;
+        this.logger = new common_1.Logger(DocumentsService_1.name);
     }
     assertAdminPublicLibraryOnly(groupId) {
         if (!this.authService.isAdmin()) {
@@ -888,7 +890,7 @@ let DocumentsService = class DocumentsService {
     }
 };
 exports.DocumentsService = DocumentsService;
-exports.DocumentsService = DocumentsService = __decorate([
+exports.DocumentsService = DocumentsService = DocumentsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(document_entity_1.DocumentEntity)),
     __param(1, (0, typeorm_1.InjectRepository)(document_chunk_entity_1.DocumentChunkEntity)),

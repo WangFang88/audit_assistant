@@ -62,7 +62,7 @@ export declare class ChatService {
     private getDirectConversationPeerUserId;
     listConversations(groupId?: string): Promise<{
         id: string;
-        type: "group" | "agent" | "direct";
+        type: "group" | "direct" | "agent";
         title: string;
         groupId: string | null;
         isTeamAgent: boolean;

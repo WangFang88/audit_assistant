@@ -90,7 +90,7 @@ export declare class OverviewController {
             currentPlanId: string;
             trialEndsAt: string;
             trialDays: number;
-            status: "active" | "admin-preview" | "trial" | "expired";
+            status: "admin-preview" | "trial" | "active" | "expired";
             statusLabel: string;
             latestOrder: {
                 id: string;
@@ -202,7 +202,7 @@ export declare class OverviewController {
         recentAuditEvents: import("../../database/repositories/audit-event.repository").AuditEventSnapshot[];
         conversations: {
             id: string;
-            type: "group" | "agent" | "direct";
+            type: "group" | "direct" | "agent";
             title: string;
             groupId: string | null;
             isTeamAgent: boolean;

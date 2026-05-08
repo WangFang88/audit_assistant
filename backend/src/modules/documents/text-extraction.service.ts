@@ -33,7 +33,8 @@ export class TextExtractionService {
   private async extractPdf(buffer: Buffer): Promise<string> {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const pdfParse = require('pdf-parse');
-    const result = await pdfParse(buffer);
+    const parseFunc = pdfParse.default || pdfParse;
+    const result = await parseFunc(buffer);
     return result.text ?? '';
   }
 
