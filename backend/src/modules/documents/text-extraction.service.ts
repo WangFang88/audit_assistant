@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import * as pdfParse from 'pdf-parse';
 
 @Injectable()
 export class TextExtractionService {
@@ -32,8 +33,6 @@ export class TextExtractionService {
 
   private async extractPdf(buffer: Buffer): Promise<string> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pdfParse = require('pdf-parse');
       const result = await pdfParse(buffer);
       return result.text ?? '';
     } catch (err) {

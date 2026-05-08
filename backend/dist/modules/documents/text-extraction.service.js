@@ -30,10 +30,14 @@ let TextExtractionService = class TextExtractionService {
         return '';
     }
     async extractPdf(buffer) {
-        const pdfParse = require('pdf-parse');
-        const parseFunc = pdfParse.default || pdfParse;
-        const result = await parseFunc(buffer);
-        return result.text ?? '';
+        try {
+            const pdfParse = require('pdf-parse');
+            const result = await pdfParse(buffer);
+            return result.text ?? '';
+        }
+        catch (err) {
+            throw new Error(`PDF解析失败: ${err instanceof Error ? err.message : String(err)}`);
+        }
     }
     async extractDocx(buffer) {
         const mammoth = require('mammoth');
