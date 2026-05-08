@@ -136,7 +136,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
               onPressed: () async {
                 final result = await FilePicker.platform.pickFiles(
                   type: FileType.custom,
-                  allowedExtensions: ['pdf', 'doc', 'docx', 'txt'],
+                  allowedExtensions: ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'],
                   withData: true,
                 );
                 if (result != null) setDialogState(() => selectedFile = result.files.first);
