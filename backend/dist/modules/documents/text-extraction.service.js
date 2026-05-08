@@ -36,7 +36,7 @@ let TextExtractionService = TextExtractionService_1 = class TextExtractionServic
     async extractPdf(buffer) {
         try {
             const pdfParseModule = require('pdf-parse');
-            const parser = new pdfParseModule.PDFParse();
+            const parser = new pdfParseModule.PDFParse({ verbosity: 0 });
             const result = await parser.parse(buffer);
             return result.text ?? '';
         }

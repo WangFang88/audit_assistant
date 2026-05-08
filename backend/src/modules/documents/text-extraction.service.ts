@@ -34,10 +34,9 @@ export class TextExtractionService {
   private async extractPdf(buffer: Buffer): Promise<string> {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-      const pdfParseModule = require('pdf-parse');
-      const parser = new pdfParseModule.PDFParse({ verbosity: 0 });
-      const result = await parser.parse(buffer);
-      return result.text ?? '';
+      const pdf = require('pdf-parse');
+      const data = await pdf(buffer);
+      return data.text ?? '';
     } catch (err) {
       throw new Error(`PDF解析失败: ${err instanceof Error ? err.message : String(err)}`);
     }
