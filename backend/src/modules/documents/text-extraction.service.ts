@@ -35,7 +35,8 @@ export class TextExtractionService {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
       const pdfParseModule = require('pdf-parse');
-      const result = await pdfParseModule.PDFParse(buffer);
+      const parser = new pdfParseModule.PDFParse();
+      const result = await parser.parse(buffer);
       return result.text ?? '';
     } catch (err) {
       throw new Error(`PDF解析失败: ${err instanceof Error ? err.message : String(err)}`);
