@@ -10,6 +10,7 @@ exports.TextExtractionService = void 0;
 const common_1 = require("@nestjs/common");
 const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
+const pdfParse = require("pdf-parse");
 let TextExtractionService = class TextExtractionService {
     getAbsolutePath(sourcePath) {
         const relative = sourcePath.replace(/^\/files\//, '');
@@ -31,7 +32,6 @@ let TextExtractionService = class TextExtractionService {
     }
     async extractPdf(buffer) {
         try {
-            const pdfParse = require('pdf-parse');
             const result = await pdfParse(buffer);
             return result.text ?? '';
         }

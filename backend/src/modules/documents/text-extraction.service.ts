@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import * as pdfParse from 'pdf-parse';
+import pdfParse from 'pdf-parse';
 
 @Injectable()
 export class TextExtractionService {
