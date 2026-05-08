@@ -2455,26 +2455,94 @@ String get _activeConversationType {
         color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-          if (result.answer.isNotEmpty) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: Container(
+                  constraints: const BoxConstraints(maxHeight: 400),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(result.answer, style: const TextStyle(fontSize: 14)),
+                  ),
+                ),
               ),
-              child: Text(result.answer, style: const TextStyle(fontSize: 14)),
-            ),
-            const SizedBox(height: 12),
-          ],
+              if (result.similarCases.isNotEmpty) ...[
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    constraints: const BoxConstraints(maxHeight: 400),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: theme.colorScheme.outlineVariant),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Text('相关审计案例（${result.similarCases.length}）', style: theme.textTheme.labelMedium),
+                        ),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Column(
+                              children: result.similarCases.map((c) {
+                                final parsed = _parseCaseChunk(c.matchedChunk);
+                                final description = parsed['description'] ?? '';
+                                final basis = parsed['basis'] ?? '';
+                                final problemType = parsed['problemType'] ?? '';
+
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 6),
+                                  child: ListTile(
+                                    dense: true,
+                                    enabled: c.documentId.isNotEmpty,
+                                    onTap: c.documentId.isEmpty ? null : () => _showCaseDetailDialog(c),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    title: Text(c.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                    subtitle: Text(
+                                      [
+                                        if (problemType.isNotEmpty) '问题类型：$problemType',
+                                        if (description.isNotEmpty) '问题描述：$description',
+                                        if (basis.isNotEmpty) '定性依据：$basis',
+                                      ].join('\n'),
+                                      maxLines: 4,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.secondary, fontSize: 12)),
+                                        const SizedBox(width: 6),
+                                        Icon(Icons.open_in_new, size: 16, color: theme.colorScheme.outline),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
           if (result.citations.isNotEmpty) ...[
+            const SizedBox(height: 16),
             Text('参考来源（${result.citations.length}）', style: theme.textTheme.labelMedium),
             const SizedBox(height: 6),
             ...result.citations.map((c) => Card(
@@ -2492,57 +2560,6 @@ String get _activeConversationType {
                 trailing: Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.primary, fontSize: 12)),
               ),
             )),
-          ],
-              ],
-            ),
-          ),
-          if (result.similarCases.isNotEmpty) ...[
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 1,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('相关审计案例（${result.similarCases.length}）', style: theme.textTheme.labelMedium),
-                  const SizedBox(height: 6),
-          ...result.similarCases.map((c) {
-            final parsed = _parseCaseChunk(c.matchedChunk);
-            final description = parsed['description'] ?? '';
-            final basis = parsed['basis'] ?? '';
-            final problemType = parsed['problemType'] ?? '';
-
-            return Card(
-              margin: const EdgeInsets.only(bottom: 6),
-              child: ListTile(
-                dense: true,
-                enabled: c.documentId.isNotEmpty,
-                onTap: c.documentId.isEmpty ? null : () => _showCaseDetailDialog(c),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                title: Text(c.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                subtitle: Text(
-                  [
-                    if (problemType.isNotEmpty) '问题类型：$problemType',
-                    if (description.isNotEmpty) '问题描述：$description',
-                    if (basis.isNotEmpty) '定性依据：$basis',
-                  ].join('\n'),
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12),
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.secondary, fontSize: 12)),
-                    const SizedBox(width: 6),
-                    Icon(Icons.open_in_new, size: 16, color: theme.colorScheme.outline),
-                  ],
-                ),
-              ),
-            );
-          }),
-                ],
-              ),
-            ),
           ],
         ],
       ),
