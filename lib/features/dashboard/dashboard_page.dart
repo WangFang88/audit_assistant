@@ -2470,7 +2470,6 @@ String get _activeConversationType {
             const SizedBox(height: 12),
           ],
           if (result.citations.isNotEmpty) ...[
-                if (result.citations.isNotEmpty) ...[
             Text('参考来源（${result.citations.length}）', style: theme.textTheme.labelMedium),
             const SizedBox(height: 6),
             ...result.citations.map((c) => Card(
