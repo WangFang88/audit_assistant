@@ -38,6 +38,7 @@ class _MobileHomePageState extends State<MobileHomePage> {
   String? _error;
   DashboardOverview? _overview;
   QueryResult? _result;
+  List<Map<String, dynamic>> _queryHistory = [];
 
   @override
   void initState() {
@@ -55,8 +56,12 @@ class _MobileHomePageState extends State<MobileHomePage> {
     setState(() { _loading = true; _error = null; });
     try {
       final overview = await widget.apiService.fetchDashboard();
+      final queryHistory = await widget.apiService.getQueryHistory();
       if (!mounted) return;
-      setState(() { _overview = overview; });
+      setState(() {
+        _overview = overview;
+        _queryHistory = queryHistory;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() { _error = e.toString(); });
@@ -74,8 +79,12 @@ class _MobileHomePageState extends State<MobileHomePage> {
     setState(() { _searching = true; _result = null; });
     try {
       final result = await widget.apiService.search(question: q, queryScope: _queryScope);
+      final queryHistory = await widget.apiService.getQueryHistory();
       if (!mounted) return;
-      setState(() { _result = result; });
+      setState(() {
+        _result = result;
+        _queryHistory = queryHistory;
+      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('检索失败：$e')));
@@ -131,6 +140,55 @@ class _MobileHomePageState extends State<MobileHomePage> {
             style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
           ),
           const SizedBox(height: 20),
+          // Query History
+          if (_queryHistory.isNotEmpty) ...[
+            Text('检索历史', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 200),
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: _queryHistory.length,
+                separatorBuilder: (_, __) => Divider(height: 1, color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+                itemBuilder: (context, index) {
+                  final h = _queryHistory[index];
+                  final timestamp = DateTime.parse(h['queriedAt'] as String);
+                  final timeStr = '${timestamp.month}/${timestamp.day} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+                  return ListTile(
+                    dense: true,
+                    leading: Icon(Icons.search, size: 18, color: theme.colorScheme.outline),
+                    title: Text(
+                      h['queryText'] as String,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    subtitle: Text(timeStr, style: theme.textTheme.labelSmall),
+                    onTap: () {
+                      _questionController.text = h['queryText'] as String;
+                      if (h['queryResult'] != null) {
+                        try {
+                          final result = QueryResult.fromJson(h['queryResult'] as Map<String, dynamic>);
+                          setState(() {
+                            _result = result;
+                          });
+                        } catch (e) {
+                          _search();
+                        }
+                      } else {
+                        _search();
+                      }
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           // Result
           if (_result != null) _ResultCard(result: _result!, apiService: widget.apiService),
           // Quota
