@@ -2691,63 +2691,63 @@ String get _activeConversationType {
         ),
         const SizedBox(height: 12),
         // 检索历史
-        if (_queryHistory.isNotEmpty)
-          SectionCard(
-            title: '检索历史',
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 200),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: _queryHistory.map((h) {
-                    try {
-                      print('Query history item queriedAt: ${h['queriedAt']}');
-                      final timestamp = DateTime.parse(h['queriedAt'] as String);
-                      final timeStr = '${timestamp.month}/${timestamp.day} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
-                      return InkWell(
-                        onTap: () {
-                          _questionController.text = h['queryText'] as String;
-                          if (h['queryResult'] != null) {
-                            try {
-                              final result = QueryResult.fromJson(h['queryResult'] as Map<String, dynamic>);
-                              setState(() {
-                                _result = result;
-                                _error = null;
-                              });
-                            } catch (e) {
-                              print('Error parsing queryResult: $e');
-                              _runSearch();
-                            }
-                          } else {
-                            _runSearch();
-                          }
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              Icon(Icons.search, size: 14, color: theme.colorScheme.outline),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  '${h['queryText']} · $timeStr',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.bodySmall,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    } catch (e) {
-                      print('Error rendering query history item: $e');
-                      return const SizedBox.shrink();
-                    }
-                  }).toList(),
-                ),
-              ),
-            ),
-          ),
+        // if (_queryHistory.isNotEmpty)
+        //   SectionCard(
+        //     title: '检索历史',
+        //     child: ConstrainedBox(
+        //       constraints: const BoxConstraints(maxHeight: 200),
+        //       child: SingleChildScrollView(
+        //         child: Column(
+        //           children: _queryHistory.map((h) {
+        //             try {
+        //               print('Query history item queriedAt: ${h['queriedAt']}');
+        //               final timestamp = DateTime.parse(h['queriedAt'] as String);
+        //               final timeStr = '${timestamp.month}/${timestamp.day} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+        //               return InkWell(
+        //                 onTap: () {
+        //                   _questionController.text = h['queryText'] as String;
+        //                   if (h['queryResult'] != null) {
+        //                     try {
+        //                       final result = QueryResult.fromJson(h['queryResult'] as Map<String, dynamic>);
+        //                       setState(() {
+        //                         _result = result;
+        //                         _error = null;
+        //                       });
+        //                     } catch (e) {
+        //                       print('Error parsing queryResult: $e');
+        //                       _runSearch();
+        //                     }
+        //                   } else {
+        //                     _runSearch();
+        //                   }
+        //                 },
+        //                 child: Padding(
+        //                   padding: const EdgeInsets.symmetric(vertical: 4),
+        //                   child: Row(
+        //                     children: [
+        //                       Icon(Icons.search, size: 14, color: theme.colorScheme.outline),
+        //                       const SizedBox(width: 6),
+        //                       Expanded(
+        //                         child: Text(
+        //                           '${h['queryText']} · $timeStr',
+        //                           maxLines: 1,
+        //                           overflow: TextOverflow.ellipsis,
+        //                           style: theme.textTheme.bodySmall,
+        //                         ),
+        //                       ),
+        //                     ],
+        //                   ),
+        //                 ),
+        //               );
+        //             } catch (e) {
+        //               print('Error rendering query history item: $e');
+        //               return const SizedBox.shrink();
+        //             }
+        //           }).toList(),
+        //         ),
+        //       ),
+        //     ),
+        //   ),
         const SizedBox(height: 12),
         // 最近操作
         if (recentEvents.isNotEmpty)
