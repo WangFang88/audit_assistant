@@ -276,6 +276,9 @@ class ApiService {
       (headers) => _client.get(uri, headers: headers),
     );
     final json = jsonDecode(utf8.decode(response.bodyBytes));
+    if (json is! List) {
+      return [];
+    }
     return (json as List).cast<Map<String, dynamic>>();
   }
 

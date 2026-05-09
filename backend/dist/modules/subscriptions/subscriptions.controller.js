@@ -30,6 +30,10 @@ let SubscriptionsController = class SubscriptionsController {
         const memberships = await this.teamMemberRepository.findBy({ userId: currentUser.id, role: 'leader' });
         return await this.subscriptionsService.getOverview(memberships.length);
     }
+    async getQueryHistory(teamId) {
+        const currentUser = this.authService.me();
+        return this.subscriptionsService.getQueryHistory(currentUser.id, teamId || null);
+    }
     async createOrder(dto) {
         return this.subscriptionsService.createSubscriptionOrder(dto);
     }
@@ -44,6 +48,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], SubscriptionsController.prototype, "getOverview", null);
+__decorate([
+    (0, common_1.Get)('query-history'),
+    __param(0, (0, common_1.Query)('teamId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], SubscriptionsController.prototype, "getQueryHistory", null);
 __decorate([
     (0, common_1.Post)('orders'),
     __param(0, (0, common_1.Body)()),

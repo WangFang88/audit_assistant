@@ -11,7 +11,7 @@ export declare class SubscriptionsController {
         currentPlanId: string;
         trialEndsAt: string;
         trialDays: number;
-        status: "active" | "admin-preview" | "trial" | "expired";
+        status: "admin-preview" | "trial" | "active" | "expired";
         statusLabel: string;
         latestOrder: {
             id: string;
@@ -115,11 +115,16 @@ export declare class SubscriptionsController {
             region: string | null;
             expiredAt: string;
         }[];
-        libraryAccessPrices: Record<"local_policy" | "national_case" | "local_case" | "industry", {
+        libraryAccessPrices: Record<"local_policy" | "local_case" | "industry" | "national_case", {
             region: string;
             all: string;
         }>;
     }>;
+    getQueryHistory(teamId?: string): Promise<{
+        id: string;
+        queryText: string;
+        queriedAt: string;
+    }[]>;
     createOrder(dto: CreateSubscriptionOrderDto): Promise<{
         activationMode: string;
         message: string;
