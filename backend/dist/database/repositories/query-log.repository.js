@@ -17,6 +17,7 @@ let QueryLogRepository = class QueryLogRepository {
         entity.userId = snapshot.userId;
         entity.teamId = snapshot.teamId;
         entity.queryText = snapshot.queryText;
+        entity.queryResult = snapshot.queryResult;
         entity.queriedAt = new Date(snapshot.queriedAt.replace(' ', 'T'));
         entity.consumedQuota = snapshot.consumedQuota;
         return entity;
@@ -27,6 +28,7 @@ let QueryLogRepository = class QueryLogRepository {
             userId: entity.userId,
             teamId: entity.teamId,
             queryText: entity.queryText,
+            queryResult: entity.queryResult,
             queriedAt: (0, date_1.formatCst)(entity.queriedAt),
             consumedQuota: entity.consumedQuota,
         };

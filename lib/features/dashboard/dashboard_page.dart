@@ -2696,7 +2696,8 @@ String get _activeConversationType {
                         _questionController.text = h['queryText'] as String;
                         if (h['queryResult'] != null) {
                           setState(() {
-                            _result = h['queryResult'];
+                            _result = QueryResult.fromJson(h['queryResult'] as Map<String, dynamic>);
+                            _error = null;
                           });
                         } else {
                           _runSearch();

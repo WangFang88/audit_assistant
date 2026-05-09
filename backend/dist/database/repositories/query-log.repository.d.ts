@@ -4,6 +4,7 @@ export type QueryLogSnapshot = {
     userId: string;
     teamId: string | null;
     queryText: string;
+    queryResult?: any;
     queriedAt: string;
     consumedQuota: number;
 };
