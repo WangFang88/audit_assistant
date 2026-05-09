@@ -16,7 +16,7 @@ Map<String, String> _parseCaseChunk(String chunk) {
   final lastLine = lines.last;
   final fields = lastLine.split(',');
 
-  String getField(int index) => index < fields.length ? fields[index].trim() : '';
+  String getField(int index) => (index >= 0 && index < fields.length) ? fields[index].trim() : '';
 
   return {
     'category': getField(fields.length - 5),
