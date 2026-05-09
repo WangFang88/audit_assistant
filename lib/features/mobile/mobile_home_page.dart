@@ -165,6 +165,7 @@ class _MobileHomePageState extends State<MobileHomePage> {
             Container(
               constraints: const BoxConstraints(maxHeight: 200),
               decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLowest,
                 border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -175,18 +176,17 @@ class _MobileHomePageState extends State<MobileHomePage> {
                 separatorBuilder: (_, __) => Divider(height: 1, color: theme.colorScheme.outline.withValues(alpha: 0.1)),
                 itemBuilder: (context, index) {
                   final h = _queryHistory[index];
-                  final timestamp = DateTime.parse(h['queriedAt'] as String);
-                  final timeStr = '${timestamp.month}/${timestamp.day} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
                   return ListTile(
                     dense: true,
-                    leading: Icon(Icons.search, size: 18, color: theme.colorScheme.outline),
+                    visualDensity: const VisualDensity(vertical: -3),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    leading: Icon(Icons.search, size: 16, color: theme.colorScheme.outline),
                     title: Text(
                       h['queryText'] as String,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall,
                     ),
-                    subtitle: Text(timeStr, style: theme.textTheme.labelSmall),
                     onTap: () {
                       _questionController.text = h['queryText'] as String;
                       if (h['queryResult'] != null) {
