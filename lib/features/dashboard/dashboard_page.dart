@@ -2684,28 +2684,39 @@ String get _activeConversationType {
         if (_queryHistory.isNotEmpty)
           SectionCard(
             title: '检索历史',
-            child: Column(
-              children: _queryHistory.take(5).map((h) {
-                final timestamp = DateTime.parse(h['queriedAt'] as String);
-                final timeStr = '${timestamp.month}/${timestamp.day} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Icon(Icons.search, size: 14, color: theme.colorScheme.outline),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          '${h['queryText']} · $timeStr',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: _queryHistory.map((h) {
+                    final timestamp = DateTime.parse(h['queriedAt'] as String);
+                    final timeStr = '${timestamp.month}/${timestamp.day} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+                    return InkWell(
+                      onTap: () {
+                        _questionController.text = h['queryText'] as String;
+                        _runSearch();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Icon(Icons.search, size: 14, color: theme.colorScheme.outline),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                '${h['queryText']} · $timeStr',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
           ),
         const SizedBox(height: 12),
