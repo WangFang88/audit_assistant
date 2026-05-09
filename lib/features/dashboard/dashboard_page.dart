@@ -2695,44 +2695,49 @@ String get _activeConversationType {
               child: SingleChildScrollView(
                 child: Column(
                   children: _queryHistory.map((h) {
-                    final timestamp = DateTime.parse(h['queriedAt'] as String);
-                    final timeStr = '${timestamp.month}/${timestamp.day} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
-                    return InkWell(
-                      onTap: () {
-                        _questionController.text = h['queryText'] as String;
-                        if (h['queryResult'] != null) {
-                          try {
-                            final result = QueryResult.fromJson(h['queryResult'] as Map<String, dynamic>);
-                            setState(() {
-                              _result = result;
-                              _error = null;
-                            });
-                          } catch (e) {
-                            print('Error parsing queryResult: $e');
+                    try {
+                      final timestamp = DateTime.parse(h['queriedAt'] as String);
+                      final timeStr = '${timestamp.month}/${timestamp.day} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+                      return InkWell(
+                        onTap: () {
+                          _questionController.text = h['queryText'] as String;
+                          if (h['queryResult'] != null) {
+                            try {
+                              final result = QueryResult.fromJson(h['queryResult'] as Map<String, dynamic>);
+                              setState(() {
+                                _result = result;
+                                _error = null;
+                              });
+                            } catch (e) {
+                              print('Error parsing queryResult: $e');
+                              _runSearch();
+                            }
+                          } else {
                             _runSearch();
                           }
-                        } else {
-                          _runSearch();
-                        }
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Icon(Icons.search, size: 14, color: theme.colorScheme.outline),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                '${h['queryText']} · $timeStr',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall,
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Icon(Icons.search, size: 14, color: theme.colorScheme.outline),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '${h['queryText']} · $timeStr',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    } catch (e) {
+                      print('Error rendering query history item: $e');
+                      return const SizedBox.shrink();
+                    }
                   }).toList(),
                 ),
               ),
