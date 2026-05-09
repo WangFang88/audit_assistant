@@ -152,6 +152,7 @@ class _MobileHomePageState extends State<MobileHomePage> {
               ),
               child: ListView.separated(
                 shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 itemCount: _queryHistory.length,
                 separatorBuilder: (_, __) => Divider(height: 1, color: theme.colorScheme.outline.withValues(alpha: 0.1)),
                 itemBuilder: (context, index) {
