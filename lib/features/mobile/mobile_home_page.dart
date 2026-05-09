@@ -56,7 +56,7 @@ class _MobileHomePageState extends State<MobileHomePage> {
     setState(() { _loading = true; _error = null; });
     try {
       final overview = await widget.apiService.fetchDashboard();
-      final queryHistory = await widget.apiService.getQueryHistory();
+      final queryHistory = await widget.apiService.getQueryHistory(teamId: null);
       if (!mounted) return;
       setState(() {
         _overview = overview;
@@ -79,7 +79,7 @@ class _MobileHomePageState extends State<MobileHomePage> {
     setState(() { _searching = true; _result = null; });
     try {
       final result = await widget.apiService.search(question: q, queryScope: _queryScope);
-      final queryHistory = await widget.apiService.getQueryHistory();
+      final queryHistory = await widget.apiService.getQueryHistory(teamId: null);
       if (!mounted) return;
       setState(() {
         _result = result;
