@@ -281,7 +281,7 @@ let SubscriptionsService = class SubscriptionsService {
         await this.queryLogRepo.save(entity);
     }
     async getQueryHistory(userId, teamId, limit = 20) {
-        const where = teamId ? { teamId } : { userId, teamId: IsNull() };
+        const where = teamId ? { teamId } : { userId, teamId: (0, typeorm_2.IsNull)() };
         const logs = await this.queryLogRepo.find({
             where,
             order: { queriedAt: 'DESC' },
