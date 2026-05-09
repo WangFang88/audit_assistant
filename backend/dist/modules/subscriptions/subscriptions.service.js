@@ -275,6 +275,7 @@ let SubscriptionsService = class SubscriptionsService {
             userId: queryLog.userId,
             teamId: queryLog.teamId,
             queryText: queryLog.queryText,
+            queryResult: queryLog.queryResult,
             queriedAt: new Date(queryLog.queriedAt.replace(' ', 'T')),
             consumedQuota: queryLog.consumedQuota,
         });
@@ -290,6 +291,7 @@ let SubscriptionsService = class SubscriptionsService {
         return logs.map(log => ({
             id: log.id,
             queryText: log.queryText,
+            queryResult: log.queryResult,
             queriedAt: log.queriedAt.toISOString(),
         }));
     }

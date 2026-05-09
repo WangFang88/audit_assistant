@@ -14,6 +14,9 @@ export class QueryLogEntity {
   @Column({ name: 'query_text', type: 'text' })
   queryText!: string;
 
+  @Column({ name: 'query_result', type: 'jsonb', nullable: true })
+  queryResult!: any;
+
   @CreateDateColumn({ name: 'queried_at', type: 'timestamp' })
   queriedAt!: Date;
 

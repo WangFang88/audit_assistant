@@ -2694,7 +2694,13 @@ String get _activeConversationType {
                     return InkWell(
                       onTap: () {
                         _questionController.text = h['queryText'] as String;
-                        _runSearch();
+                        if (h['queryResult'] != null) {
+                          setState(() {
+                            _result = h['queryResult'];
+                          });
+                        } else {
+                          _runSearch();
+                        }
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),

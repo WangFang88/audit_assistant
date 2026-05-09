@@ -280,12 +280,13 @@ export class SubscriptionsService {
     }
   }
 
-  async recordQueryLog(queryLog: { id: string; userId: string; teamId: string | null; queryText: string; queriedAt: string; consumedQuota: number }) {
+  async recordQueryLog(queryLog: { id: string; userId: string; teamId: string | null; queryText: string; queriedAt: string; consumedQuota: number; queryResult?: any }) {
     const entity = this.queryLogRepo.create({
       id: queryLog.id,
       userId: queryLog.userId,
       teamId: queryLog.teamId,
       queryText: queryLog.queryText,
+      queryResult: queryLog.queryResult,
       queriedAt: new Date(queryLog.queriedAt.replace(' ', 'T')),
       consumedQuota: queryLog.consumedQuota,
     });
@@ -302,6 +303,7 @@ export class SubscriptionsService {
     return logs.map(log => ({
       id: log.id,
       queryText: log.queryText,
+      queryResult: log.queryResult,
       queriedAt: log.queriedAt.toISOString(),
     }));
   }

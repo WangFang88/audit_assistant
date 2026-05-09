@@ -3,6 +3,7 @@ export declare class QueryLogEntity {
     userId: string;
     teamId: string | null;
     queryText: string;
+    queryResult: any;
     queriedAt: Date;
     consumedQuota: number;
 }

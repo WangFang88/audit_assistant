@@ -155,16 +155,6 @@ let QueryService = class QueryService {
                 : '\u5173\u952e\u8bcd + \u8bed\u4e49\u878d\u5408';
         const publicHits = candidates.filter((c) => (0, library_type_1.isPublicLibrary)(c.libraryType)).length;
         const privateHits = candidates.filter((c) => c.libraryType === 'private').length;
-        if (!options?.skipAccounting) {
-            this.subscriptionsService.recordQueryLog({
-                id: 'query-log-' + Date.now(),
-                userId: this.authService.me().id,
-                teamId: resolvedGroupId ?? null,
-                queryText: dto.question,
-                queriedAt: (0, date_1.formatCst)(new Date()),
-                consumedQuota: 1,
-            });
-        }
         const fallbackAnswer = candidates.length === 0
             ? '未找到相关内容。建议：1) 尝试使用不同的关键词重新描述问题；2) 检查是否选择了正确的项目组或知识库范围；3) 确认相关文档是否已上传并完成索引。'
             : null;
@@ -189,7 +179,7 @@ let QueryService = class QueryService {
                 },
             });
         }
-        return {
+        const result = {
             question: dto.question,
             agentMode: dto.agentId != null,
             agent: teamAgent == null
@@ -239,6 +229,18 @@ let QueryService = class QueryService {
             similarCases,
             explanation: '\u8be5\u67e5\u8be2\u94fe\u8def\u5df2\u4ece\u56fa\u5b9a\u793a\u4f8b\u547d\u4e2d\u8fc7\u6e21\u5230\u57fa\u4e8e\u6301\u4e45\u5316 chunk \u7684\u68c0\u7d22\u9aa8\u67b6\uff1a\u5148\u8fc7\u6ee4\u8303\u56f4\uff0c\u518d\u5bf9\u6587\u672c\u5757\u6267\u884c\u5173\u952e\u8bcd\u4e0e\u8bed\u4e49\u7ebf\u7d22\u5339\u914d\uff0c\u6700\u540e\u8fd4\u56de\u53ef\u6eaf\u6e90\u7684\u5019\u9009\u6761\u6b3e\u3002',
         };
+        if (!options?.skipAccounting) {
+            this.subscriptionsService.recordQueryLog({
+                id: 'query-log-' + Date.now(),
+                userId: this.authService.me().id,
+                teamId: resolvedGroupId ?? null,
+                queryText: dto.question,
+                queriedAt: (0, date_1.formatCst)(new Date()),
+                consumedQuota: 1,
+                queryResult: result,
+            });
+        }
+        return result;
     }
 };
 exports.QueryService = QueryService;

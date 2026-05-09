@@ -123,6 +123,7 @@ export declare class SubscriptionsController {
     getQueryHistory(teamId?: string): Promise<{
         id: string;
         queryText: string;
+        queryResult: any;
         queriedAt: string;
     }[]>;
     createOrder(dto: CreateSubscriptionOrderDto): Promise<{

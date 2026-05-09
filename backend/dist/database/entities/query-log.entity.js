@@ -31,6 +31,10 @@ __decorate([
     __metadata("design:type", String)
 ], QueryLogEntity.prototype, "queryText", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'query_result', type: 'jsonb', nullable: true }),
+    __metadata("design:type", Object)
+], QueryLogEntity.prototype, "queryResult", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'queried_at', type: 'timestamp' }),
     __metadata("design:type", Date)
 ], QueryLogEntity.prototype, "queriedAt", void 0);
