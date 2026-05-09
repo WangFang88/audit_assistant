@@ -368,10 +368,6 @@ String get _activeConversationType {
       final resolvedGroupId = _resolveGroupId(overview.groups, preferredGroupId);
       final bundle = await _loadGroupBundle(resolvedGroupId);
       final queryHistory = await widget.apiService.getQueryHistory(teamId: resolvedGroupId);
-      print('Query history loaded: ${queryHistory.length} items');
-      if (queryHistory.isNotEmpty) {
-        print('First item: ${queryHistory.first}');
-      }
 
       if (!mounted) {
         return;
@@ -2707,16 +2703,12 @@ String get _activeConversationType {
                           _questionController.text = h['queryText'] as String;
                           if (h['queryResult'] != null) {
                             try {
-                              print('Parsing queryResult...');
                               final result = QueryResult.fromJson(h['queryResult'] as Map<String, dynamic>);
-                              print('QueryResult parsed successfully');
                               setState(() {
                                 _result = result;
                                 _error = null;
                               });
                             } catch (e, stackTrace) {
-                              print('Error parsing queryResult: $e');
-                              print('Stack trace: $stackTrace');
                               _runSearch();
                             }
                           } else {
@@ -2742,7 +2734,6 @@ String get _activeConversationType {
                         ),
                       );
                     } catch (e) {
-                      print('Error rendering query history item: $e');
                       return const SizedBox.shrink();
                     }
                   }).toList(),
