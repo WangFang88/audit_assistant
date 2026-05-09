@@ -2695,10 +2695,16 @@ String get _activeConversationType {
                       onTap: () {
                         _questionController.text = h['queryText'] as String;
                         if (h['queryResult'] != null) {
-                          setState(() {
-                            _result = QueryResult.fromJson(h['queryResult'] as Map<String, dynamic>);
-                            _error = null;
-                          });
+                          try {
+                            final result = QueryResult.fromJson(h['queryResult'] as Map<String, dynamic>);
+                            setState(() {
+                              _result = result;
+                              _error = null;
+                            });
+                          } catch (e) {
+                            print('Error parsing queryResult: $e');
+                            _runSearch();
+                          }
                         } else {
                           _runSearch();
                         }
