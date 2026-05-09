@@ -368,6 +368,10 @@ String get _activeConversationType {
       final resolvedGroupId = _resolveGroupId(overview.groups, preferredGroupId);
       final bundle = await _loadGroupBundle(resolvedGroupId);
       final queryHistory = await widget.apiService.getQueryHistory(teamId: resolvedGroupId);
+      print('Query history loaded: ${queryHistory.length} items');
+      if (queryHistory.isNotEmpty) {
+        print('First item: ${queryHistory.first}');
+      }
 
       if (!mounted) {
         return;
