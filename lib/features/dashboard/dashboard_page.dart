@@ -2704,8 +2704,24 @@ String get _activeConversationType {
                       final timeStr = '${timestamp.month}/${timestamp.day} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
                       return InkWell(
                         onTap: () {
-                          print('Clicked on query: ${h['queryText']}');
-                          // 暂时禁用功能，用于调试
+                          _questionController.text = h['queryText'] as String;
+                          if (h['queryResult'] != null) {
+                            try {
+                              print('Parsing queryResult...');
+                              final result = QueryResult.fromJson(h['queryResult'] as Map<String, dynamic>);
+                              print('QueryResult parsed successfully');
+                              setState(() {
+                                _result = result;
+                                _error = null;
+                              });
+                            } catch (e, stackTrace) {
+                              print('Error parsing queryResult: $e');
+                              print('Stack trace: $stackTrace');
+                              _runSearch();
+                            }
+                          } else {
+                            _runSearch();
+                          }
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
