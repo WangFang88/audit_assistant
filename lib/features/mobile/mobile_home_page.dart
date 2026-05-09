@@ -37,7 +37,6 @@ class _MobileHomePageState extends State<MobileHomePage> {
   bool _searching = false;
   String? _error;
   DashboardOverview? _overview;
-  QueryResult? _result;
   List<Map<String, dynamic>> _queryHistory = [];
 
   @override
@@ -72,19 +71,38 @@ class _MobileHomePageState extends State<MobileHomePage> {
 
   String? _queryScope;
 
+  void _showResultDialog(QueryResult result) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog.fullscreen(
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('检索结果'),
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: _ResultCard(result: result, apiService: widget.apiService),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _search() async {
     final q = _questionController.text.trim();
     if (q.isEmpty) return;
     FocusScope.of(context).unfocus();
-    setState(() { _searching = true; _result = null; });
+    setState(() { _searching = true; });
     try {
       final result = await widget.apiService.search(question: q, queryScope: _queryScope);
       final queryHistory = await widget.apiService.getQueryHistory(teamId: null);
       if (!mounted) return;
-      setState(() {
-        _result = result;
-        _queryHistory = queryHistory;
-      });
+      setState(() { _queryHistory = queryHistory; });
+      _showResultDialog(result);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('检索失败：$e')));
@@ -174,9 +192,7 @@ class _MobileHomePageState extends State<MobileHomePage> {
                       if (h['queryResult'] != null) {
                         try {
                           final result = QueryResult.fromJson(h['queryResult'] as Map<String, dynamic>);
-                          setState(() {
-                            _result = result;
-                          });
+                          _showResultDialog(result);
                         } catch (e) {
                           _search();
                         }
@@ -190,8 +206,6 @@ class _MobileHomePageState extends State<MobileHomePage> {
             ),
             const SizedBox(height: 16),
           ],
-          // Result
-          if (_result != null) _ResultCard(result: _result!, apiService: widget.apiService),
           // Quota
           _QuotaCard(subscription: sub),
         ]),
