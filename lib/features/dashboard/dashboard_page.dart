@@ -629,8 +629,14 @@ String get _activeConversationType {
       if (!mounted) {
         return;
       }
+      final resolvedGroupId = _isAdmin ? null : _activeGroupId;
+      final queryHistory = await widget.apiService.getQueryHistory(teamId: resolvedGroupId);
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _result = result;
+        _queryHistory = queryHistory;
       });
     } on ApiException catch (error) {
       if (!mounted) {
