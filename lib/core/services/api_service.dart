@@ -278,19 +278,6 @@ class ApiService {
     final json = jsonDecode(utf8.decode(response.bodyBytes));
     return (json as List).cast<Map<String, dynamic>>();
   }
-    final response = await _requestWithRefresh(
-      (headers) => _client.post(
-        Uri.parse('$_baseUrl/subscriptions/library-access'),
-        headers: headers,
-        body: jsonEncode({
-          'libraryType': libraryType,
-          if (region != null) 'region': region,
-        }),
-      ),
-      headers: {'Content-Type': 'application/json'},
-    );
-    _decodeMap(response);
-  }
 
   Future<List<ConversationSummary>> fetchConversations({String? groupId}) async {
     final uri = Uri.parse('$_baseUrl/chat/conversations').replace(
