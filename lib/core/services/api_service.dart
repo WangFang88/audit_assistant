@@ -261,6 +261,27 @@ class ApiService {
       (headers) => _client.post(
         Uri.parse('$_baseUrl/subscriptions/library-access'),
         headers: headers,
+        body: jsonEncode({'libraryType': libraryType, 'region': region}),
+      ),
+      headers: {'Content-Type': 'application/json'},
+    );
+    _decodeMap(response);
+  }
+
+  Future<List<Map<String, dynamic>>> getQueryHistory({String? teamId}) async {
+    final uri = teamId != null
+        ? Uri.parse('$_baseUrl/subscriptions/query-history?teamId=$teamId')
+        : Uri.parse('$_baseUrl/subscriptions/query-history');
+    final response = await _requestWithRefresh(
+      (headers) => _client.get(uri, headers: headers),
+    );
+    final json = jsonDecode(utf8.decode(response.bodyBytes));
+    return (json as List).cast<Map<String, dynamic>>();
+  }
+    final response = await _requestWithRefresh(
+      (headers) => _client.post(
+        Uri.parse('$_baseUrl/subscriptions/library-access'),
+        headers: headers,
         body: jsonEncode({
           'libraryType': libraryType,
           if (region != null) 'region': region,

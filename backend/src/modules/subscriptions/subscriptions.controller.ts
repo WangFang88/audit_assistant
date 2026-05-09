@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TeamMemberEntity } from '../../database/entities/team-member.entity';
@@ -19,6 +19,12 @@ export class SubscriptionsController {
     const currentUser = this.authService.me();
     const memberships = await this.teamMemberRepository.findBy({ userId: currentUser.id, role: 'leader' });
     return await this.subscriptionsService.getOverview(memberships.length);
+  }
+
+  @Get('query-history')
+  async getQueryHistory(@Query('teamId') teamId?: string) {
+    const currentUser = this.authService.me();
+    return this.subscriptionsService.getQueryHistory(currentUser.id, teamId || null);
   }
 
   @Post('orders')

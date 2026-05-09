@@ -292,6 +292,20 @@ export class SubscriptionsService {
     await this.queryLogRepo.save(entity);
   }
 
+  async getQueryHistory(userId: string, teamId: string | null, limit = 20) {
+    const where = teamId ? { teamId } : { userId, teamId: IsNull() };
+    const logs = await this.queryLogRepo.find({
+      where,
+      order: { queriedAt: 'DESC' },
+      take: limit,
+    });
+    return logs.map(log => ({
+      id: log.id,
+      queryText: log.queryText,
+      queriedAt: log.queriedAt.toISOString(),
+    }));
+  }
+
   async syncSubscriptionOrder(order: { id: string; userId: string; planType: string; amount: string; paidAt: string; expiredAt: string }) {
     await this.subscriptionRepo.upsert({
       id: order.id,

@@ -35,10 +35,9 @@ let TextExtractionService = TextExtractionService_1 = class TextExtractionServic
     }
     async extractPdf(buffer) {
         try {
-            const pdfParseModule = require('pdf-parse');
-            const parser = new pdfParseModule.PDFParse({ verbosity: 0 });
-            const result = await parser.parse(buffer);
-            return result.text ?? '';
+            const pdf = require('pdf-parse');
+            const data = await pdf(buffer);
+            return data.text ?? '';
         }
         catch (err) {
             throw new Error(`PDF解析失败: ${err instanceof Error ? err.message : String(err)}`);
