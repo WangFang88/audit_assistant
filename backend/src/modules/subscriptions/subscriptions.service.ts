@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { IsIn, IsOptional, IsString } from 'class-validator';
 import { QueryLogEntity } from '../../database/entities/query-log.entity';
 import { SubscriptionEntity } from '../../database/entities/subscription.entity';
