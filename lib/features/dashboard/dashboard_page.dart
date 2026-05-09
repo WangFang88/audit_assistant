@@ -2696,6 +2696,7 @@ String get _activeConversationType {
                 child: Column(
                   children: _queryHistory.map((h) {
                     try {
+                      print('Query history item queriedAt: ${h['queriedAt']}');
                       final timestamp = DateTime.parse(h['queriedAt'] as String);
                       final timeStr = '${timestamp.month}/${timestamp.day} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
                       return InkWell(
