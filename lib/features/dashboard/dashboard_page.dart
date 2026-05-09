@@ -66,6 +66,7 @@ class _DashboardPageState extends State<DashboardPage> {
   String? _error;
   String? _queryScope;
   DashboardOverview? _overview;
+  List<Map<String, dynamic>> _queryHistory = [];
   QueryResult? _result;
   List<ConversationSummary> _conversations = const [];
   List<ChatMessage> _messages = const [];
@@ -366,6 +367,7 @@ String get _activeConversationType {
       final overview = await widget.apiService.fetchDashboard(groupId: preferredGroupId);
       final resolvedGroupId = _resolveGroupId(overview.groups, preferredGroupId);
       final bundle = await _loadGroupBundle(resolvedGroupId);
+      final queryHistory = await widget.apiService.getQueryHistory(teamId: resolvedGroupId);
 
       if (!mounted) {
         return;
@@ -381,6 +383,7 @@ String get _activeConversationType {
         _extractJobs = bundle.extractJobs;
         _selectedConversationId = bundle.selectedConversationId;
         _messages = bundle.messages;
+        _queryHistory = queryHistory;
       });
     } on ApiException catch (error) {
       if (!mounted) {
@@ -2676,6 +2679,35 @@ String get _activeConversationType {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        // 检索历史
+        if (_queryHistory.isNotEmpty)
+          SectionCard(
+            title: '检索历史',
+            child: Column(
+              children: _queryHistory.take(5).map((h) {
+                final timestamp = DateTime.parse(h['queriedAt'] as String);
+                final timeStr = '${timestamp.month}/${timestamp.day} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.search, size: 14, color: theme.colorScheme.outline),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '${h['queryText']} · $timeStr',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
         const SizedBox(height: 12),
         // 最近操作
         if (recentEvents.isNotEmpty)
