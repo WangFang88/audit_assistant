@@ -61,6 +61,8 @@ export declare class QueryService {
     constructor(authService: AuthService, documentsService: DocumentsService, embeddingService: EmbeddingService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, teamAgentsService: TeamAgentsService, qwenService: QwenService, auditService: AuditService);
     private buildCandidates;
     private sanitizeJsonBlock;
+    private resolveRiskTemplates;
+    private looksLikeRiskTitle;
     private buildFallbackRiskTable;
     private buildRiskTable;
     search(dto: QueryRequestDto, options?: {

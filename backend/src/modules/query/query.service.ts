@@ -253,8 +253,8 @@ export class QueryService {
       riskLevel: (index < 2 ? '高' : index == 2 ? '中' : '低') as RiskLevel,
       detail: {
         explanation: `风险点是指最容易发生错报、舞弊、违规或控制失效的环节。${citation.matchedChunk || '请结合制度依据和业务资料进一步核查。'}`,
-        legalBasisDetails: [citation.matchedChunk].filter(Boolean),
-        caseDetails: similarCases[index] != null ? [similarCases[index].matchedChunk] : [],
+        legalBasisDetails: [citation.matchedChunk ? `【${citation.title}】${citation.matchedChunk}` : ''].filter(Boolean),
+        caseDetails: similarCases[index] != null ? [`【${similarCases[index].title}】${similarCases[index].matchedChunk}`] : [],
         evidenceSuggestions: ['调取原始业务资料', '核对审批流程与执行记录', '比对台账、单据与实际执行情况'],
         possibleFindings: ['可能存在制度执行不到位', '可能存在内控缺失、程序不规范或异常事项未被识别'],
         rectificationSuggestions: ['完善制度执行流程', '补齐审批、验收和归档资料', '强化关键岗位复核与监督机制'],
@@ -304,6 +304,17 @@ export class QueryService {
             ? row.checkContent
             : (templates.checkContents[index] ?? '结合制度条款、业务流程和原始资料检查高风险环节执行情况。');
 
+          const basisCitation = citations[index] ?? citations[0];
+          const caseCitation = similarCases[index] ?? similarCases[0];
+          const fallbackLegalBasisDetail = basisCitation?.matchedChunk ? `【${basisCitation.title}】${basisCitation.matchedChunk}` : '';
+          const fallbackCaseDetail = caseCitation?.matchedChunk ? `【${caseCitation.title}】${caseCitation.matchedChunk}` : '';
+          const normalizedLegalBasisDetails = Array.isArray(row.detail?.legalBasisDetails) && row.detail.legalBasisDetails.length > 0
+            ? row.detail.legalBasisDetails.map((item) => item.includes('【') ? item : `【${basisCitation?.title ?? '法规依据'}】${item}`)
+            : [fallbackLegalBasisDetail].filter(Boolean);
+          const normalizedCaseDetails = Array.isArray(row.detail?.caseDetails) && row.detail.caseDetails.length > 0
+            ? row.detail.caseDetails.map((item) => item.includes('【') ? item : `【${caseCitation?.title ?? '相关案例'}】${item}`)
+            : [fallbackCaseDetail].filter(Boolean);
+
           return {
             index: Number(row.index) || index + 1,
             riskPoint: normalizedRiskPoint,
@@ -314,8 +325,8 @@ export class QueryService {
             riskLevel: row.riskLevel === '高' || row.riskLevel === '中' || row.riskLevel === '低' ? row.riskLevel : '中',
             detail: {
               explanation: row.detail?.explanation || '',
-              legalBasisDetails: Array.isArray(row.detail?.legalBasisDetails) ? row.detail.legalBasisDetails : [],
-              caseDetails: Array.isArray(row.detail?.caseDetails) ? row.detail.caseDetails : [],
+              legalBasisDetails: normalizedLegalBasisDetails,
+              caseDetails: normalizedCaseDetails,
               evidenceSuggestions: Array.isArray(row.detail?.evidenceSuggestions) ? row.detail.evidenceSuggestions : [],
               possibleFindings: Array.isArray(row.detail?.possibleFindings) ? row.detail.possibleFindings : [],
               rectificationSuggestions: Array.isArray(row.detail?.rectificationSuggestions) ? row.detail.rectificationSuggestions : [],
