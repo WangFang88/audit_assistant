@@ -414,7 +414,7 @@ let QueryService = class QueryService {
             .map((token) => token.trim())
             .filter((token) => token.length >= 2)));
         const questionEmbedding = await this.embeddingService.embed(dto.question);
-        const candidateLimit = dto.queryScope === 'risk' ? (userTier === 'free' ? 15 : 30) : 6;
+        const candidateLimit = dto.queryScope === 'risk' ? 100 : 6;
         const candidates = this.buildCandidates({
             chunks: filteredChunks,
             lowerQuestion,
