@@ -149,24 +149,104 @@ export class QueryService {
       .trim();
   }
 
+  private resolveRiskTemplates(question: string) {
+    const lowerQuestion = question.toLowerCase();
+
+    if (question.includes('采购') || question.includes('招标') || question.includes('供应商')) {
+      return {
+        riskPoints: ['采购程序不规范', '供应商遴选不透明', '验收控制流于形式', '采购价格异常'],
+        checkContents: [
+          '核查是否履行规定采购程序，是否存在拆分采购、规避招标或未按要求比价。',
+          '核查供应商选择是否公允透明，是否存在固定供应商、关联交易或资质不符。',
+          '核查验收是否真实完整，是否建立台账、是否双人验收、是否账实一致。',
+          '核查采购价格是否明显偏离市场水平，是否建立询价、比价和价格复核机制。',
+        ],
+      };
+    }
+
+    if (question.includes('收入') || question.includes('销售') || question.includes('回款')) {
+      return {
+        riskPoints: ['收入确认不准确', '异常销售交易未被识别', '回款管理失控', '退货折让处理不规范'],
+        checkContents: [
+          '核查收入确认时点、金额和依据是否符合规定，是否存在提前或延后确认。',
+          '核查年末集中交易、异常订单、关联销售等事项是否真实合理。',
+          '核查回款记录、对账机制和账龄管理是否有效，是否存在截留或挪用回款。',
+          '核查退货、折让、冲销等处理是否完整入账，是否影响收入真实性。',
+        ],
+      };
+    }
+
+    if (question.includes('存货') || question.includes('仓库') || question.includes('库存')) {
+      return {
+        riskPoints: ['存货账实不符', '跌价减值识别不充分', '出入库控制薄弱', '异常损耗未被及时发现'],
+        checkContents: [
+          '核查盘点结果、台账记录和财务账面是否一致，是否存在盘盈盘亏未处理。',
+          '核查呆滞、毁损、积压存货是否及时识别并计提跌价或减值。',
+          '核查出入库审批、复核和记录是否完整，是否存在无单出库或手续不全。',
+          '核查损耗、报废、调拨等异常事项是否履行审批并留存依据。',
+        ],
+      };
+    }
+
+    if (question.includes('资金') || question.includes('现金') || question.includes('银行')) {
+      return {
+        riskPoints: ['资金收付审批失控', '银行账户管理不规范', '现金管理存在漏洞', '账实核对不及时'],
+        checkContents: [
+          '核查资金支付是否履行审批和授权程序，是否存在越权支付或挪用。',
+          '核查银行账户开立、使用和清理是否规范，是否存在账外账户或账户混用。',
+          '核查库存现金管理是否规范，是否存在坐支、白条抵库或私设小金库。',
+          '核查银行对账、余额调节和未达账项清理是否及时完整。',
+        ],
+      };
+    }
+
+    if (question.includes('费用') || question.includes('报销') || lowerQuestion.includes('expense')) {
+      return {
+        riskPoints: ['费用报销不合规', '费用归属期间不准确', '审批和预算约束失效', '异常费用支出未被识别'],
+        checkContents: [
+          '核查报销票据、事由和标准是否真实合规，是否存在虚假报销。',
+          '核查费用确认期间是否准确，是否存在跨期调节利润。',
+          '核查费用审批、预算控制和超标准支出管理是否有效执行。',
+          '核查大额、频繁或异常费用支出是否经过专项复核和解释。',
+        ],
+      };
+    }
+
+    return {
+      riskPoints: ['关键业务程序执行不规范', '职责分离或授权审批不到位', '业务资料记录不完整', '异常交易或数据变动未被及时识别'],
+      checkContents: [
+        '核查关键业务流程是否按制度要求执行，是否存在规避程序或变相绕过控制的情形。',
+        '核查岗位职责、审批权限和复核机制是否清晰，是否存在一人经办到底或越权处理。',
+        '核查台账、单据、合同、验收和归档资料是否完整一致，是否存在缺失或前后不符。',
+        '核查异常波动、敏感交易和关键数据是否经过有效识别、复核和解释。',
+      ],
+    };
+  }
+
+  private looksLikeRiskTitle(value: string, question: string): boolean {
+    const trimmed = value.trim();
+    if (!trimmed) return true;
+    if (trimmed === question.trim()) return true;
+    if (trimmed.length <= 3) return true;
+    if (/制度|办法|规定|条例|准则|法|细则|规范|指引|通知|流程|手册|台账|资料|文件|案例$/.test(trimmed)) {
+      return true;
+    }
+    if (/第.+条|第.+章/.test(trimmed)) {
+      return true;
+    }
+    if (/风险排查|审计|检查表/.test(trimmed) && !/不|未|异常|失控|缺失|不足|不规范|不透明|不完整/.test(trimmed)) {
+      return true;
+    }
+    return false;
+  }
+
   private buildFallbackRiskTable(question: string, citations: CitationRecord[], similarCases: CitationRecord[]): RiskCheckTable {
-    const fallbackRiskPoints = [
-      '关键业务程序执行不规范',
-      '职责分离或授权审批不到位',
-      '业务资料记录不完整',
-      '异常交易或数据变动未被及时识别',
-    ] as const;
-    const fallbackCheckContents = [
-      '核查关键业务流程是否按制度要求执行，是否存在规避程序或变相绕过控制的情形。',
-      '核查岗位职责、审批权限和复核机制是否清晰，是否存在一人经办到底或越权处理。',
-      '核查台账、单据、合同、验收和归档资料是否完整一致，是否存在缺失或前后不符。',
-      '核查异常波动、敏感交易和关键数据是否经过有效识别、复核和解释。',
-    ] as const;
+    const templates = this.resolveRiskTemplates(question);
 
     const rows = citations.slice(0, 4).map((citation, index) => ({
       index: index + 1,
-      riskPoint: fallbackRiskPoints[index] ?? `重点风险环节${index + 1}`,
-      checkContent: fallbackCheckContents[index] ?? '结合制度条款、业务流程和原始资料检查高风险环节执行情况。',
+      riskPoint: templates.riskPoints[index] ?? `重点风险环节${index + 1}`,
+      checkContent: templates.checkContents[index] ?? '结合制度条款、业务流程和原始资料检查高风险环节执行情况。',
       legalBasis: [citation.title, citation.chapterTitle, citation.articleRef].filter(Boolean).join(' · '),
       caseReference: similarCases[index]?.title ?? (similarCases.length > 0 ? similarCases[0].title : '可结合相关审计案例进一步核查'),
       evidenceMaterials: '制度文件、业务台账、审批记录、合同凭证、原始单据',
@@ -207,29 +287,41 @@ export class QueryService {
       if (!Array.isArray(parsed.rows) || parsed.rows.length === 0) {
         return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases) : null;
       }
+      const templates = this.resolveRiskTemplates(question);
+
       return {
         topic: parsed.topic || question,
         summary: parsed.summary || `围绕“${question}”生成的风险排查结果。`,
         columns: Array.isArray(parsed.columns) && parsed.columns.length > 0
             ? parsed.columns
             : ['序号', '风险点', '检查内容', '法规依据', '案例参考', '取证资料', '风险等级'],
-        rows: parsed.rows.map((row, index) => ({
-          index: Number(row.index) || index + 1,
-          riskPoint: row.riskPoint || `风险点${index + 1}`,
-          checkContent: row.checkContent || '',
-          legalBasis: row.legalBasis || '',
-          caseReference: row.caseReference || '',
-          evidenceMaterials: row.evidenceMaterials || '',
-          riskLevel: row.riskLevel === '高' || row.riskLevel === '中' || row.riskLevel === '低' ? row.riskLevel : '中',
-          detail: {
-            explanation: row.detail?.explanation || '',
-            legalBasisDetails: Array.isArray(row.detail?.legalBasisDetails) ? row.detail.legalBasisDetails : [],
-            caseDetails: Array.isArray(row.detail?.caseDetails) ? row.detail.caseDetails : [],
-            evidenceSuggestions: Array.isArray(row.detail?.evidenceSuggestions) ? row.detail.evidenceSuggestions : [],
-            possibleFindings: Array.isArray(row.detail?.possibleFindings) ? row.detail.possibleFindings : [],
-            rectificationSuggestions: Array.isArray(row.detail?.rectificationSuggestions) ? row.detail.rectificationSuggestions : [],
-          },
-        })),
+        rows: parsed.rows.map((row, index) => {
+          const fallbackRiskPoint = templates.riskPoints[index] ?? `重点风险环节${index + 1}`;
+          const normalizedRiskPoint = this.looksLikeRiskTitle(row.riskPoint ?? '', question)
+            ? fallbackRiskPoint
+            : (row.riskPoint || fallbackRiskPoint);
+          const normalizedCheckContent = row.checkContent && row.checkContent.trim().length > 0
+            ? row.checkContent
+            : (templates.checkContents[index] ?? '结合制度条款、业务流程和原始资料检查高风险环节执行情况。');
+
+          return {
+            index: Number(row.index) || index + 1,
+            riskPoint: normalizedRiskPoint,
+            checkContent: normalizedCheckContent,
+            legalBasis: row.legalBasis || '',
+            caseReference: row.caseReference || '',
+            evidenceMaterials: row.evidenceMaterials || '',
+            riskLevel: row.riskLevel === '高' || row.riskLevel === '中' || row.riskLevel === '低' ? row.riskLevel : '中',
+            detail: {
+              explanation: row.detail?.explanation || '',
+              legalBasisDetails: Array.isArray(row.detail?.legalBasisDetails) ? row.detail.legalBasisDetails : [],
+              caseDetails: Array.isArray(row.detail?.caseDetails) ? row.detail.caseDetails : [],
+              evidenceSuggestions: Array.isArray(row.detail?.evidenceSuggestions) ? row.detail.evidenceSuggestions : [],
+              possibleFindings: Array.isArray(row.detail?.possibleFindings) ? row.detail.possibleFindings : [],
+              rectificationSuggestions: Array.isArray(row.detail?.rectificationSuggestions) ? row.detail.rectificationSuggestions : [],
+            },
+          };
+        }),
       };
     } catch {
       return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases) : null;
