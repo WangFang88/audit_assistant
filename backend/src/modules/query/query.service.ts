@@ -150,21 +150,34 @@ export class QueryService {
   }
 
   private buildFallbackRiskTable(question: string, citations: CitationRecord[], similarCases: CitationRecord[]): RiskCheckTable {
+    const fallbackRiskPoints = [
+      '关键业务程序执行不规范',
+      '职责分离或授权审批不到位',
+      '业务资料记录不完整',
+      '异常交易或数据变动未被及时识别',
+    ] as const;
+    const fallbackCheckContents = [
+      '核查关键业务流程是否按制度要求执行，是否存在规避程序或变相绕过控制的情形。',
+      '核查岗位职责、审批权限和复核机制是否清晰，是否存在一人经办到底或越权处理。',
+      '核查台账、单据、合同、验收和归档资料是否完整一致，是否存在缺失或前后不符。',
+      '核查异常波动、敏感交易和关键数据是否经过有效识别、复核和解释。',
+    ] as const;
+
     const rows = citations.slice(0, 4).map((citation, index) => ({
       index: index + 1,
-      riskPoint: citation.title || `风险点${index + 1}`,
-      checkContent: citation.matchedChunk.slice(0, 60) || '结合制度条款检查执行情况。',
-      legalBasis: [citation.chapterTitle, citation.articleRef].filter(Boolean).join(' ') || citation.title,
+      riskPoint: fallbackRiskPoints[index] ?? `重点风险环节${index + 1}`,
+      checkContent: fallbackCheckContents[index] ?? '结合制度条款、业务流程和原始资料检查高风险环节执行情况。',
+      legalBasis: [citation.title, citation.chapterTitle, citation.articleRef].filter(Boolean).join(' · '),
       caseReference: similarCases[index]?.title ?? (similarCases.length > 0 ? similarCases[0].title : '可结合相关审计案例进一步核查'),
-      evidenceMaterials: '制度文件、业务台账、审批记录、合同凭证',
-      riskLevel: index < 2 ? '高' : index == 2 ? '中' : '低' as RiskLevel,
+      evidenceMaterials: '制度文件、业务台账、审批记录、合同凭证、原始单据',
+      riskLevel: (index < 2 ? '高' : index == 2 ? '中' : '低') as RiskLevel,
       detail: {
-        explanation: citation.matchedChunk || '请结合制度依据和业务资料进一步核查。',
+        explanation: `风险点是指最容易发生错报、舞弊、违规或控制失效的环节。${citation.matchedChunk || '请结合制度依据和业务资料进一步核查。'}`,
         legalBasisDetails: [citation.matchedChunk].filter(Boolean),
         caseDetails: similarCases[index] != null ? [similarCases[index].matchedChunk] : [],
-        evidenceSuggestions: ['调取原始业务资料', '核对审批流程与执行记录'],
-        possibleFindings: ['可能存在制度执行不到位', '可能存在内控缺失或程序不规范'],
-        rectificationSuggestions: ['完善制度执行流程', '补齐审批、验收和归档资料'],
+        evidenceSuggestions: ['调取原始业务资料', '核对审批流程与执行记录', '比对台账、单据与实际执行情况'],
+        possibleFindings: ['可能存在制度执行不到位', '可能存在内控缺失、程序不规范或异常事项未被识别'],
+        rectificationSuggestions: ['完善制度执行流程', '补齐审批、验收和归档资料', '强化关键岗位复核与监督机制'],
       },
     }));
 
@@ -182,7 +195,7 @@ export class QueryService {
     similarCases: CitationRecord[];
   }): Promise<RiskCheckTable | null> {
     const { question, citations, similarCases } = params;
-    const prompt = `你是一名审计风险排查助手。请围绕用户输入生成风险排查表。\n\n用户输入：${question}\n\n法规和制度依据候选：\n${citations.map((c, i) => `${i + 1}.【${c.title}】${c.matchedChunk}`).join('\n\n')}\n\n案例候选：\n${similarCases.map((c, i) => `${i + 1}.【${c.title}】${c.matchedChunk}`).join('\n\n')}\n\n请严格输出 JSON，不要输出 markdown 代码块，不要输出额外解释。\nJSON 结构如下：\n{\n  "topic": "string",\n  "summary": "string",\n  "columns": ["序号", "风险点", "检查内容", "法规依据", "案例参考", "取证资料", "风险等级"],\n  "rows": [\n    {\n      "index": 1,\n      "riskPoint": "string",\n      "checkContent": "string",\n      "legalBasis": "string",\n      "caseReference": "string",\n      "evidenceMaterials": "string",\n      "riskLevel": "高|中|低",\n      "detail": {\n        "explanation": "string",\n        "legalBasisDetails": ["string"],\n        "caseDetails": ["string"],\n        "evidenceSuggestions": ["string"],\n        "possibleFindings": ["string"],\n        "rectificationSuggestions": ["string"]\n      }\n    }\n  ]\n}\n\n要求：\n1. 输出 4-8 个风险点\n2. 风险点要贴合审计主题\n3. 优先引用给定法规和案例\n4. 风险等级只能填写 高、中、低\n5. 每条都必须包含 detail。`;
+    const prompt = `你是一名审计风险排查助手。请围绕用户输入生成风险排查表。\n\n用户输入：${question}\n\n法规和制度依据候选：\n${citations.map((c, i) => `${i + 1}.【${c.title}】${c.matchedChunk}`).join('\n\n')}\n\n案例候选：\n${similarCases.map((c, i) => `${i + 1}.【${c.title}】${c.matchedChunk}`).join('\n\n')}\n\n请严格输出 JSON，不要输出 markdown 代码块，不要输出额外解释。\nJSON 结构如下：\n{\n  "topic": "string",\n  "summary": "string",\n  "columns": ["序号", "风险点", "检查内容", "法规依据", "案例参考", "取证资料", "风险等级"],\n  "rows": [\n    {\n      "index": 1,\n      "riskPoint": "string",\n      "checkContent": "string",\n      "legalBasis": "string",\n      "caseReference": "string",\n      "evidenceMaterials": "string",\n      "riskLevel": "高|中|低",\n      "detail": {\n        "explanation": "string",\n        "legalBasisDetails": ["string"],\n        "caseDetails": ["string"],\n        "evidenceSuggestions": ["string"],\n        "possibleFindings": ["string"],\n        "rectificationSuggestions": ["string"]\n      }\n    }\n  ]\n}\n\n字段定义要求：\n1. “风险点”必须表示最容易发生错报、漏报、舞弊、违规或控制失效的具体环节，必须写成问题型表达，如“采购程序不规范”“审批授权失控”“验收记录不完整”。\n2. “风险点”不能写成法规标题、制度名称、资料名称、文档标题，也不能直接照抄审计主题。\n3. “检查内容”是围绕风险点需要核查的具体事项或程序，不得与“风险点”重复。\n4. “法规依据”只能填写制度、法规、办法、条款等依据名称或摘要，不得写成风险点。\n5. “取证资料”只能填写审计取证时需要调取的资料。\n\n其他要求：\n1. 输出 4-8 个风险点\n2. 风险点要贴合审计主题\n3. 优先引用给定法规和案例\n4. 风险等级只能填写 高、中、低\n5. 每条都必须包含 detail。`;
 
     const text = await this.qwenService.generateFromPrompt(prompt);
     if (!text) {
