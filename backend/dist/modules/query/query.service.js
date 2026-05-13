@@ -218,9 +218,11 @@ let QueryService = class QueryService {
         };
         return explanations[riskPoint] || `该风险点涉及${riskPoint}相关的内控缺失或执行不到位，可能导致错报、舞弊或违规行为。`;
     }
-    buildFallbackRiskTable(question, citations, similarCases) {
+    buildFallbackRiskTable(question, citations, similarCases, userTier) {
         const templates = this.resolveRiskTemplates(question);
-        const rows = citations.slice(0, 4).map((citation, index) => {
+        const maxRisks = userTier === 'free' ? 10 : 20;
+        const availableCitations = citations.slice(0, Math.min(citations.length, maxRisks));
+        const rows = availableCitations.map((citation, index) => {
             const riskPoint = templates.riskPoints[index] ?? `重点风险环节${index + 1}`;
             return {
                 index: index + 1,
@@ -258,12 +260,12 @@ let QueryService = class QueryService {
         const prompt = `你是一名审计风险排查助手。请围绕用户输入生成风险排查表。\n\n用户输入：${question}\n\n法规和制度依据候选：\n${citations.map((c, i) => `${i + 1}.【${c.title}】${c.matchedChunk}`).join('\n\n')}\n\n案例候选：\n${similarCases.map((c, i) => `${i + 1}.【${c.title}】${c.matchedChunk}`).join('\n\n')}\n\n请严格输出 JSON，不要输出 markdown 代码块，不要输出额外解释。\nJSON 结构如下：\n{\n  “topic”: “string”,\n  “summary”: “string”,\n  “columns”: [“序号”, “风险点”, “检查内容”, “法规依据”, “案例参考”, “取证资料”, “风险等级”],\n  “rows”: [\n    {\n      “index”: 1,\n      “riskPoint”: “string”,\n      “checkContent”: “string”,\n      “legalBasis”: “string”,\n      “caseReference”: “string”,\n      “evidenceMaterials”: “string”,\n      “riskLevel”: “高|中|低”,\n      “detail”: {\n        “explanation”: “string”,\n        “legalBasisDetails”: [“string”],\n        “caseDetails”: [“string”],\n        “evidenceSuggestions”: [“string”],\n        “possibleFindings”: [“string”],\n        “rectificationSuggestions”: [“string”]\n      }\n    }\n  ]\n}\n\n字段定义要求：\n1. “风险点”必须表示最容易发生错报、漏报、舞弊、违规或控制失效的具体环节，必须写成问题型表达，如”采购程序不规范””审批授权失控””验收记录不完整”。\n2. “风险点”不能写成法规标题、制度名称、资料名称、文档标题，也不能直接照抄审计主题。\n3. “检查内容”是围绕风险点需要核查的具体事项或程序，不得与”风险点”重复。\n4. “法规依据”只能填写制度、法规、办法、条款等依据名称或摘要，不得写成风险点。\n5. “取证资料”只能填写审计取证时需要调取的资料。\n\n其他要求：\n1. ${riskCountGuidance}\n2. ${detailGuidance}\n3. 风险点要贴合审计主题\n4. 优先引用给定法规和案例\n5. 风险等级只能填写 高、中、低\n6. 每条都必须包含 detail。`;
         const text = await this.qwenService.generateFromPrompt(prompt);
         if (!text) {
-            return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases) : null;
+            return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases, userTier) : null;
         }
         try {
             const parsed = JSON.parse(this.sanitizeJsonBlock(text));
             if (!Array.isArray(parsed.rows) || parsed.rows.length === 0) {
-                return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases) : null;
+                return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases, userTier) : null;
             }
             const templates = this.resolveRiskTemplates(question);
             return {
@@ -311,7 +313,7 @@ let QueryService = class QueryService {
             };
         }
         catch {
-            return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases) : null;
+            return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases, userTier) : null;
         }
     }
     async search(dto, options) {

@@ -270,10 +270,12 @@ export class QueryService {
     return explanations[riskPoint] || `该风险点涉及${riskPoint}相关的内控缺失或执行不到位，可能导致错报、舞弊或违规行为。`;
   }
 
-  private buildFallbackRiskTable(question: string, citations: CitationRecord[], similarCases: CitationRecord[]): RiskCheckTable {
+  private buildFallbackRiskTable(question: string, citations: CitationRecord[], similarCases: CitationRecord[], userTier: 'free' | 'subscribed'): RiskCheckTable {
     const templates = this.resolveRiskTemplates(question);
+    const maxRisks = userTier === 'free' ? 10 : 20;
+    const availableCitations = citations.slice(0, Math.min(citations.length, maxRisks));
 
-    const rows = citations.slice(0, 4).map((citation, index) => {
+    const rows = availableCitations.map((citation, index) => {
       const riskPoint = templates.riskPoints[index] ?? `重点风险环节${index + 1}`;
       return {
         index: index + 1,
@@ -320,13 +322,13 @@ export class QueryService {
 
     const text = await this.qwenService.generateFromPrompt(prompt);
     if (!text) {
-      return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases) : null;
+      return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases, userTier) : null;
     }
 
     try {
       const parsed = JSON.parse(this.sanitizeJsonBlock(text)) as RiskCheckTable;
       if (!Array.isArray(parsed.rows) || parsed.rows.length === 0) {
-        return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases) : null;
+        return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases, userTier) : null;
       }
       const templates = this.resolveRiskTemplates(question);
 
@@ -376,7 +378,7 @@ export class QueryService {
         }),
       };
     } catch {
-      return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases) : null;
+      return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases, userTier) : null;
     }
   }
 
