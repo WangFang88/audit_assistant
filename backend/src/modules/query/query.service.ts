@@ -492,12 +492,13 @@ export class QueryService {
 
     const questionEmbedding = await this.embeddingService.embed(dto.question);
 
+    const candidateLimit = dto.queryScope === 'risk' ? (userTier === 'free' ? 15 : 30) : 6;
     const candidates = this.buildCandidates({
       chunks: filteredChunks,
       lowerQuestion,
       tokens,
       questionEmbedding,
-      limit: 6,
+      limit: candidateLimit,
     });
 
     const shouldFetchSimilarCases = canAccessCases && (dto.queryScope == null || ['regulation', 'material', 'risk'].includes(dto.queryScope));
