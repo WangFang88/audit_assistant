@@ -39,6 +39,21 @@ class _MobileHomePageState extends State<MobileHomePage> {
   DashboardOverview? _overview;
   List<Map<String, dynamic>> _queryHistory = [];
 
+  bool get _isAdmin {
+    return widget.user.role == '管理员' || widget.user.role == 'admin';
+  }
+
+  String? get _activeGroupId {
+    if (_isAdmin) {
+      return null;
+    }
+    final groups = _overview?.groups ?? const <ProjectGroup>[];
+    if (groups.isEmpty) {
+      return null;
+    }
+    return groups.first.id;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -55,7 +70,8 @@ class _MobileHomePageState extends State<MobileHomePage> {
     setState(() { _loading = true; _error = null; });
     try {
       final overview = await widget.apiService.fetchDashboard();
-      final queryHistory = await widget.apiService.getQueryHistory(teamId: null);
+      final resolvedGroupId = _isAdmin || overview.groups.isEmpty ? null : overview.groups.first.id;
+      final queryHistory = await widget.apiService.getQueryHistory(teamId: resolvedGroupId);
       if (!mounted) return;
       setState(() {
         _overview = overview;
@@ -98,8 +114,13 @@ class _MobileHomePageState extends State<MobileHomePage> {
     FocusScope.of(context).unfocus();
     setState(() { _searching = true; });
     try {
-      final result = await widget.apiService.search(question: q, queryScope: _queryScope);
-      final queryHistory = await widget.apiService.getQueryHistory(teamId: null);
+      final groupId = _activeGroupId;
+      final result = await widget.apiService.search(
+        question: q,
+        groupId: groupId,
+        queryScope: _queryScope,
+      );
+      final queryHistory = await widget.apiService.getQueryHistory(teamId: groupId);
       if (!mounted) return;
       setState(() { _queryHistory = queryHistory; });
       _showResultDialog(result);
