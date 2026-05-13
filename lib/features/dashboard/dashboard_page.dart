@@ -2582,21 +2582,28 @@ String get _activeConversationType {
             const SizedBox(height: 16),
             Text('参考来源（${result.citations.length}）', style: theme.textTheme.labelMedium),
             const SizedBox(height: 6),
-            ...result.citations.map((c) => Card(
-              margin: const EdgeInsets.only(bottom: 6),
-              child: ListTile(
-                dense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                title: Text(c.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                subtitle: Text(
-                  '${c.libraryType}${c.chapterTitle.isNotEmpty ? ' · ${c.chapterTitle}' : ''}${c.articleRef.isNotEmpty ? ' ${c.articleRef}' : ''}\n${c.matchedChunk}',
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 400),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: result.citations.map((c) => Card(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    child: ListTile(
+                      dense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      title: Text(c.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      subtitle: Text(
+                        '${c.libraryType}${c.chapterTitle.isNotEmpty ? ' · ${c.chapterTitle}' : ''}${c.articleRef.isNotEmpty ? ' ${c.articleRef}' : ''}\n${c.matchedChunk}',
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      trailing: Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.primary, fontSize: 12)),
+                    ),
+                  )).toList(),
                 ),
-                trailing: Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.primary, fontSize: 12)),
               ),
-            )),
+            ),
           ],
         ],
       ),
@@ -2667,9 +2674,12 @@ String get _activeConversationType {
             ),
             const SizedBox(height: 12),
           ],
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
+          Container(
+            constraints: const BoxConstraints(maxHeight: 400),
+            child: SingleChildScrollView(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
               columnSpacing: 16,
               headingRowHeight: 42,
               dataRowMinHeight: 52,
@@ -2743,25 +2753,34 @@ String get _activeConversationType {
               }).toList(),
             ),
           ),
+            ),
+          ),
           if (result.citations.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text('参考来源（${result.citations.length}）', style: theme.textTheme.labelMedium),
             const SizedBox(height: 6),
-            ...result.citations.map((c) => Card(
-              margin: const EdgeInsets.only(bottom: 6),
-              child: ListTile(
-                dense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                title: Text(c.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                subtitle: Text(
-                  '${c.libraryType}${c.chapterTitle.isNotEmpty ? ' · ${c.chapterTitle}' : ''}${c.articleRef.isNotEmpty ? ' ${c.articleRef}' : ''}\n${c.matchedChunk}',
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 400),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: result.citations.map((c) => Card(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    child: ListTile(
+                      dense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      title: Text(c.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      subtitle: Text(
+                        '${c.libraryType}${c.chapterTitle.isNotEmpty ? ' · ${c.chapterTitle}' : ''}${c.articleRef.isNotEmpty ? ' ${c.articleRef}' : ''}\n${c.matchedChunk}',
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      trailing: Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.primary, fontSize: 12)),
+                    ),
+                  )).toList(),
                 ),
-                trailing: Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.primary, fontSize: 12)),
               ),
-            )),
+            ),
           ],
         ],
       ),
