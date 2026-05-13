@@ -427,7 +427,9 @@ export class QueryService {
             evidenceMaterials: row.evidenceMaterials || '',
             riskLevel: row.riskLevel === '高' || row.riskLevel === '中' || row.riskLevel === '低' ? row.riskLevel : '中',
             detail: {
-              explanation: row.detail?.explanation || '',
+              explanation: row.detail?.explanation && row.detail.explanation.trim().length > 0
+                ? row.detail.explanation
+                : this.generateRiskExplanation(normalizedRiskPoint),
               legalBasisDetails: normalizedLegalBasisDetails,
               caseDetails: normalizedCaseDetails,
               evidenceSuggestions: Array.isArray(row.detail?.evidenceSuggestions) ? row.detail.evidenceSuggestions : [],
