@@ -343,6 +343,140 @@ class _ResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    if (result.riskTable != null && result.riskTable!.rows.isNotEmpty) {
+      final table = result.riskTable!;
+
+      Color riskBg(String level) {
+        switch (level) {
+          case '高':
+            return const Color(0xFFFEE2E2);
+          case '中':
+            return const Color(0xFFFEF3C7);
+          default:
+            return const Color(0xFFDCFCE7);
+        }
+      }
+
+      Color riskFg(String level) {
+        switch (level) {
+          case '高':
+            return const Color(0xFFB91C1C);
+          case '中':
+            return const Color(0xFFB45309);
+          default:
+            return const Color(0xFF15803D);
+        }
+      }
+
+      Widget buildSection(String title, List<String> items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 6),
+              ...items.map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text('• $item', style: theme.textTheme.bodySmall),
+              )),
+            ],
+          ),
+        );
+      }
+
+      return Card(
+        margin: const EdgeInsets.only(bottom: 20),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('风险排查结果', style: theme.textTheme.titleSmall),
+            if (table.summary.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(table.summary, style: theme.textTheme.bodyMedium),
+              ),
+            ],
+            const SizedBox(height: 12),
+            ...table.rows.map((row) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: Text('${row.index}. ${row.riskPoint}'),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (row.detail.explanation.isNotEmpty) Text(row.detail.explanation, style: theme.textTheme.bodyMedium),
+                            buildSection('相关法条', row.detail.legalBasisDetails),
+                            buildSection('相关案例', row.detail.caseDetails),
+                            buildSection('审计取证建议', row.detail.evidenceSuggestions),
+                            buildSection('可能问题定性', row.detail.possibleFindings),
+                            buildSection('整改建议', row.detail.rectificationSuggestions),
+                          ],
+                        ),
+                      ),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭')),
+                      ],
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${row.index}. ${row.riskPoint}', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            Text(row.checkContent, style: theme.textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                            const SizedBox(height: 4),
+                            Text('取证资料：${row.evidenceMaterials}', style: theme.textTheme.labelSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: riskBg(row.riskLevel),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          row.riskLevel,
+                          style: TextStyle(color: riskFg(row.riskLevel), fontWeight: FontWeight.w600, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )),
+          ]),
+        ),
+      );
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 20),
       child: Padding(

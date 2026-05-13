@@ -2458,8 +2458,12 @@ String get _activeConversationType {
   Widget _buildQueryResult(BuildContext context, QueryResult result) {
     final theme = Theme.of(context);
 
-    if (result.answer.isEmpty && result.citations.isEmpty && result.similarCases.isEmpty) {
+    if (result.answer.isEmpty && result.citations.isEmpty && result.similarCases.isEmpty && result.riskTable == null) {
       return const SizedBox.shrink();
+    }
+
+    if (result.riskTable != null && result.riskTable!.rows.isNotEmpty) {
+      return _buildRiskTableResult(context, result);
     }
 
     return Container(
@@ -2553,6 +2557,171 @@ String get _activeConversationType {
                 ),
               ],
             ],
+          ),
+          if (result.citations.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text('参考来源（${result.citations.length}）', style: theme.textTheme.labelMedium),
+            const SizedBox(height: 6),
+            ...result.citations.map((c) => Card(
+              margin: const EdgeInsets.only(bottom: 6),
+              child: ListTile(
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                title: Text(c.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                subtitle: Text(
+                  '${c.libraryType}${c.chapterTitle.isNotEmpty ? ' · ${c.chapterTitle}' : ''}${c.articleRef.isNotEmpty ? ' ${c.articleRef}' : ''}\n${c.matchedChunk}',
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12),
+                ),
+                trailing: Text('${(c.score * 100).toStringAsFixed(0)}%', style: TextStyle(color: theme.colorScheme.primary, fontSize: 12)),
+              ),
+            )),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRiskTableResult(BuildContext context, QueryResult result) {
+    final theme = Theme.of(context);
+    final table = result.riskTable!;
+
+    Widget buildListSection(String title, List<String> items) {
+      if (items.isEmpty) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            ...items.map((item) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text('• $item', style: const TextStyle(fontSize: 13)),
+            )),
+          ],
+        ),
+      );
+    }
+
+    Color riskBg(String level) {
+      switch (level) {
+        case '高':
+          return const Color(0xFFFEE2E2);
+        case '中':
+          return const Color(0xFFFEF3C7);
+        default:
+          return const Color(0xFFDCFCE7);
+      }
+    }
+
+    Color riskFg(String level) {
+      switch (level) {
+        case '高':
+          return const Color(0xFFB91C1C);
+        case '中':
+          return const Color(0xFFB45309);
+        default:
+          return const Color(0xFF15803D);
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (table.summary.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(table.summary, style: const TextStyle(fontSize: 14)),
+            ),
+            const SizedBox(height: 12),
+          ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columnSpacing: 16,
+              headingRowHeight: 42,
+              dataRowMinHeight: 52,
+              dataRowMaxHeight: 70,
+              columns: const [
+                DataColumn(label: Text('序号')),
+                DataColumn(label: Text('风险点')),
+                DataColumn(label: Text('检查内容')),
+                DataColumn(label: Text('法规依据')),
+                DataColumn(label: Text('案例参考')),
+                DataColumn(label: Text('取证资料')),
+                DataColumn(label: Text('风险等级')),
+                DataColumn(label: Text('详情')),
+              ],
+              rows: table.rows.map((row) {
+                return DataRow(
+                  cells: [
+                    DataCell(Text('${row.index}')),
+                    DataCell(SizedBox(width: 140, child: Text(row.riskPoint, maxLines: 2, overflow: TextOverflow.ellipsis))),
+                    DataCell(SizedBox(width: 220, child: Text(row.checkContent, maxLines: 3, overflow: TextOverflow.ellipsis))),
+                    DataCell(SizedBox(width: 180, child: Text(row.legalBasis, maxLines: 2, overflow: TextOverflow.ellipsis))),
+                    DataCell(SizedBox(width: 160, child: Text(row.caseReference, maxLines: 2, overflow: TextOverflow.ellipsis))),
+                    DataCell(SizedBox(width: 180, child: Text(row.evidenceMaterials, maxLines: 2, overflow: TextOverflow.ellipsis))),
+                    DataCell(
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: riskBg(row.riskLevel),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          row.riskLevel,
+                          style: TextStyle(color: riskFg(row.riskLevel), fontWeight: FontWeight.w600, fontSize: 12),
+                        ),
+                      ),
+                    ),
+                    DataCell(
+                      TextButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: Text('${row.index}. ${row.riskPoint}'),
+                              content: SizedBox(
+                                width: 680,
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (row.detail.explanation.isNotEmpty) Text(row.detail.explanation),
+                                      buildListSection('相关法条', row.detail.legalBasisDetails),
+                                      buildListSection('相关案例', row.detail.caseDetails),
+                                      buildListSection('审计取证建议', row.detail.evidenceSuggestions),
+                                      buildListSection('可能问题定性', row.detail.possibleFindings),
+                                      buildListSection('整改建议', row.detail.rectificationSuggestions),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('关闭')),
+                              ],
+                            ),
+                          );
+                        },
+                        child: const Text('展开'),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
           ),
           if (result.citations.isNotEmpty) ...[
             const SizedBox(height: 16),

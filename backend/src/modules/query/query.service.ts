@@ -43,6 +43,35 @@ type CitationRecord = {
 
 type ReadyChunkRecord = Awaited<ReturnType<DocumentsService['getReadyChunks']>>[number];
 
+type RiskLevel = '高' | '中' | '低';
+
+type RiskCheckTableDetail = {
+  explanation: string;
+  legalBasisDetails: string[];
+  caseDetails: string[];
+  evidenceSuggestions: string[];
+  possibleFindings: string[];
+  rectificationSuggestions: string[];
+};
+
+type RiskCheckTableRow = {
+  index: number;
+  riskPoint: string;
+  checkContent: string;
+  legalBasis: string;
+  caseReference: string;
+  evidenceMaterials: string;
+  riskLevel: RiskLevel;
+  detail: RiskCheckTableDetail;
+};
+
+type RiskCheckTable = {
+  topic: string;
+  summary: string;
+  columns: string[];
+  rows: RiskCheckTableRow[];
+};
+
 @Injectable()
 export class QueryService {
   constructor(
@@ -110,6 +139,88 @@ export class QueryService {
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
+  }
+
+  private sanitizeJsonBlock(raw: string): string {
+    return raw
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/```$/i, '')
+      .trim();
+  }
+
+  private buildFallbackRiskTable(question: string, citations: CitationRecord[], similarCases: CitationRecord[]): RiskCheckTable {
+    const rows = citations.slice(0, 4).map((citation, index) => ({
+      index: index + 1,
+      riskPoint: citation.title || `风险点${index + 1}`,
+      checkContent: citation.matchedChunk.slice(0, 60) || '结合制度条款检查执行情况。',
+      legalBasis: [citation.chapterTitle, citation.articleRef].filter(Boolean).join(' ') || citation.title,
+      caseReference: similarCases[index]?.title ?? (similarCases.isNotEmpty ? similarCases[0].title : '可结合相关审计案例进一步核查'),
+      evidenceMaterials: '制度文件、业务台账、审批记录、合同凭证',
+      riskLevel: index < 2 ? '高' : index == 2 ? '中' : '低' as RiskLevel,
+      detail: {
+        explanation: citation.matchedChunk || '请结合制度依据和业务资料进一步核查。',
+        legalBasisDetails: [citation.matchedChunk].filter(Boolean),
+        caseDetails: similarCases[index] != null ? [similarCases[index].matchedChunk] : [],
+        evidenceSuggestions: ['调取原始业务资料', '核对审批流程与执行记录'],
+        possibleFindings: ['可能存在制度执行不到位', '可能存在内控缺失或程序不规范'],
+        rectificationSuggestions: ['完善制度执行流程', '补齐审批、验收和归档资料'],
+      },
+    }));
+
+    return {
+      topic: question,
+      summary: rows.isEmpty ? '暂无足够依据生成风险排查表。' : `围绕“${question}”识别出 ${rows.length} 个重点风险点。`,
+      columns: ['序号', '风险点', '检查内容', '法规依据', '案例参考', '取证资料', '风险等级'],
+      rows,
+    };
+  }
+
+  private async buildRiskTable(params: {
+    question: string;
+    citations: CitationRecord[];
+    similarCases: CitationRecord[];
+  }): Promise<RiskCheckTable | null> {
+    const { question, citations, similarCases } = params;
+    const prompt = `你是一名审计风险排查助手。请围绕用户输入生成风险排查表。\n\n用户输入：${question}\n\n法规和制度依据候选：\n${citations.map((c, i) => `${i + 1}.【${c.title}】${c.matchedChunk}`).join('\n\n')}\n\n案例候选：\n${similarCases.map((c, i) => `${i + 1}.【${c.title}】${c.matchedChunk}`).join('\n\n')}\n\n请严格输出 JSON，不要输出 markdown 代码块，不要输出额外解释。\nJSON 结构如下：\n{\n  "topic": "string",\n  "summary": "string",\n  "columns": ["序号", "风险点", "检查内容", "法规依据", "案例参考", "取证资料", "风险等级"],\n  "rows": [\n    {\n      "index": 1,\n      "riskPoint": "string",\n      "checkContent": "string",\n      "legalBasis": "string",\n      "caseReference": "string",\n      "evidenceMaterials": "string",\n      "riskLevel": "高|中|低",\n      "detail": {\n        "explanation": "string",\n        "legalBasisDetails": ["string"],\n        "caseDetails": ["string"],\n        "evidenceSuggestions": ["string"],\n        "possibleFindings": ["string"],\n        "rectificationSuggestions": ["string"]\n      }\n    }\n  ]\n}\n\n要求：\n1. 输出 4-8 个风险点\n2. 风险点要贴合审计主题\n3. 优先引用给定法规和案例\n4. 风险等级只能填写 高、中、低\n5. 每条都必须包含 detail。`;
+
+    const text = await this.qwenService.generateFromPrompt(prompt);
+    if (!text) {
+      return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases) : null;
+    }
+
+    try {
+      const parsed = JSON.parse(this.sanitizeJsonBlock(text)) as RiskCheckTable;
+      if (!Array.isArray(parsed.rows) || parsed.rows.length === 0) {
+        return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases) : null;
+      }
+      return {
+        topic: parsed.topic || question,
+        summary: parsed.summary || `围绕“${question}”生成的风险排查结果。`,
+        columns: Array.isArray(parsed.columns) && parsed.columns.length > 0
+            ? parsed.columns
+            : ['序号', '风险点', '检查内容', '法规依据', '案例参考', '取证资料', '风险等级'],
+        rows: parsed.rows.map((row, index) => ({
+          index: Number(row.index) || index + 1,
+          riskPoint: row.riskPoint || `风险点${index + 1}`,
+          checkContent: row.checkContent || '',
+          legalBasis: row.legalBasis || '',
+          caseReference: row.caseReference || '',
+          evidenceMaterials: row.evidenceMaterials || '',
+          riskLevel: row.riskLevel === '高' || row.riskLevel === '中' || row.riskLevel === '低' ? row.riskLevel : '中',
+          detail: {
+            explanation: row.detail?.explanation || '',
+            legalBasisDetails: Array.isArray(row.detail?.legalBasisDetails) ? row.detail.legalBasisDetails : [],
+            caseDetails: Array.isArray(row.detail?.caseDetails) ? row.detail.caseDetails : [],
+            evidenceSuggestions: Array.isArray(row.detail?.evidenceSuggestions) ? row.detail.evidenceSuggestions : [],
+            possibleFindings: Array.isArray(row.detail?.possibleFindings) ? row.detail.possibleFindings : [],
+            rectificationSuggestions: Array.isArray(row.detail?.rectificationSuggestions) ? row.detail.rectificationSuggestions : [],
+          },
+        })),
+      };
+    } catch {
+      return citations.length > 0 ? this.buildFallbackRiskTable(question, citations, similarCases) : null;
+    }
   }
 
   async search(dto: QueryRequestDto, options?: { skipAccounting?: boolean }) {
@@ -193,7 +304,17 @@ export class QueryService {
       ? await this.qwenService.generate(dto.question, candidates.map((c) => `【${c.title}】${c.matchedChunk}`))
       : null;
 
-    const answer = fallbackAnswer ?? qwenAnswer ?? '\u68c0\u7d22\u5b8c\u6210\uff0c\u8bf7\u67e5\u770b\u4e0b\u65b9\u5f15\u7528\u6761\u6b3e\u3002';
+    const riskTable = dto.queryScope === 'risk'
+      ? await this.buildRiskTable({
+          question: dto.question,
+          citations: candidates,
+          similarCases,
+        })
+      : null;
+
+    const answer = riskTable != null
+      ? `${riskTable.topic}共识别出 ${riskTable.rows.length} 个重点风险点，建议优先关注高风险事项并结合取证资料逐项核查。`
+      : fallbackAnswer ?? qwenAnswer ?? '\u68c0\u7d22\u5b8c\u6210\uff0c\u8bf7\u67e5\u770b\u4e0b\u65b9\u5f15\u7528\u6761\u6b3e\u3002';
 
     if (!options?.skipAccounting) {
       const user = this.authService.me();
@@ -263,6 +384,7 @@ export class QueryService {
       answer,
       citations: candidates,
       similarCases,
+      riskTable,
       explanation:
         '\u8be5\u67e5\u8be2\u94fe\u8def\u5df2\u4ece\u56fa\u5b9a\u793a\u4f8b\u547d\u4e2d\u8fc7\u6e21\u5230\u57fa\u4e8e\u6301\u4e45\u5316 chunk \u7684\u68c0\u7d22\u9aa8\u67b6\uff1a\u5148\u8fc7\u6ee4\u8303\u56f4\uff0c\u518d\u5bf9\u6587\u672c\u5757\u6267\u884c\u5173\u952e\u8bcd\u4e0e\u8bed\u4e49\u7ebf\u7d22\u5339\u914d\uff0c\u6700\u540e\u8fd4\u56de\u53ef\u6eaf\u6e90\u7684\u5019\u9009\u6761\u6b3e\u3002',
     };

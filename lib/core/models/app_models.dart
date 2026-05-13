@@ -239,6 +239,7 @@ class QueryResult {
     required this.ragMeta,
     required this.agentMode,
     required this.agent,
+    required this.riskTable,
   });
 
   final String answer;
@@ -251,6 +252,7 @@ class QueryResult {
   final QueryRagMeta ragMeta;
   final bool agentMode;
   final TeamAgentSummary? agent;
+  final RiskCheckTable? riskTable;
 
   factory QueryResult.fromJson(Map<String, dynamic> json) {
     return QueryResult(
@@ -276,6 +278,102 @@ class QueryResult {
       agent: (json['agent'] as Map<String, dynamic>?) == null
           ? null
           : TeamAgentSummary.fromJson(json['agent'] as Map<String, dynamic>),
+      riskTable: (json['riskTable'] as Map<String, dynamic>?) == null
+          ? null
+          : RiskCheckTable.fromJson(json['riskTable'] as Map<String, dynamic>),
+    );
+  }
+}
+
+class RiskCheckTable {
+  const RiskCheckTable({
+    required this.topic,
+    required this.summary,
+    required this.columns,
+    required this.rows,
+  });
+
+  final String topic;
+  final String summary;
+  final List<String> columns;
+  final List<RiskCheckTableRow> rows;
+
+  factory RiskCheckTable.fromJson(Map<String, dynamic> json) {
+    return RiskCheckTable(
+      topic: json['topic'] as String? ?? '',
+      summary: json['summary'] as String? ?? '',
+      columns: (json['columns'] as List<dynamic>? ?? const []).map((e) => e.toString()).toList(),
+      rows: (json['rows'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(RiskCheckTableRow.fromJson)
+          .toList(),
+    );
+  }
+}
+
+class RiskCheckTableRow {
+  const RiskCheckTableRow({
+    required this.index,
+    required this.riskPoint,
+    required this.checkContent,
+    required this.legalBasis,
+    required this.caseReference,
+    required this.evidenceMaterials,
+    required this.riskLevel,
+    required this.detail,
+  });
+
+  final int index;
+  final String riskPoint;
+  final String checkContent;
+  final String legalBasis;
+  final String caseReference;
+  final String evidenceMaterials;
+  final String riskLevel;
+  final RiskCheckTableDetail detail;
+
+  factory RiskCheckTableRow.fromJson(Map<String, dynamic> json) {
+    return RiskCheckTableRow(
+      index: json['index'] as int? ?? 0,
+      riskPoint: json['riskPoint'] as String? ?? '',
+      checkContent: json['checkContent'] as String? ?? '',
+      legalBasis: json['legalBasis'] as String? ?? '',
+      caseReference: json['caseReference'] as String? ?? '',
+      evidenceMaterials: json['evidenceMaterials'] as String? ?? '',
+      riskLevel: json['riskLevel'] as String? ?? '',
+      detail: RiskCheckTableDetail.fromJson(json['detail'] as Map<String, dynamic>? ?? const {}),
+    );
+  }
+}
+
+class RiskCheckTableDetail {
+  const RiskCheckTableDetail({
+    required this.explanation,
+    required this.legalBasisDetails,
+    required this.caseDetails,
+    required this.evidenceSuggestions,
+    required this.possibleFindings,
+    required this.rectificationSuggestions,
+  });
+
+  final String explanation;
+  final List<String> legalBasisDetails;
+  final List<String> caseDetails;
+  final List<String> evidenceSuggestions;
+  final List<String> possibleFindings;
+  final List<String> rectificationSuggestions;
+
+  factory RiskCheckTableDetail.fromJson(Map<String, dynamic> json) {
+    List<String> toList(String key) =>
+        (json[key] as List<dynamic>? ?? const []).map((e) => e.toString()).toList();
+
+    return RiskCheckTableDetail(
+      explanation: json['explanation'] as String? ?? '',
+      legalBasisDetails: toList('legalBasisDetails'),
+      caseDetails: toList('caseDetails'),
+      evidenceSuggestions: toList('evidenceSuggestions'),
+      possibleFindings: toList('possibleFindings'),
+      rectificationSuggestions: toList('rectificationSuggestions'),
     );
   }
 }
