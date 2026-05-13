@@ -163,15 +163,16 @@ class _MobileHomePageState extends State<MobileHomePage> {
             Text('检索历史', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             Container(
-              constraints: const BoxConstraints(maxHeight: 200),
+              height: _queryHistory.length > 5 ? 210 : _queryHistory.length * 42,
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLowest,
                 border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
+                physics: _queryHistory.length > 5
+                    ? const ClampingScrollPhysics()
+                    : const NeverScrollableScrollPhysics(),
                 itemCount: _queryHistory.length,
                 separatorBuilder: (_, __) => Divider(height: 1, color: theme.colorScheme.outline.withValues(alpha: 0.1)),
                 itemBuilder: (context, index) {
