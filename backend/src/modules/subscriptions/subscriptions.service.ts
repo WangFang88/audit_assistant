@@ -280,7 +280,7 @@ export class SubscriptionsService {
     }
   }
 
-  async recordQueryLog(queryLog: { id: string; userId: string; teamId: string | null; queryText: string; queriedAt: string; consumedQuota: number; queryResult?: any }) {
+  async recordQueryLog(queryLog: { id: string; userId: string; teamId: string | null; queryText: string; queriedAt: string; consumedQuota: number; queryResult?: any; queryScope?: string | null }) {
     const entity = this.queryLogRepo.create({
       id: queryLog.id,
       userId: queryLog.userId,
@@ -289,6 +289,7 @@ export class SubscriptionsService {
       queryResult: queryLog.queryResult,
       queriedAt: new Date(queryLog.queriedAt.replace(' ', 'T')),
       consumedQuota: queryLog.consumedQuota,
+      queryScope: queryLog.queryScope ?? null,
     });
     await this.queryLogRepo.save(entity);
   }
@@ -305,6 +306,7 @@ export class SubscriptionsService {
       queryText: log.queryText,
       queryResult: log.queryResult,
       queriedAt: log.queriedAt.toISOString(),
+      queryScope: log.queryScope,
     }));
   }
 

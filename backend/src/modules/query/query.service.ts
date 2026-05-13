@@ -514,6 +514,7 @@ export class QueryService {
         queriedAt: formatCst(new Date()),
         consumedQuota: 1,
         queryResult: result,
+        queryScope: dto.queryScope,
       });
     }
 

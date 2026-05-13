@@ -42,6 +42,10 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'consumed_quota', type: 'int', default: 1 }),
     __metadata("design:type", Number)
 ], QueryLogEntity.prototype, "consumedQuota", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'query_scope', type: 'varchar', length: 32, nullable: true }),
+    __metadata("design:type", Object)
+], QueryLogEntity.prototype, "queryScope", void 0);
 exports.QueryLogEntity = QueryLogEntity = __decorate([
     (0, typeorm_1.Entity)({ name: 'query_logs' })
 ], QueryLogEntity);

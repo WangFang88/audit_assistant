@@ -20,6 +20,7 @@ let QueryLogRepository = class QueryLogRepository {
         entity.queryResult = snapshot.queryResult;
         entity.queriedAt = new Date(snapshot.queriedAt.replace(' ', 'T'));
         entity.consumedQuota = snapshot.consumedQuota;
+        entity.queryScope = snapshot.queryScope ?? null;
         return entity;
     }
     mapEntity(entity) {
@@ -31,6 +32,7 @@ let QueryLogRepository = class QueryLogRepository {
             queryResult: entity.queryResult,
             queriedAt: (0, date_1.formatCst)(entity.queriedAt),
             consumedQuota: entity.consumedQuota,
+            queryScope: entity.queryScope,
         };
     }
 };

@@ -10,6 +10,7 @@ export type QueryLogSnapshot = {
   queryResult?: any;
   queriedAt: string;
   consumedQuota: number;
+  queryScope?: string | null;
 };
 
 @Injectable()
@@ -23,6 +24,7 @@ export class QueryLogRepository {
     entity.queryResult = snapshot.queryResult;
     entity.queriedAt = new Date(snapshot.queriedAt.replace(' ', 'T'));
     entity.consumedQuota = snapshot.consumedQuota;
+    entity.queryScope = snapshot.queryScope ?? null;
     return entity;
   }
 
@@ -35,6 +37,7 @@ export class QueryLogRepository {
       queryResult: entity.queryResult,
       queriedAt: formatCst(entity.queriedAt),
       consumedQuota: entity.consumedQuota,
+      queryScope: entity.queryScope,
     };
   }
 }

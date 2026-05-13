@@ -125,6 +125,7 @@ export declare class SubscriptionsController {
         queryText: string;
         queryResult: any;
         queriedAt: string;
+        queryScope: string | null;
     }[]>;
     createOrder(dto: CreateSubscriptionOrderDto): Promise<{
         activationMode: string;

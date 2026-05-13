@@ -357,6 +357,26 @@ String get _activeConversationType {
     return null;
   }
 
+  String _getScopeLabel(String scope) {
+    switch (scope) {
+      case 'regulation': return '法条查询';
+      case 'material': return '资料库问答';
+      case 'case': return '案例参考';
+      case 'risk': return '风险排查';
+      default: return '检索';
+    }
+  }
+
+  Color _getScopeColor(String scope) {
+    switch (scope) {
+      case 'regulation': return const Color(0xFF1D4ED8);
+      case 'material': return const Color(0xFF0891B2);
+      case 'case': return const Color(0xFF7C3AED);
+      case 'risk': return const Color(0xFF059669);
+      default: return Colors.grey;
+    }
+  }
+
   Future<void> _loadDashboard({String? preferredGroupId}) async {
     setState(() {
       _loading = true;
@@ -2888,6 +2908,23 @@ String get _activeConversationType {
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Row(
                             children: [
+                              if (h['queryScope'] != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: _getScopeColor(h['queryScope'] as String).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    _getScopeLabel(h['queryScope'] as String),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: _getScopeColor(h['queryScope'] as String),
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                              ],
                               Icon(Icons.search, size: 14, color: theme.colorScheme.outline),
                               const SizedBox(width: 6),
                               Expanded(

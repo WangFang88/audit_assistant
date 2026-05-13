@@ -125,12 +125,14 @@ export declare class SubscriptionsService {
         queriedAt: string;
         consumedQuota: number;
         queryResult?: any;
+        queryScope?: string | null;
     }): Promise<void>;
     getQueryHistory(userId: string, teamId: string | null, limit?: number): Promise<{
         id: string;
         queryText: string;
         queryResult: any;
         queriedAt: string;
+        queryScope: string | null;
     }[]>;
     syncSubscriptionOrder(order: {
         id: string;

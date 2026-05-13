@@ -278,6 +278,7 @@ let SubscriptionsService = class SubscriptionsService {
             queryResult: queryLog.queryResult,
             queriedAt: new Date(queryLog.queriedAt.replace(' ', 'T')),
             consumedQuota: queryLog.consumedQuota,
+            queryScope: queryLog.queryScope ?? null,
         });
         await this.queryLogRepo.save(entity);
     }
@@ -293,6 +294,7 @@ let SubscriptionsService = class SubscriptionsService {
             queryText: log.queryText,
             queryResult: log.queryResult,
             queriedAt: log.queriedAt.toISOString(),
+            queryScope: log.queryScope,
         }));
     }
     async syncSubscriptionOrder(order) {

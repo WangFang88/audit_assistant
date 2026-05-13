@@ -6,4 +6,5 @@ export declare class QueryLogEntity {
     queryResult: any;
     queriedAt: Date;
     consumedQuota: number;
+    queryScope: string | null;
 }

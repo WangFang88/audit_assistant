@@ -7,6 +7,7 @@ export type QueryLogSnapshot = {
     queryResult?: any;
     queriedAt: string;
     consumedQuota: number;
+    queryScope?: string | null;
 };
 export declare class QueryLogRepository {
     createEntity(snapshot: QueryLogSnapshot): QueryLogEntity;

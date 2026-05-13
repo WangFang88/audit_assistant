@@ -22,4 +22,7 @@ export class QueryLogEntity {
 
   @Column({ name: 'consumed_quota', type: 'int', default: 1 })
   consumedQuota!: number;
+
+  @Column({ name: 'query_scope', type: 'varchar', length: 32, nullable: true })
+  queryScope!: string | null;
 }
