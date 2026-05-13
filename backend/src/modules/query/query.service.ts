@@ -273,9 +273,17 @@ export class QueryService {
     question: string;
     citations: CitationRecord[];
     similarCases: CitationRecord[];
+    userTier: 'free' | 'subscribed';
   }): Promise<RiskCheckTable | null> {
-    const { question, citations, similarCases } = params;
-    const prompt = `你是一名审计风险排查助手。请围绕用户输入生成风险排查表。\n\n用户输入：${question}\n\n法规和制度依据候选：\n${citations.map((c, i) => `${i + 1}.【${c.title}】${c.matchedChunk}`).join('\n\n')}\n\n案例候选：\n${similarCases.map((c, i) => `${i + 1}.【${c.title}】${c.matchedChunk}`).join('\n\n')}\n\n请严格输出 JSON，不要输出 markdown 代码块，不要输出额外解释。\nJSON 结构如下：\n{\n  "topic": "string",\n  "summary": "string",\n  "columns": ["序号", "风险点", "检查内容", "法规依据", "案例参考", "取证资料", "风险等级"],\n  "rows": [\n    {\n      "index": 1,\n      "riskPoint": "string",\n      "checkContent": "string",\n      "legalBasis": "string",\n      "caseReference": "string",\n      "evidenceMaterials": "string",\n      "riskLevel": "高|中|低",\n      "detail": {\n        "explanation": "string",\n        "legalBasisDetails": ["string"],\n        "caseDetails": ["string"],\n        "evidenceSuggestions": ["string"],\n        "possibleFindings": ["string"],\n        "rectificationSuggestions": ["string"]\n      }\n    }\n  ]\n}\n\n字段定义要求：\n1. “风险点”必须表示最容易发生错报、漏报、舞弊、违规或控制失效的具体环节，必须写成问题型表达，如“采购程序不规范”“审批授权失控”“验收记录不完整”。\n2. “风险点”不能写成法规标题、制度名称、资料名称、文档标题，也不能直接照抄审计主题。\n3. “检查内容”是围绕风险点需要核查的具体事项或程序，不得与“风险点”重复。\n4. “法规依据”只能填写制度、法规、办法、条款等依据名称或摘要，不得写成风险点。\n5. “取证资料”只能填写审计取证时需要调取的资料。\n\n其他要求：\n1. 输出 4-8 个风险点\n2. 风险点要贴合审计主题\n3. 优先引用给定法规和案例\n4. 风险等级只能填写 高、中、低\n5. 每条都必须包含 detail。`;
+    const { question, citations, similarCases, userTier } = params;
+    const riskCountGuidance = userTier === 'free'
+      ? '输出 8-10 个基础风险点'
+      : '输出尽可能全面的风险点（建议 10-20 个），覆盖高、中、低风险';
+    const detailGuidance = userTier === 'free'
+      ? '提供基础的风险说明'
+      : '提供详细的风险解释，结合案例和法规进行深入分析';
+
+    const prompt = `你是一名审计风险排查助手。请围绕用户输入生成风险排查表。\n\n用户输入：${question}\n\n法规和制度依据候选：\n${citations.map((c, i) => `${i + 1}.【${c.title}】${c.matchedChunk}`).join('\n\n')}\n\n案例候选：\n${similarCases.map((c, i) => `${i + 1}.【${c.title}】${c.matchedChunk}`).join('\n\n')}\n\n请严格输出 JSON，不要输出 markdown 代码块，不要输出额外解释。\nJSON 结构如下：\n{\n  “topic”: “string”,\n  “summary”: “string”,\n  “columns”: [“序号”, “风险点”, “检查内容”, “法规依据”, “案例参考”, “取证资料”, “风险等级”],\n  “rows”: [\n    {\n      “index”: 1,\n      “riskPoint”: “string”,\n      “checkContent”: “string”,\n      “legalBasis”: “string”,\n      “caseReference”: “string”,\n      “evidenceMaterials”: “string”,\n      “riskLevel”: “高|中|低”,\n      “detail”: {\n        “explanation”: “string”,\n        “legalBasisDetails”: [“string”],\n        “caseDetails”: [“string”],\n        “evidenceSuggestions”: [“string”],\n        “possibleFindings”: [“string”],\n        “rectificationSuggestions”: [“string”]\n      }\n    }\n  ]\n}\n\n字段定义要求：\n1. “风险点”必须表示最容易发生错报、漏报、舞弊、违规或控制失效的具体环节，必须写成问题型表达，如”采购程序不规范””审批授权失控””验收记录不完整”。\n2. “风险点”不能写成法规标题、制度名称、资料名称、文档标题，也不能直接照抄审计主题。\n3. “检查内容”是围绕风险点需要核查的具体事项或程序，不得与”风险点”重复。\n4. “法规依据”只能填写制度、法规、办法、条款等依据名称或摘要，不得写成风险点。\n5. “取证资料”只能填写审计取证时需要调取的资料。\n\n其他要求：\n1. ${riskCountGuidance}\n2. ${detailGuidance}\n3. 风险点要贴合审计主题\n4. 优先引用给定法规和案例\n5. 风险等级只能填写 高、中、低\n6. 每条都必须包含 detail。`;
 
     const text = await this.qwenService.generateFromPrompt(prompt);
     if (!text) {
@@ -354,15 +362,25 @@ export class QueryService {
       await this.subscriptionsService.assertCanRunQuery(usage.dailyQueries);
     }
 
+    const plan = await this.subscriptionsService.getCurrentPlan();
+    const canAccessCases = plan.limits.caseSearch;
+    const userTier: 'free' | 'subscribed' = plan.id === 'free' ? 'free' : 'subscribed';
+
     const group = resolvedGroupId ? await this.groupsService.getGroupById(resolvedGroupId) : null;
     const teamAgent = resolvedGroupId ? await this.teamAgentsService.getVisibleAgentByGroupId(resolvedGroupId) : null;
     const readyChunks = await this.documentsService.getReadyChunks(resolvedGroupId);
 
+    const baseRegulationTypes: LibraryType[] = ['regulation'];
+    const localTypes: LibraryType[] = ['local_policy'];
+    const caseTypes: LibraryType[] = canAccessCases ? ['national_case', 'local_case'] : [];
+    const privateTypes: LibraryType[] = resolvedGroupId ? ['private'] : [];
+    const industryTypes: LibraryType[] = ['industry'];
+
     const scopeLibraryTypes: Record<string, LibraryType[]> = {
-      regulation: ['regulation', 'private', 'local_policy'],
-      material:   ['private', 'industry', 'local_policy'],
-      case:       ['national_case', 'local_case'],
-      risk:       ['regulation', 'local_policy', 'private', 'industry'],
+      regulation: [...baseRegulationTypes, ...localTypes, ...privateTypes],
+      material:   [...privateTypes, ...industryTypes, ...localTypes],
+      case:       caseTypes,
+      risk:       [...baseRegulationTypes, ...localTypes, ...privateTypes, ...industryTypes],
     };
     const allowedTypes = dto.queryScope ? scopeLibraryTypes[dto.queryScope] : scopeLibraryTypes.regulation;
     const filteredChunks = readyChunks.filter((c) => allowedTypes.includes(c.libraryType as LibraryType));
@@ -387,7 +405,7 @@ export class QueryService {
       limit: 6,
     });
 
-    const shouldFetchSimilarCases = dto.queryScope == null || ['regulation', 'material', 'risk'].includes(dto.queryScope);
+    const shouldFetchSimilarCases = canAccessCases && (dto.queryScope == null || ['regulation', 'material', 'risk'].includes(dto.queryScope));
     const similarCaseChunks = shouldFetchSimilarCases
       ? readyChunks.filter((chunk) => ['national_case', 'local_case'].includes(chunk.libraryType))
       : [];
@@ -425,6 +443,7 @@ export class QueryService {
           question: dto.question,
           citations: candidates,
           similarCases,
+          userTier,
         })
       : null;
 
