@@ -163,7 +163,7 @@ class _MobileHomePageState extends State<MobileHomePage> {
             Text('检索历史', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             Container(
-              height: _queryHistory.length > 5 ? 210 : _queryHistory.length * 42,
+              height: _queryHistory.length > 5 ? 180 : _queryHistory.length * 36,
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLowest,
                 border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
