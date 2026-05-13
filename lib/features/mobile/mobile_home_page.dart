@@ -179,9 +179,10 @@ class _MobileHomePageState extends State<MobileHomePage> {
                   final h = _queryHistory[index];
                   return ListTile(
                     dense: true,
-                    visualDensity: const VisualDensity(vertical: -3),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                    leading: Icon(Icons.search, size: 16, color: theme.colorScheme.outline),
+                    visualDensity: const VisualDensity(horizontal: -2, vertical: -4),
+                    minTileHeight: 36,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                    leading: Icon(Icons.search, size: 14, color: theme.colorScheme.outline),
                     title: Text(
                       h['queryText'] as String,
                       maxLines: 1,
