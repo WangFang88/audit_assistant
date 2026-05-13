@@ -442,9 +442,11 @@ String get _activeConversationType {
       final results = await Future.wait([
         widget.apiService.fetchDashboard(groupId: groupId),
         _loadGroupBundle(groupId),
+        widget.apiService.getQueryHistory(teamId: groupId),
       ]);
       final overview = results[0] as DashboardOverview;
       final bundle = results[1] as _GroupBundle;
+      final queryHistory = results[2] as List<Map<String, dynamic>>;
 
       if (!mounted) {
         return;
@@ -460,6 +462,7 @@ String get _activeConversationType {
         _extractJobs = bundle.extractJobs;
         _selectedConversationId = bundle.selectedConversationId;
         _messages = bundle.messages;
+        _queryHistory = queryHistory;
         if (_selectedIndex == 1 && _selectedConversationId == null && bundle.conversations.isEmpty) {
           _selectedIndex = 0;
         }
