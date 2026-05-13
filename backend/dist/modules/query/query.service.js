@@ -200,7 +200,7 @@ let QueryService = class QueryService {
             evidenceMaterials: '制度文件、业务台账、审批记录、合同凭证、原始单据',
             riskLevel: (index < 2 ? '高' : index == 2 ? '中' : '低'),
             detail: {
-                explanation: `风险点是指最容易发生错报、舞弊、违规或控制失效的环节。${citation.matchedChunk || '请结合制度依据和业务资料进一步核查。'}`,
+                explanation: citation.matchedChunk || '请结合制度依据和业务资料进一步核查该风险点。',
                 legalBasisDetails: [citation.matchedChunk ? `【${citation.title}】${citation.matchedChunk}` : ''].filter(Boolean),
                 caseDetails: similarCases[index] != null ? [`【${similarCases[index].title}】${similarCases[index].matchedChunk}`] : [],
                 evidenceSuggestions: ['调取原始业务资料', '核对审批流程与执行记录', '比对台账、单据与实际执行情况'],
