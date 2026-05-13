@@ -295,7 +295,7 @@ export class SubscriptionsService {
   }
 
   async getQueryHistory(userId: string, teamId: string | null, limit = 20) {
-    const where = teamId ? { teamId } : { userId, teamId: IsNull() };
+    const where = teamId ? { userId, teamId } : { userId, teamId: IsNull() };
     const logs = await this.queryLogRepo.find({
       where,
       order: { queriedAt: 'DESC' },
