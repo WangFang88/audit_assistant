@@ -17,8 +17,6 @@ let QwenService = QwenService_1 = class QwenService {
         this.endpoint = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
     }
     async generate(question, contextChunks) {
-        if (!this.apiKey)
-            return null;
         const context = contextChunks.slice(0, 6).join('\n\n');
         const prompt = `你是一名专业的审计助手。请根据以下知识库内容回答用户问题。
 
@@ -38,6 +36,11 @@ ${context}
 - 引用条款和相关案例会在回答下方单独展示，无需在回答中重复列出
 
 注意：引用条款和相关案例会在回答下方单独展示，无需在回答中重复列出。`;
+        return this.generateFromPrompt(prompt);
+    }
+    async generateFromPrompt(prompt) {
+        if (!this.apiKey)
+            return null;
         try {
             const res = await fetch(this.endpoint, {
                 method: 'POST',
@@ -45,7 +48,7 @@ ${context}
                 body: JSON.stringify({
                     model: this.model,
                     messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 1024,
+                    max_tokens: 2048,
                 }),
             });
             if (!res.ok) {

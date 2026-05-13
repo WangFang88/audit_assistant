@@ -60,6 +60,28 @@ export declare class QueryController {
             chapterTitle: string;
             pageLabel: string;
         }[];
+        riskTable: {
+            topic: string;
+            summary: string;
+            columns: string[];
+            rows: {
+                index: number;
+                riskPoint: string;
+                checkContent: string;
+                legalBasis: string;
+                caseReference: string;
+                evidenceMaterials: string;
+                riskLevel: "高" | "中" | "低";
+                detail: {
+                    explanation: string;
+                    legalBasisDetails: string[];
+                    caseDetails: string[];
+                    evidenceSuggestions: string[];
+                    possibleFindings: string[];
+                    rectificationSuggestions: string[];
+                };
+            }[];
+        } | null;
         explanation: string;
     }>;
 }

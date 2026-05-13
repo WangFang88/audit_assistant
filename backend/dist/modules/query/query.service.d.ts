@@ -24,6 +24,31 @@ type CitationRecord = {
     chapterTitle: string;
     pageLabel: string;
 };
+type RiskLevel = '高' | '中' | '低';
+type RiskCheckTableDetail = {
+    explanation: string;
+    legalBasisDetails: string[];
+    caseDetails: string[];
+    evidenceSuggestions: string[];
+    possibleFindings: string[];
+    rectificationSuggestions: string[];
+};
+type RiskCheckTableRow = {
+    index: number;
+    riskPoint: string;
+    checkContent: string;
+    legalBasis: string;
+    caseReference: string;
+    evidenceMaterials: string;
+    riskLevel: RiskLevel;
+    detail: RiskCheckTableDetail;
+};
+type RiskCheckTable = {
+    topic: string;
+    summary: string;
+    columns: string[];
+    rows: RiskCheckTableRow[];
+};
 export declare class QueryService {
     private readonly authService;
     private readonly documentsService;
@@ -35,6 +60,9 @@ export declare class QueryService {
     private readonly auditService;
     constructor(authService: AuthService, documentsService: DocumentsService, embeddingService: EmbeddingService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, teamAgentsService: TeamAgentsService, qwenService: QwenService, auditService: AuditService);
     private buildCandidates;
+    private sanitizeJsonBlock;
+    private buildFallbackRiskTable;
+    private buildRiskTable;
     search(dto: QueryRequestDto, options?: {
         skipAccounting?: boolean;
     }): Promise<{
@@ -75,6 +103,7 @@ export declare class QueryService {
         answer: string;
         citations: CitationRecord[];
         similarCases: CitationRecord[];
+        riskTable: RiskCheckTable | null;
         explanation: string;
     }>;
 }
