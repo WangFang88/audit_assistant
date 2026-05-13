@@ -109,7 +109,7 @@ let QueryService = class QueryService {
             riskPoint: citation.title || `风险点${index + 1}`,
             checkContent: citation.matchedChunk.slice(0, 60) || '结合制度条款检查执行情况。',
             legalBasis: [citation.chapterTitle, citation.articleRef].filter(Boolean).join(' ') || citation.title,
-            caseReference: similarCases[index]?.title ?? (similarCases.isNotEmpty ? similarCases[0].title : '可结合相关审计案例进一步核查'),
+            caseReference: similarCases[index]?.title ?? (similarCases.length > 0 ? similarCases[0].title : '可结合相关审计案例进一步核查'),
             evidenceMaterials: '制度文件、业务台账、审批记录、合同凭证',
             riskLevel: index < 2 ? '高' : index == 2 ? '中' : '低',
             detail: {
@@ -123,7 +123,7 @@ let QueryService = class QueryService {
         }));
         return {
             topic: question,
-            summary: rows.isEmpty ? '暂无足够依据生成风险排查表。' : `围绕“${question}”识别出 ${rows.length} 个重点风险点。`,
+            summary: rows.length === 0 ? '暂无足够依据生成风险排查表。' : `围绕“${question}”识别出 ${rows.length} 个重点风险点。`,
             columns: ['序号', '风险点', '检查内容', '法规依据', '案例参考', '取证资料', '风险等级'],
             rows,
         };
