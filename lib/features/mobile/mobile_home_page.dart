@@ -177,18 +177,7 @@ class _MobileHomePageState extends State<MobileHomePage> {
                 separatorBuilder: (_, __) => Divider(height: 1, color: theme.colorScheme.outline.withValues(alpha: 0.1)),
                 itemBuilder: (context, index) {
                   final h = _queryHistory[index];
-                  return ListTile(
-                    dense: true,
-                    visualDensity: const VisualDensity(horizontal: -2, vertical: -4),
-                    minTileHeight: 36,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                    leading: Icon(Icons.search, size: 14, color: theme.colorScheme.outline),
-                    title: Text(
-                      h['queryText'] as String,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall,
-                    ),
+                  return InkWell(
                     onTap: () {
                       _questionController.text = h['queryText'] as String;
                       if (h['queryResult'] != null) {
@@ -202,6 +191,23 @@ class _MobileHomePageState extends State<MobileHomePage> {
                         _search();
                       }
                     },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      child: Row(
+                        children: [
+                          Icon(Icons.search, size: 14, color: theme.colorScheme.outline),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              h['queryText'] as String,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 },
               ),
