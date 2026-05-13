@@ -402,10 +402,66 @@ export class QueryService {
     return explanations[riskPoint] || `该风险点涉及${riskPoint}相关的内控缺失或执行不到位，可能导致错报、舞弊或违规行为。`;
   }
 
-  private buildFallbackRiskTable(question: string, citations: CitationRecord[], similarCases: CitationRecord[], userTier: 'free' | 'subscribed'): RiskCheckTable {
+  private async assessRiskLevels(question: string, riskItems: Array<{ riskPoint: string; checkContent: string; legalBasis: string }>): Promise<RiskLevel[]> {
+    const prompt = `你是审计风险评估专家。请根据审计主题和风险点信息，评估每个风险点的风险等级。
+
+审计主题：${question}
+
+风险点列表：
+${riskItems.map((item, i) => `${i + 1}. ${item.riskPoint}\n   检查内容：${item.checkContent}\n   法规依据：${item.legalBasis}`).join('\n\n')}
+
+评估标准：
+- 高风险：涉及资金安全、重大违规、舞弊可能性大、影响财务报表真实性的关键环节
+- 中风险：涉及内控缺失、程序不规范、可能导致错报或违规的重要环节
+- 低风险：一般性管理问题、影响相对较小的常规检查事项
+
+请严格输出JSON数组，不要输出markdown代码块，不要输出额外解释。
+格式：["高", "中", "低", ...]
+
+数组长度必须等于风险点数量（${riskItems.length}个），每个元素只能是"高"、"中"或"低"。`;
+
+    try {
+      const text = await this.qwenService.generateFromPrompt(prompt);
+      if (!text) throw new Error('LLM返回空结果');
+
+      const parsed = JSON.parse(this.sanitizeJsonBlock(text)) as string[];
+      if (!Array.isArray(parsed) || parsed.length !== riskItems.length) {
+        throw new Error('LLM返回格式不正确');
+      }
+
+      return parsed.map(level => {
+        if (level === '高' || level === '中' || level === '低') return level as RiskLevel;
+        return '中' as RiskLevel;
+      });
+    } catch {
+      return riskItems.map((item, index) => {
+        const riskPoint = item.riskPoint.toLowerCase();
+        const highKeywords = ['资金', '审批失控', '挪用', '侵占', '舞弊', '虚假', '账实不符', '私设', '小金库', '越权'];
+        const lowKeywords = ['记录', '资料', '台账', '归档', '不完整', '不及时'];
+
+        if (highKeywords.some(kw => riskPoint.includes(kw))) return '高';
+        if (lowKeywords.some(kw => riskPoint.includes(kw))) return '低';
+        return index < 3 ? '高' : index < 6 ? '中' : '低';
+      }) as RiskLevel[];
+    }
+  }
+
+  private async buildFallbackRiskTable(question: string, citations: CitationRecord[], similarCases: CitationRecord[], userTier: 'free' | 'subscribed'): Promise<RiskCheckTable> {
     const templates = this.resolveRiskTemplates(question);
     const maxRisks = userTier === 'free' ? 10 : 20;
     const availableCitations = citations.slice(0, Math.min(citations.length, maxRisks));
+
+    const riskItems = availableCitations.map((citation, index) => {
+      const riskPoint = templates.riskPoints[index] ?? `重点风险环节${index + 1}`;
+      return {
+        riskPoint,
+        checkContent: templates.checkContents[index] ?? '结合制度条款、业务流程和原始资料检查高风险环节执行情况。',
+        legalBasis: [citation.title, citation.chapterTitle, citation.articleRef].filter(Boolean).join(' · '),
+        citation,
+      };
+    });
+
+    const riskLevels = await this.assessRiskLevels(question, riskItems);
 
     const rows = availableCitations.map((citation, index) => {
       const riskPoint = templates.riskPoints[index] ?? `重点风险环节${index + 1}`;
@@ -416,7 +472,7 @@ export class QueryService {
         legalBasis: [citation.title, citation.chapterTitle, citation.articleRef].filter(Boolean).join(' · '),
         caseReference: similarCases[index]?.title ?? (similarCases.length > 0 ? similarCases[0].title : '可结合相关审计案例进一步核查'),
         evidenceMaterials: '制度文件、业务台账、审批记录、合同凭证、原始单据',
-        riskLevel: (index < 2 ? '高' : index == 2 ? '中' : '低') as RiskLevel,
+        riskLevel: riskLevels[index] || '中',
         detail: {
           explanation: this.generateRiskExplanation(riskPoint),
           legalBasisDetails: [citation.matchedChunk ? `【${citation.title}】${citation.matchedChunk}` : ''].filter(Boolean),
@@ -430,7 +486,7 @@ export class QueryService {
 
     return {
       topic: question,
-      summary: rows.length === 0 ? '暂无足够依据生成风险排查表。' : `围绕“${question}”识别出 ${rows.length} 个重点风险点。`,
+      summary: rows.length === 0 ? '暂无足够依据生成风险排查表。' : `围绕”${question}”识别出 ${rows.length} 个重点风险点。`,
       columns: ['序号', '风险点', '检查内容', '法规依据', '案例参考', '取证资料', '风险等级'],
       rows,
     };

@@ -64,6 +64,7 @@ export declare class QueryService {
     private resolveRiskTemplates;
     private looksLikeRiskTitle;
     private generateRiskExplanation;
+    private assessRiskLevels;
     private buildFallbackRiskTable;
     private buildRiskTable;
     search(dto: QueryRequestDto, options?: {
