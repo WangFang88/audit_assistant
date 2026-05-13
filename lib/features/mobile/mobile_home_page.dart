@@ -275,27 +275,38 @@ class _FeatureGrid extends StatelessWidget {
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.7,
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      childAspectRatio: 2.2,
       children: _cards.map((c) {
         final (icon, color, title, subtitle, scope, hint) = c;
         return InkWell(
           onTap: () => onTap(scope, hint),
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.06),
               border: Border.all(color: color.withValues(alpha: 0.2)),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(height: 4),
-              Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: color)),
-              Text(subtitle, style: TextStyle(fontSize: 10, color: color.withValues(alpha: 0.7)), maxLines: 1, overflow: TextOverflow.ellipsis),
-            ]),
+            child: Row(
+              children: [
+                Icon(icon, color: color, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: color), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Text(subtitle, style: TextStyle(fontSize: 9, color: color.withValues(alpha: 0.7)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       }).toList(),
