@@ -63,6 +63,7 @@ export declare class QueryService {
     private sanitizeJsonBlock;
     private resolveRiskTemplates;
     private looksLikeRiskTitle;
+    private generateRiskExplanation;
     private buildFallbackRiskTable;
     private buildRiskTable;
     search(dto: QueryRequestDto, options?: {

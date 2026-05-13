@@ -189,25 +189,57 @@ let QueryService = class QueryService {
         }
         return false;
     }
+    generateRiskExplanation(riskPoint) {
+        const explanations = {
+            '采购程序不规范': '采购过程中未严格执行规定程序，可能导致采购不公、价格虚高、质量问题或利益输送。',
+            '供应商遴选不透明': '供应商选择缺乏公开透明机制，可能存在关联交易、利益输送或资质不符等问题。',
+            '验收控制流于形式': '验收环节缺乏有效控制，可能导致货物质量、数量与合同不符，或虚假验收。',
+            '采购价格异常': '采购价格明显偏离市场水平，可能存在虚高定价、利益输送或缺乏比价机制。',
+            '收入确认不准确': '收入确认时点、金额或依据不符合规定，可能导致财务报表失真或调节利润。',
+            '异常销售交易未被识别': '年末集中交易、关联销售等异常事项未被有效识别和审查，可能影响收入真实性。',
+            '回款管理失控': '回款记录、对账和账龄管理不到位，可能导致资金被截留、挪用或坏账风险。',
+            '退货折让处理不规范': '退货、折让等处理不完整或不及时入账，可能影响收入和利润的真实性。',
+            '存货账实不符': '存货盘点结果与账面记录不一致，可能存在盘盈盘亏、账实分离或资产流失。',
+            '跌价减值识别不充分': '呆滞、毁损存货未及时识别和计提减值，可能导致资产虚增。',
+            '出入库控制薄弱': '出入库审批、复核和记录不完整，可能导致存货流失或无单出库。',
+            '异常损耗未被及时发现': '损耗、报废等异常事项未履行审批或缺乏依据，可能掩盖资产流失。',
+            '资金收付审批失控': '资金支付缺乏有效审批和授权，可能导致资金被挪用、侵占或越权支付。',
+            '银行账户管理不规范': '银行账户开立、使用和清理不规范，可能存在账外账户、私设小金库或账户混用。',
+            '现金管理存在漏洞': '库存现金管理不规范，可能存在坐支、白条抵库或现金流失。',
+            '账实核对不及时': '银行对账和余额调节不及时，可能掩盖资金异常或未达账项长期挂账。',
+            '费用报销不合规': '报销票据、事由或标准不符合规定，可能存在虚假报销或违规支出。',
+            '费用归属期间不准确': '费用确认期间不准确，可能存在跨期调节利润或费用资本化不当。',
+            '审批和预算约束失效': '费用审批和预算控制机制失效，可能导致超标准支出或预算约束形同虚设。',
+            '异常费用支出未被识别': '大额、频繁或异常费用支出未经专项复核，可能掩盖违规支出或利益输送。',
+            '关键业务程序执行不规范': '关键业务流程未按制度执行，可能存在规避程序、变相绕过控制或执行不到位。',
+            '职责分离或授权审批不到位': '岗位职责不清晰或审批权限失控，可能导致一人经办到底、越权处理或内控失效。',
+            '业务资料记录不完整': '业务台账、原始凭证或审批资料不完整，可能影响业务可追溯性或掩盖违规行为。',
+            '异常交易或数据变动未被及时识别': '异常交易、数据波动或例外事项未被及时识别和处理，可能掩盖舞弊或错误。',
+        };
+        return explanations[riskPoint] || `该风险点涉及${riskPoint}相关的内控缺失或执行不到位，可能导致错报、舞弊或违规行为。`;
+    }
     buildFallbackRiskTable(question, citations, similarCases) {
         const templates = this.resolveRiskTemplates(question);
-        const rows = citations.slice(0, 4).map((citation, index) => ({
-            index: index + 1,
-            riskPoint: templates.riskPoints[index] ?? `重点风险环节${index + 1}`,
-            checkContent: templates.checkContents[index] ?? '结合制度条款、业务流程和原始资料检查高风险环节执行情况。',
-            legalBasis: [citation.title, citation.chapterTitle, citation.articleRef].filter(Boolean).join(' · '),
-            caseReference: similarCases[index]?.title ?? (similarCases.length > 0 ? similarCases[0].title : '可结合相关审计案例进一步核查'),
-            evidenceMaterials: '制度文件、业务台账、审批记录、合同凭证、原始单据',
-            riskLevel: (index < 2 ? '高' : index == 2 ? '中' : '低'),
-            detail: {
-                explanation: citation.matchedChunk || '请结合制度依据和业务资料进一步核查该风险点。',
-                legalBasisDetails: [citation.matchedChunk ? `【${citation.title}】${citation.matchedChunk}` : ''].filter(Boolean),
-                caseDetails: similarCases[index] != null ? [`【${similarCases[index].title}】${similarCases[index].matchedChunk}`] : [],
-                evidenceSuggestions: ['调取原始业务资料', '核对审批流程与执行记录', '比对台账、单据与实际执行情况'],
-                possibleFindings: ['可能存在制度执行不到位', '可能存在内控缺失、程序不规范或异常事项未被识别'],
-                rectificationSuggestions: ['完善制度执行流程', '补齐审批、验收和归档资料', '强化关键岗位复核与监督机制'],
-            },
-        }));
+        const rows = citations.slice(0, 4).map((citation, index) => {
+            const riskPoint = templates.riskPoints[index] ?? `重点风险环节${index + 1}`;
+            return {
+                index: index + 1,
+                riskPoint,
+                checkContent: templates.checkContents[index] ?? '结合制度条款、业务流程和原始资料检查高风险环节执行情况。',
+                legalBasis: [citation.title, citation.chapterTitle, citation.articleRef].filter(Boolean).join(' · '),
+                caseReference: similarCases[index]?.title ?? (similarCases.length > 0 ? similarCases[0].title : '可结合相关审计案例进一步核查'),
+                evidenceMaterials: '制度文件、业务台账、审批记录、合同凭证、原始单据',
+                riskLevel: (index < 2 ? '高' : index == 2 ? '中' : '低'),
+                detail: {
+                    explanation: this.generateRiskExplanation(riskPoint),
+                    legalBasisDetails: [citation.matchedChunk ? `【${citation.title}】${citation.matchedChunk}` : ''].filter(Boolean),
+                    caseDetails: similarCases[index] != null ? [`【${similarCases[index].title}】${similarCases[index].matchedChunk}`] : [],
+                    evidenceSuggestions: ['调取原始业务资料', '核对审批流程与执行记录', '比对台账、单据与实际执行情况'],
+                    possibleFindings: ['可能存在制度执行不到位', '可能存在内控缺失、程序不规范或异常事项未被识别'],
+                    rectificationSuggestions: ['完善制度执行流程', '补齐审批、验收和归档资料', '强化关键岗位复核与监督机制'],
+                },
+            };
+        });
         return {
             topic: question,
             summary: rows.length === 0 ? '暂无足够依据生成风险排查表。' : `围绕“${question}”识别出 ${rows.length} 个重点风险点。`,
