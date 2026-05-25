@@ -3895,6 +3895,12 @@ String get _activeConversationType {
                             minLines: 1,
                             maxLines: 4,
                             enabled: _activeGroupId != null && _selectedConversationId != null && !_sendingMessage,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) {
+                              if (_activeGroupId != null && _selectedConversationId != null && !_sendingMessage) {
+                                _sendMessage();
+                              }
+                            },
                             decoration: InputDecoration(
                               labelText: _activeConversationType == 'agent' ? '输入消息（Agent 会话暂不支持文件）' : '输入消息或附言',
                             ),
@@ -3943,6 +3949,12 @@ String get _activeConversationType {
                             child: TextField(
                               controller: _messageController,
                               enabled: _activeGroupId != null && _selectedConversationId != null && !_sendingMessage,
+                              textInputAction: TextInputAction.send,
+                              onSubmitted: (_) {
+                                if (_activeGroupId != null && _selectedConversationId != null && !_sendingMessage) {
+                                  _sendMessage();
+                                }
+                              },
                               decoration: InputDecoration(
                                 labelText: '输入消息或附言',
                               ),
