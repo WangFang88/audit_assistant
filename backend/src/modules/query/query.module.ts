@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { DatabaseSupportModule } from '../../database/database-support.module';
 import { AuthModule } from '../auth/auth.module';
 import { AuditModule } from '../audit/audit.module';
@@ -11,7 +11,7 @@ import { QueryService } from './query.service';
 import { QwenService } from './qwen.service';
 
 @Module({
-  imports: [DatabaseSupportModule, AuthModule, AuditModule, DocumentsModule, GroupsModule, SubscriptionsModule, TeamAgentsModule],
+  imports: [DatabaseSupportModule, AuthModule, AuditModule, DocumentsModule, forwardRef(() => GroupsModule), SubscriptionsModule, TeamAgentsModule],
   controllers: [QueryController],
   providers: [QueryService, QwenService],
   exports: [QueryService],

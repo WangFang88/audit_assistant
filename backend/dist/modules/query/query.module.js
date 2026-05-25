@@ -23,7 +23,7 @@ let QueryModule = class QueryModule {
 exports.QueryModule = QueryModule;
 exports.QueryModule = QueryModule = __decorate([
     (0, common_1.Module)({
-        imports: [database_support_module_1.DatabaseSupportModule, auth_module_1.AuthModule, audit_module_1.AuditModule, documents_module_1.DocumentsModule, groups_module_1.GroupsModule, subscriptions_module_1.SubscriptionsModule, team_agents_module_1.TeamAgentsModule],
+        imports: [database_support_module_1.DatabaseSupportModule, auth_module_1.AuthModule, audit_module_1.AuditModule, documents_module_1.DocumentsModule, (0, common_1.forwardRef)(() => groups_module_1.GroupsModule), subscriptions_module_1.SubscriptionsModule, team_agents_module_1.TeamAgentsModule],
         controllers: [query_controller_1.QueryController],
         providers: [query_service_1.QueryService, qwen_service_1.QwenService],
         exports: [query_service_1.QueryService],
