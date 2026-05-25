@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { formatCst } from '../../utils/date';
 import { AuditService } from '../audit/audit.service';
@@ -78,6 +78,7 @@ export class QueryService {
     private readonly authService: AuthService,
     private readonly documentsService: DocumentsService,
     private readonly embeddingService: EmbeddingService,
+    @Inject(forwardRef(() => GroupsService))
     private readonly groupsService: GroupsService,
     private readonly subscriptionsService: SubscriptionsService,
     private readonly teamAgentsService: TeamAgentsService,
