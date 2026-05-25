@@ -199,6 +199,9 @@ class _MobileHomePageState extends State<MobileHomePage> {
             style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
           ),
           const SizedBox(height: 20),
+          // Quota
+          _QuotaCard(subscription: sub),
+          const SizedBox(height: 16),
           // Query History
           if (_queryHistory.isNotEmpty) ...[
             Text('检索历史', style: theme.textTheme.titleSmall),
@@ -272,8 +275,6 @@ class _MobileHomePageState extends State<MobileHomePage> {
             ),
             const SizedBox(height: 16),
           ],
-          // Quota
-          _QuotaCard(subscription: sub),
         ]),
       ),
     );
