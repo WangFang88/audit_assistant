@@ -64,6 +64,9 @@ export declare class QueryService {
     private resolveRiskTemplates;
     private looksLikeRiskTitle;
     private generateRiskExplanation;
+    private generateEvidenceSuggestions;
+    private generatePossibleFindings;
+    private generateRectificationSuggestions;
     private assessRiskLevels;
     private buildFallbackRiskTable;
     private buildRiskTable;
