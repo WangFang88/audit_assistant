@@ -628,7 +628,11 @@ export class ChatService {
 
     if (conversation.type === 'agent') {
       const replySentAt = new Date();
-      const searchResult = await this.queryService.search(messageContent, conversation.groupId, conversation.agentId, undefined);
+      const searchResult = await this.queryService.search({
+        question: messageContent,
+        groupId: conversation.groupId,
+        agentId: conversation.agentId,
+      });
       await this.messageRepository.save(
         this.messageRepository.create({
           id: `msg-${Date.now() + 1}`,
