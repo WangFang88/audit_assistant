@@ -12,7 +12,7 @@ import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ConversationEntity, ConversationParticipantEntity, MessageEntity]), AuthModule, DocumentsModule, forwardRef(() => GroupsModule), QueryModule, SubscriptionsModule],
+  imports: [TypeOrmModule.forFeature([ConversationEntity, ConversationParticipantEntity, MessageEntity]), AuthModule, DocumentsModule, forwardRef(() => GroupsModule), forwardRef(() => QueryModule), SubscriptionsModule],
   controllers: [ChatController],
   providers: [ChatService],
   exports: [ChatService],
