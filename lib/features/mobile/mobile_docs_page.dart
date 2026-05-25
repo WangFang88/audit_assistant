@@ -18,6 +18,8 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
   bool _loading = true;
   bool _uploading = false;
   List<KnowledgeDocument> _docs = const [];
+  List<ProjectGroup> _groups = const [];
+  String? _selectedGroupId;
   String? _error;
 
   @override
@@ -29,7 +31,13 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final docs = await widget.apiService.fetchDocuments(groupId: widget.groupId);
+      if (!widget.isAdmin) {
+        final overview = await widget.apiService.fetchDashboardOverview();
+        if (!mounted) return;
+        _groups = overview.groups;
+        _selectedGroupId = widget.groupId ?? (_groups.isNotEmpty ? _groups.first.id : null);
+      }
+      final docs = await widget.apiService.fetchDocuments(groupId: widget.isAdmin ? null : _selectedGroupId);
       if (!mounted) return;
       setState(() { _docs = docs; });
     } catch (e) {
@@ -81,7 +89,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
                 ),
               ),
             ),
-            if (libraryType == 'private' && widget.groupId != null) ...[
+            if (libraryType == 'private' && _selectedGroupId != null) ...[
               const SizedBox(height: 12),
               InputDecorator(
                 decoration: const InputDecoration(labelText: '私有库范围', isDense: true),
@@ -166,7 +174,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
         libraryType: libraryType,
         file: selectedFile!,
         region: region,
-        groupId: libraryType == 'private' && privateScope == 'group' ? widget.groupId : null,
+        groupId: libraryType == 'private' && privateScope == 'group' ? _selectedGroupId : null,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.notes)));
@@ -190,17 +198,53 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
       ]));
     }
     return Scaffold(
-      body: _docs.isEmpty
-          ? const Center(child: Text('暂无文档，点击右下角上传'))
-          : RefreshIndicator(
-              onRefresh: _load,
-              child: ListView.separated(
-                padding: const EdgeInsets.all(12),
-                itemCount: _docs.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, i) => _DocTile(doc: _docs[i]),
+      body: Column(
+        children: [
+          if (!widget.isAdmin && _groups.length > 1) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.group, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedGroupId,
+                        isExpanded: true,
+                        items: _groups.map((g) => DropdownMenuItem(value: g.id, child: Text(g.name))).toList(),
+                        onChanged: (v) {
+                          if (v != null) {
+                            setState(() => _selectedGroupId = v);
+                            _load();
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+          ],
+          Expanded(
+            child: _docs.isEmpty
+                ? const Center(child: Text('暂无文档，点击右下角上传'))
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: _docs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, i) => _DocTile(doc: _docs[i]),
+                    ),
+                  ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'docs_fab',
         onPressed: _uploading ? null : _showUploadDialog,
