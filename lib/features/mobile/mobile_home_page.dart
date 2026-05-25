@@ -702,49 +702,87 @@ class _QuotaCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final s = subscription;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('使用额度', style: theme.textTheme.titleSmall),
-          const SizedBox(height: 12),
-          _QuotaRow(label: '今日查询', used: s.dailyQueriesUsed, limit: s.dailyQueriesLimit),
-          const SizedBox(height: 8),
-          _QuotaRow(label: '私有文件', used: s.privateDocumentsUsed, limit: s.privateDocumentsLimit),
-          const SizedBox(height: 8),
-          _QuotaRow(label: '项目组', used: s.groupsUsed, limit: s.groupsLimit),
-        ]),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('今日额度', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _QuotaItem(
+                  icon: Icons.pie_chart,
+                  label: '查询次数',
+                  used: s.dailyQueriesUsed,
+                  limit: s.dailyQueriesLimit,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _QuotaItem(
+                  icon: Icons.folder,
+                  label: '私有文件',
+                  used: s.privateDocumentsUsed,
+                  limit: s.privateDocumentsLimit,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class _QuotaRow extends StatelessWidget {
-  const _QuotaRow({required this.label, required this.used, required this.limit});
+class _QuotaItem extends StatelessWidget {
+  const _QuotaItem({
+    required this.icon,
+    required this.label,
+    required this.used,
+    required this.limit,
+    required this.color,
+  });
+
+  final IconData icon;
   final String label;
   final int used;
   final int limit;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ratio = limit > 0 ? (used / limit).clamp(0.0, 1.0) : 0.0;
-    final nearLimit = ratio >= 0.8;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(label, style: theme.textTheme.bodySmall),
-        Text(limit > 0 ? '$used / $limit' : '不限',
-            style: theme.textTheme.bodySmall?.copyWith(color: nearLimit ? theme.colorScheme.error : null)),
-      ]),
-      const SizedBox(height: 4),
-      if (limit > 0)
-        LinearProgressIndicator(
-          value: ratio,
-          color: nearLimit ? theme.colorScheme.error : theme.colorScheme.primary,
-          backgroundColor: theme.colorScheme.surfaceContainerHighest,
-          minHeight: 4,
-          borderRadius: BorderRadius.circular(2),
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: color, size: 32),
+        const SizedBox(height: 8),
+        Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 4),
+        Text(
+          limit > 0 ? '$used / $limit' : '不限',
+          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
-    ]);
+        const SizedBox(height: 8),
+        if (limit > 0)
+          LinearProgressIndicator(
+            value: ratio,
+            color: color,
+            backgroundColor: color.withValues(alpha: 0.2),
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(3),
+          ),
+      ],
+    );
   }
 }
