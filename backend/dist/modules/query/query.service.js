@@ -766,6 +766,7 @@ exports.QueryService = QueryService;
 exports.QueryService = QueryService = __decorate([
     (0, common_1.Injectable)(),
     __param(3, (0, common_1.Inject)((0, common_1.forwardRef)(() => groups_service_1.GroupsService))),
+    __param(5, (0, common_1.Inject)((0, common_1.forwardRef)(() => team_agents_service_1.TeamAgentsService))),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
         documents_service_1.DocumentsService,
         embedding_service_1.EmbeddingService,

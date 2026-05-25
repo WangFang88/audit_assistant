@@ -11,7 +11,7 @@ import { QueryService } from './query.service';
 import { QwenService } from './qwen.service';
 
 @Module({
-  imports: [DatabaseSupportModule, AuthModule, AuditModule, DocumentsModule, forwardRef(() => GroupsModule), SubscriptionsModule, TeamAgentsModule],
+  imports: [DatabaseSupportModule, AuthModule, AuditModule, DocumentsModule, forwardRef(() => GroupsModule), SubscriptionsModule, forwardRef(() => TeamAgentsModule)],
   controllers: [QueryController],
   providers: [QueryService, QwenService],
   exports: [QueryService],

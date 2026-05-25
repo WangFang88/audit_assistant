@@ -81,6 +81,7 @@ export class QueryService {
     @Inject(forwardRef(() => GroupsService))
     private readonly groupsService: GroupsService,
     private readonly subscriptionsService: SubscriptionsService,
+    @Inject(forwardRef(() => TeamAgentsService))
     private readonly teamAgentsService: TeamAgentsService,
     private readonly qwenService: QwenService,
     private readonly auditService: AuditService,
