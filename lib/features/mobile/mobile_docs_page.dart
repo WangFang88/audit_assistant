@@ -32,7 +32,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
     setState(() { _loading = true; _error = null; });
     try {
       if (!widget.isAdmin) {
-        final overview = await widget.apiService.fetchDashboardOverview();
+        final overview = await widget.apiService.fetchDashboard();
         if (!mounted) return;
         _groups = overview.groups;
         _selectedGroupId = widget.groupId ?? (_groups.isNotEmpty ? _groups.first.id : null);
