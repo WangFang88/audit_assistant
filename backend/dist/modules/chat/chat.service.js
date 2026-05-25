@@ -25,6 +25,7 @@ const message_entity_1 = require("../../database/entities/message.entity");
 const auth_service_1 = require("../auth/auth.service");
 const file_storage_service_1 = require("../documents/file-storage.service");
 const groups_service_1 = require("../groups/groups.service");
+const query_service_1 = require("../query/query.service");
 class SendMessageDto {
 }
 exports.SendMessageDto = SendMessageDto;
@@ -49,13 +50,14 @@ __decorate([
     __metadata("design:type", String)
 ], SendMessageDto.prototype, "groupId", void 0);
 let ChatService = class ChatService {
-    constructor(conversationRepository, conversationParticipantRepository, messageRepository, authService, fileStorageService, groupsService) {
+    constructor(conversationRepository, conversationParticipantRepository, messageRepository, authService, fileStorageService, groupsService, queryService) {
         this.conversationRepository = conversationRepository;
         this.conversationParticipantRepository = conversationParticipantRepository;
         this.messageRepository = messageRepository;
         this.authService = authService;
         this.fileStorageService = fileStorageService;
         this.groupsService = groupsService;
+        this.queryService = queryService;
     }
     formatDateTime(date) {
         return (0, date_1.formatCst)(date, false);
@@ -523,22 +525,28 @@ let ChatService = class ChatService {
         await this.bumpUnreadCountForConversation(dto.conversationId, currentUser.id);
         if (conversation.type === 'agent') {
             const replySentAt = new Date();
+            const searchResult = await this.queryService.search(messageContent, conversation.groupId, conversation.agentId, undefined);
             await this.messageRepository.save(this.messageRepository.create({
                 id: `msg-${Date.now() + 1}`,
                 conversationId: dto.conversationId,
                 senderUserId: null,
                 senderAgentId: conversation.agentId,
                 senderType: 'agent',
-                content: '已收到本次提问。当前项目组 Agent 将在公共库与本组私有库范围内完成检索，并返回可溯源依据。',
+                content: searchResult.answer,
                 messageType: 'text',
                 metadata: {
                     senderName: conversation.title,
                     readStatus: true,
+                    searchResult: {
+                        citations: searchResult.citations,
+                        similarCases: searchResult.similarCases,
+                        riskTable: searchResult.riskTable,
+                    },
                 },
                 sentAt: replySentAt,
             }));
             await this.bumpUnreadCountForConversation(dto.conversationId, null);
-            await this.updateConversationLastMessage(dto.conversationId, '已收到本次提问。当前项目组 Agent 将在公共库与本组私有库范围内完成检索，并返回可溯源依据。', replySentAt);
+            await this.updateConversationLastMessage(dto.conversationId, searchResult.answer.substring(0, 100), replySentAt);
         }
         return this.toPublicMessage(this.toMessageRecord(savedMessage, conversation));
     }
@@ -746,6 +754,7 @@ exports.ChatService = ChatService = __decorate([
         typeorm_2.Repository,
         auth_service_1.AuthService,
         file_storage_service_1.FileStorageService,
-        groups_service_1.GroupsService])
+        groups_service_1.GroupsService,
+        query_service_1.QueryService])
 ], ChatService);
 //# sourceMappingURL=chat.service.js.map

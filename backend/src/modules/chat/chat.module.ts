@@ -6,12 +6,13 @@ import { MessageEntity } from '../../database/entities/message.entity';
 import { AuthModule } from '../auth/auth.module';
 import { DocumentsModule } from '../documents/documents.module';
 import { GroupsModule } from '../groups/groups.module';
+import { QueryModule } from '../query/query.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ConversationEntity, ConversationParticipantEntity, MessageEntity]), AuthModule, DocumentsModule, forwardRef(() => GroupsModule), SubscriptionsModule],
+  imports: [TypeOrmModule.forFeature([ConversationEntity, ConversationParticipantEntity, MessageEntity]), AuthModule, DocumentsModule, forwardRef(() => GroupsModule), QueryModule, SubscriptionsModule],
   controllers: [ChatController],
   providers: [ChatService],
   exports: [ChatService],

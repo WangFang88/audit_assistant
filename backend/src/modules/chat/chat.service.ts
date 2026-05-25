@@ -10,6 +10,7 @@ import { MessageEntity } from '../../database/entities/message.entity';
 import { AuthService } from '../auth/auth.service';
 import { FileStorageService, SavedFileRecord } from '../documents/file-storage.service';
 import { GroupsService } from '../groups/groups.service';
+import { QueryService } from '../query/query.service';
 import { TeamAgentRecord } from '../team-agents/team-agents.service';
 
 class SendMessageDto {
@@ -72,6 +73,7 @@ export class ChatService {
     private readonly fileStorageService: FileStorageService,
     @Inject(forwardRef(() => GroupsService))
     private readonly groupsService: GroupsService,
+    private readonly queryService: QueryService,
   ) {}
 
   private formatDateTime(date: Date) {
@@ -626,6 +628,7 @@ export class ChatService {
 
     if (conversation.type === 'agent') {
       const replySentAt = new Date();
+      const searchResult = await this.queryService.search(messageContent, conversation.groupId, conversation.agentId, undefined);
       await this.messageRepository.save(
         this.messageRepository.create({
           id: `msg-${Date.now() + 1}`,
@@ -633,11 +636,16 @@ export class ChatService {
           senderUserId: null,
           senderAgentId: conversation.agentId,
           senderType: 'agent',
-          content: '已收到本次提问。当前项目组 Agent 将在公共库与本组私有库范围内完成检索，并返回可溯源依据。',
+          content: searchResult.answer,
           messageType: 'text',
           metadata: {
             senderName: conversation.title,
             readStatus: true,
+            searchResult: {
+              citations: searchResult.citations,
+              similarCases: searchResult.similarCases,
+              riskTable: searchResult.riskTable,
+            },
           },
           sentAt: replySentAt,
         }),
@@ -645,7 +653,7 @@ export class ChatService {
       await this.bumpUnreadCountForConversation(dto.conversationId, null);
       await this.updateConversationLastMessage(
         dto.conversationId,
-        '已收到本次提问。当前项目组 Agent 将在公共库与本组私有库范围内完成检索，并返回可溯源依据。',
+        searchResult.answer.substring(0, 100),
         replySentAt,
       );
     }

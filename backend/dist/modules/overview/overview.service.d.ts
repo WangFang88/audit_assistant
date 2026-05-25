@@ -102,7 +102,7 @@ export declare class OverviewService {
             currentPlanId: string;
             trialEndsAt: string;
             trialDays: number;
-            status: "admin-preview" | "trial" | "active" | "expired";
+            status: "active" | "admin-preview" | "trial" | "expired";
             statusLabel: string;
             latestOrder: {
                 id: string;
@@ -206,7 +206,7 @@ export declare class OverviewService {
                 region: string | null;
                 expiredAt: string;
             }[];
-            libraryAccessPrices: Record<"local_policy" | "local_case" | "industry" | "national_case", {
+            libraryAccessPrices: Record<"local_policy" | "national_case" | "local_case" | "industry", {
                 region: string;
                 all: string;
             }>;

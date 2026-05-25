@@ -5,6 +5,7 @@ import { MessageEntity } from '../../database/entities/message.entity';
 import { AuthService } from '../auth/auth.service';
 import { FileStorageService } from '../documents/file-storage.service';
 import { GroupsService } from '../groups/groups.service';
+import { QueryService } from '../query/query.service';
 import { TeamAgentRecord } from '../team-agents/team-agents.service';
 declare class SendMessageDto {
     conversationType: 'group' | 'direct' | 'agent';
@@ -33,7 +34,8 @@ export declare class ChatService {
     private readonly authService;
     private readonly fileStorageService;
     private readonly groupsService;
-    constructor(conversationRepository: Repository<ConversationEntity>, conversationParticipantRepository: Repository<ConversationParticipantEntity>, messageRepository: Repository<MessageEntity>, authService: AuthService, fileStorageService: FileStorageService, groupsService: GroupsService);
+    private readonly queryService;
+    constructor(conversationRepository: Repository<ConversationEntity>, conversationParticipantRepository: Repository<ConversationParticipantEntity>, messageRepository: Repository<MessageEntity>, authService: AuthService, fileStorageService: FileStorageService, groupsService: GroupsService, queryService: QueryService);
     private formatDateTime;
     private assertAdminCannotUseChat;
     private buildSeedConversations;
