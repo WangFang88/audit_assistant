@@ -16,6 +16,8 @@ class MobileChatPage extends StatefulWidget {
 class _MobileChatPageState extends State<MobileChatPage> {
   bool _loading = true;
   List<ConversationSummary> _conversations = const [];
+  List<ProjectGroup> _groups = const [];
+  String? _selectedGroupId;
   Timer? _pollTimer;
 
   @override
@@ -33,7 +35,13 @@ class _MobileChatPageState extends State<MobileChatPage> {
 
   Future<void> _load() async {
     try {
-      final convs = await widget.apiService.fetchConversations();
+      if (_groups.isEmpty) {
+        final overview = await widget.apiService.fetchDashboard();
+        if (!mounted) return;
+        _groups = overview.groups;
+        _selectedGroupId = _groups.isNotEmpty ? _groups.first.id : null;
+      }
+      final convs = await widget.apiService.fetchConversations(groupId: _selectedGroupId);
       if (!mounted) return;
       setState(() { _conversations = convs; _loading = false; });
     } catch (_) {
