@@ -647,7 +647,7 @@ String get _activeConversationType {
         question: question,
         groupId: searchGroupId,
         agentId: _overview?.activeTeamAgent?.id,
-        queryScope: _queryScope,
+        queryScope: _queryScope ?? 'regulation',
       );
       if (!mounted) {
         return;
