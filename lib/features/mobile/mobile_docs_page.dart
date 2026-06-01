@@ -31,7 +31,7 @@ class _MobileDocsPageState extends State<MobileDocsPage> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      if (!widget.isAdmin) {
+      if (!widget.isAdmin && _groups.isEmpty) {
         final overview = await widget.apiService.fetchDashboard();
         if (!mounted) return;
         _groups = overview.groups;
