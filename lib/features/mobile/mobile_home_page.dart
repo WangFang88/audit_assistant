@@ -138,7 +138,7 @@ class _MobileHomePageState extends State<MobileHomePage> {
       final result = await widget.apiService.search(
         question: q,
         groupId: groupId,
-        queryScope: _queryScope,
+        queryScope: _queryScope ?? 'regulation',
       );
       final queryHistory = await widget.apiService.getQueryHistory(teamId: groupId);
       if (!mounted) return;
