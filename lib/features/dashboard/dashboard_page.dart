@@ -44,9 +44,7 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final TextEditingController _questionController = TextEditingController(
-    text: '请检索与专项资金使用和采购审批相关的制度依据。',
-  );
+  final TextEditingController _questionController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
   final TextEditingController _messageSearchController = TextEditingController();
   final TextEditingController _conversationSearchController = TextEditingController();
