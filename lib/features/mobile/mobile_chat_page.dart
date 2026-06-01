@@ -53,7 +53,7 @@ class _MobileChatPageState extends State<MobileChatPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_conversations.isEmpty) {
+    if (_conversations.isEmpty && _groups.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -67,13 +67,57 @@ class _MobileChatPageState extends State<MobileChatPage> {
         ),
       );
     }
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: ListView.separated(
-        itemCount: _conversations.length,
-        separatorBuilder: (_, __) => Divider(height: 1, indent: 72, color: theme.colorScheme.outlineVariant),
-        itemBuilder: (context, i) {
-          final c = _conversations[i];
+    return Column(
+      children: [
+        if (_groups.length > 1) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              border: Border(bottom: BorderSide(color: theme.dividerColor)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.group, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _selectedGroupId,
+                      isExpanded: true,
+                      items: _groups.map((g) => DropdownMenuItem(value: g.id, child: Text(g.name))).toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() => _selectedGroupId = v);
+                          _load();
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        Expanded(
+          child: _conversations.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.chat_bubble_outline, size: 64, color: theme.colorScheme.outline),
+                      const SizedBox(height: 16),
+                      Text('暂无聊天会话', style: theme.textTheme.titleMedium),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView.separated(
+                    itemCount: _conversations.length,
+                    separatorBuilder: (_, __) => Divider(height: 1, indent: 72, color: theme.colorScheme.outlineVariant),
+                    itemBuilder: (context, i) {
+                      final c = _conversations[i];
           return ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: CircleAvatar(
@@ -114,6 +158,9 @@ class _MobileChatPageState extends State<MobileChatPage> {
           );
         },
       ),
+    ),
+        ),
+      ],
     );
   }
 
