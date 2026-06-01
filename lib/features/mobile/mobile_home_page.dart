@@ -176,7 +176,7 @@ class _MobileHomePageState extends State<MobileHomePage> {
           const SizedBox(height: 16),
           // Feature cards 2x2
           _FeatureGrid(onTap: (scope, hint) {
-            setState(() { _queryScope = scope; _questionController.text = hint; });
+            setState(() { _queryScope = scope; });
           }),
           const SizedBox(height: 16),
           // Search box

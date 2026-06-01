@@ -2821,7 +2821,6 @@ String get _activeConversationType {
     return InkWell(
       onTap: () {
         setState(() => _queryScope = data.queryScope);
-        _questionController.text = '请检索与${data.title}相关的内容。';
       },
       borderRadius: BorderRadius.circular(12),
       child: Container(
