@@ -168,6 +168,7 @@ class DemoDataService {
         defaultConversationId: 'conv-agent-1',
         retrievalScope: 'public_plus_group_private',
       ),
+      riskTable: null,
     );
   }
 
