@@ -2816,6 +2816,7 @@ String get _activeConversationType {
   }
 
   Widget _buildFeatureCard(BuildContext context, _FeatureCardData data) {
+    final isSelected = _queryScope == data.queryScope;
     return InkWell(
       onTap: () {
         setState(() => _queryScope = data.queryScope);
@@ -2824,8 +2825,11 @@ String get _activeConversationType {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: data.color.withValues(alpha: 0.06),
-          border: Border.all(color: data.color.withValues(alpha: 0.2)),
+          color: data.color.withValues(alpha: isSelected ? 0.15 : 0.06),
+          border: Border.all(
+            color: data.color.withValues(alpha: isSelected ? 0.6 : 0.2),
+            width: isSelected ? 2 : 1,
+          ),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
