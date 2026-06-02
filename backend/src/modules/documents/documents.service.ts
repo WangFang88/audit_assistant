@@ -544,8 +544,8 @@ export class DocumentsService {
 
   private buildCaseChunks(document: DocumentRecord, rawText: string): DocumentChunkRecord[] {
     // 案例库按照"问题、条款、结论"结构切分
-    // 识别案例分隔标记：案例、序号、标题等
-    const caseMarkers = /(?:^|\n)(?:案例[一二三四五六七八九十\d]+[、：:.]|[一二三四五六七八九十\d]+[、\.](?![\u4e00-\u9fa5])|【案例\d+】)/;
+    // 识别案例分隔标记：案例、序号、标题等，以及Excel工作表标记
+    const caseMarkers = /(?:^|\n)(?:案例[一二三四五六七八九十\d]+[、：:.]|[一二三四五六七八九十\d]+[、\.](?![\u4e00-\u9fa5])|【案例\d+】|\[工作表:\s*[^\]]+\])/;
     const segments = rawText.split(caseMarkers).filter(s => s.trim().length > 20);
 
     if (segments.length === 0) {

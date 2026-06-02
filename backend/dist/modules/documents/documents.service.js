@@ -479,7 +479,7 @@ let DocumentsService = DocumentsService_1 = class DocumentsService {
         return this.toDocumentRecord(entity);
     }
     buildCaseChunks(document, rawText) {
-        const caseMarkers = /(?:^|\n)(?:案例[一二三四五六七八九十\d]+[、：:.]|[一二三四五六七八九十\d]+[、\.](?![\u4e00-\u9fa5])|【案例\d+】)/;
+        const caseMarkers = /(?:^|\n)(?:案例[一二三四五六七八九十\d]+[、：:.]|[一二三四五六七八九十\d]+[、\.](?![\u4e00-\u9fa5])|【案例\d+】|\[工作表:\s*[^\]]+\])/;
         const segments = rawText.split(caseMarkers).filter(s => s.trim().length > 20);
         if (segments.length === 0) {
             const paragraphs = rawText.split(/\n\n+/).filter(p => p.trim().length > 10);
