@@ -542,8 +542,66 @@ export class DocumentsService {
     return this.toDocumentRecord(entity);
   }
 
+  private buildCaseChunks(document: DocumentRecord, rawText: string): DocumentChunkRecord[] {
+    // 案例库按照"问题、条款、结论"结构切分
+    // 识别案例分隔标记：案例、序号、标题等
+    const caseMarkers = /(?:^|\n)(?:案例[一二三四五六七八九十\d]+[、：:.]|[一二三四五六七八九十\d]+[、\.](?![\u4e00-\u9fa5])|【案例\d+】)/;
+    const segments = rawText.split(caseMarkers).filter(s => s.trim().length > 20);
+
+    if (segments.length === 0) {
+      // 如果没有明确的案例分隔，尝试按段落分组（每3-5段作为一个案例单元）
+      const paragraphs = rawText.split(/\n\n+/).filter(p => p.trim().length > 10);
+      const groupedSegments: string[] = [];
+      for (let i = 0; i < paragraphs.length; i += 4) {
+        groupedSegments.push(paragraphs.slice(i, i + 4).join('\n\n'));
+      }
+      return this.buildCaseChunksFromSegments(document, groupedSegments.length > 0 ? groupedSegments : [rawText]);
+    }
+
+    return this.buildCaseChunksFromSegments(document, segments);
+  }
+
+  private buildCaseChunksFromSegments(document: DocumentRecord, segments: string[]): DocumentChunkRecord[] {
+    const titleKeywords = document.title
+      .replace(/[()\uff08\uff09_.\/-]+/g, ' ')
+      .split(/[\s]+/)
+      .filter(item => item.length >= 2);
+
+    return segments.map((segment, index) => {
+      const content = segment.trim();
+      const keywords = Array.from(
+        new Set([
+          ...titleKeywords,
+          ...content
+            .replace(/[\uff0c\u3002\uff1b\uff1a\u3001\u201c\u201d\u2018\u2019\uff08\uff09()\u3010\u3011\[\]\-]/g, ' ')
+            .split(/[\s]+/)
+            .filter(item => item.length >= 2)
+            .slice(0, 15),
+        ]),
+      );
+
+      return {
+        id: this.buildImportedChunkId(document.id, index),
+        documentId: document.id,
+        groupId: document.groupId,
+        libraryType: document.libraryType,
+        region: document.region,
+        chapterTitle: `案例${index + 1}`,
+        articleRef: '',
+        pageLabel: `案例${index + 1}`,
+        content,
+        keywords,
+      };
+    });
+  }
+
   private buildChunksFromRawText(document: DocumentRecord, rawText: string): DocumentChunkRecord[] {
     const normalizedText = rawText.replace(/\r/g, '').trim();
+
+    // 案例库特殊处理：按照"问题、条款、结论"结构切分
+    if (document.libraryType.includes('case') || document.libraryType === '全国案例库' || document.libraryType === '地方案例库') {
+      return this.buildCaseChunks(document, normalizedText);
+    }
 
     // 按章、节、条边界切分
     const rawSegments = normalizedText

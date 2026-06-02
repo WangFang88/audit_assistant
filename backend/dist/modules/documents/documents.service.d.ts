@@ -92,6 +92,8 @@ export declare class DocumentsService {
     getReadyChunks(groupId?: string): Promise<DocumentChunkRecord[]>;
     listDocumentChunks(documentId: string): Promise<DocumentChunkRecord[]>;
     getDocumentById(documentId: string): Promise<DocumentRecord>;
+    private buildCaseChunks;
+    private buildCaseChunksFromSegments;
     private buildChunksFromRawText;
     private buildChunksFromFile;
     private buildChunksForDocument;
