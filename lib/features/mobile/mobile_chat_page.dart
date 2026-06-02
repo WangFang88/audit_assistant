@@ -69,7 +69,7 @@ class _MobileChatPageState extends State<MobileChatPage> {
     }
     return Column(
       children: [
-        if (_groups.length > 1) ...[
+        if (_groups.isNotEmpty) ...[
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -81,19 +81,24 @@ class _MobileChatPageState extends State<MobileChatPage> {
                 const Icon(Icons.group, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedGroupId,
-                      isExpanded: true,
-                      items: _groups.map((g) => DropdownMenuItem(value: g.id, child: Text(g.name))).toList(),
-                      onChanged: (v) {
-                        if (v != null) {
-                          setState(() => _selectedGroupId = v);
-                          _load();
-                        }
-                      },
-                    ),
-                  ),
+                  child: _groups.length > 1
+                      ? DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedGroupId,
+                            isExpanded: true,
+                            items: _groups.map((g) => DropdownMenuItem(value: g.id, child: Text(g.name))).toList(),
+                            onChanged: (v) {
+                              if (v != null) {
+                                setState(() => _selectedGroupId = v);
+                                _load();
+                              }
+                            },
+                          ),
+                        )
+                      : Text(
+                          _groups.first.name,
+                          style: theme.textTheme.titleSmall,
+                        ),
                 ),
               ],
             ),
