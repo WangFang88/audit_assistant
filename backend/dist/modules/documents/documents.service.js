@@ -512,17 +512,19 @@ let DocumentsService = DocumentsService_1 = class DocumentsService {
                 groupId: document.groupId,
                 libraryType: document.libraryType,
                 region: document.region,
+                title: document.title,
                 chapterTitle: `案例${index + 1}`,
                 articleRef: '',
                 pageLabel: `案例${index + 1}`,
                 content,
                 keywords,
+                indexStatus: 'ready',
             };
         });
     }
     buildChunksFromRawText(document, rawText) {
         const normalizedText = rawText.replace(/\r/g, '').trim();
-        if (document.libraryType.includes('case') || document.libraryType === '全国案例库' || document.libraryType === '地方案例库') {
+        if (document.libraryType === 'national_case' || document.libraryType === 'local_case') {
             return this.buildCaseChunks(document, normalizedText);
         }
         const rawSegments = normalizedText
