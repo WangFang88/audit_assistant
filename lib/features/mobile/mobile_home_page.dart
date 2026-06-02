@@ -175,9 +175,12 @@ class _MobileHomePageState extends State<MobileHomePage> {
           _HeroCard(user: widget.user, subscription: sub),
           const SizedBox(height: 16),
           // Feature cards 2x2
-          _FeatureGrid(onTap: (scope, hint) {
-            setState(() { _queryScope = scope; });
-          }),
+          _FeatureGrid(
+            selectedScope: _queryScope,
+            onTap: (scope, hint) {
+              setState(() { _queryScope = scope; });
+            },
+          ),
           const SizedBox(height: 16),
           // Search box
           TextField(
@@ -318,8 +321,9 @@ class _HeroCard extends StatelessWidget {
 }
 
 class _FeatureGrid extends StatelessWidget {
-  const _FeatureGrid({required this.onTap});
+  const _FeatureGrid({required this.onTap, this.selectedScope});
   final void Function(String scope, String hint) onTap;
+  final String? selectedScope;
 
   static const _cards = [
     (Icons.gavel_outlined, Color(0xFF1D4ED8), '法条查询', '国家法律与政策文件', 'regulation', '请检索与法条查询相关的制度依据。'),
@@ -339,14 +343,18 @@ class _FeatureGrid extends StatelessWidget {
       childAspectRatio: 2.6,
       children: _cards.map((c) {
         final (icon, color, title, subtitle, scope, hint) = c;
+        final isSelected = selectedScope == scope;
         return InkWell(
           onTap: () => onTap(scope, hint),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.06),
-              border: Border.all(color: color.withValues(alpha: 0.2)),
+              color: color.withValues(alpha: isSelected ? 0.15 : 0.06),
+              border: Border.all(
+                color: color.withValues(alpha: isSelected ? 0.6 : 0.2),
+                width: isSelected ? 2 : 1,
+              ),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
