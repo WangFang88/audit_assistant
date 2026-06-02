@@ -88,8 +88,11 @@ class _MobileChatPageState extends State<MobileChatPage> {
                             isExpanded: true,
                             items: _groups.map((g) => DropdownMenuItem(value: g.id, child: Text(g.name))).toList(),
                             onChanged: (v) {
-                              if (v != null) {
-                                setState(() => _selectedGroupId = v);
+                              if (v != null && v != _selectedGroupId) {
+                                setState(() {
+                                  _selectedGroupId = v;
+                                  _loading = true;
+                                });
                                 _load();
                               }
                             },
