@@ -28,6 +28,7 @@ const groups_service_1 = require("../groups/groups.service");
 const subscriptions_service_1 = require("../subscriptions/subscriptions.service");
 const file_storage_service_1 = require("./file-storage.service");
 const text_extraction_service_1 = require("./text-extraction.service");
+const case_chunk_processor_service_1 = require("./case-chunk-processor.service");
 const embedding_service_1 = require("./embedding.service");
 const library_type_1 = require("./library-type");
 class ImportDocumentDto {
@@ -59,7 +60,7 @@ __decorate([
     __metadata("design:type", String)
 ], ImportDocumentDto.prototype, "groupId", void 0);
 let DocumentsService = DocumentsService_1 = class DocumentsService {
-    constructor(persistedDocumentRepository, persistedChunkRepository, persistedExtractionJobRepository, auditService, authService, groupsService, subscriptionsService, fileStorageService, textExtractionService, embeddingService) {
+    constructor(persistedDocumentRepository, persistedChunkRepository, persistedExtractionJobRepository, auditService, authService, groupsService, subscriptionsService, fileStorageService, textExtractionService, caseChunkProcessor, embeddingService) {
         this.persistedDocumentRepository = persistedDocumentRepository;
         this.persistedChunkRepository = persistedChunkRepository;
         this.persistedExtractionJobRepository = persistedExtractionJobRepository;
@@ -69,6 +70,7 @@ let DocumentsService = DocumentsService_1 = class DocumentsService {
         this.subscriptionsService = subscriptionsService;
         this.fileStorageService = fileStorageService;
         this.textExtractionService = textExtractionService;
+        this.caseChunkProcessor = caseChunkProcessor;
         this.embeddingService = embeddingService;
         this.logger = new common_1.Logger(DocumentsService_1.name);
     }
@@ -478,54 +480,10 @@ let DocumentsService = DocumentsService_1 = class DocumentsService {
         }
         return this.toDocumentRecord(entity);
     }
-    buildCaseChunks(document, rawText) {
-        const caseMarkers = /(?:^|\n)(?:案例[一二三四五六七八九十\d]+[、：:.]|[一二三四五六七八九十\d]+[、\.](?![\u4e00-\u9fa5])|【案例\d+】|\[工作表:\s*[^\]]+\])/;
-        const segments = rawText.split(caseMarkers).filter(s => s.trim().length > 20);
-        if (segments.length === 0) {
-            const paragraphs = rawText.split(/\n\n+/).filter(p => p.trim().length > 10);
-            const groupedSegments = [];
-            for (let i = 0; i < paragraphs.length; i += 4) {
-                groupedSegments.push(paragraphs.slice(i, i + 4).join('\n\n'));
-            }
-            return this.buildCaseChunksFromSegments(document, groupedSegments.length > 0 ? groupedSegments : [rawText]);
-        }
-        return this.buildCaseChunksFromSegments(document, segments);
-    }
-    buildCaseChunksFromSegments(document, segments) {
-        const titleKeywords = document.title
-            .replace(/[()\uff08\uff09_.\/-]+/g, ' ')
-            .split(/[\s]+/)
-            .filter(item => item.length >= 2);
-        return segments.map((segment, index) => {
-            const content = segment.trim();
-            const keywords = Array.from(new Set([
-                ...titleKeywords,
-                ...content
-                    .replace(/[\uff0c\u3002\uff1b\uff1a\u3001\u201c\u201d\u2018\u2019\uff08\uff09()\u3010\u3011\[\]\-]/g, ' ')
-                    .split(/[\s]+/)
-                    .filter(item => item.length >= 2)
-                    .slice(0, 15),
-            ]));
-            return {
-                id: this.buildImportedChunkId(document.id, index),
-                documentId: document.id,
-                groupId: document.groupId,
-                libraryType: document.libraryType,
-                region: document.region,
-                title: document.title,
-                chapterTitle: `案例${index + 1}`,
-                articleRef: '',
-                pageLabel: `案例${index + 1}`,
-                content,
-                keywords,
-                indexStatus: 'ready',
-            };
-        });
-    }
     buildChunksFromRawText(document, rawText) {
         const normalizedText = rawText.replace(/\r/g, '').trim();
         if (document.libraryType === 'national_case' || document.libraryType === 'local_case') {
-            return this.buildCaseChunks(document, normalizedText);
+            return this.caseChunkProcessor.buildTextCaseChunks(document, normalizedText);
         }
         const rawSegments = normalizedText
             .split(/(?=第[一二三四五六七八九十百零千\d]+[章节条款])/)
@@ -588,6 +546,16 @@ let DocumentsService = DocumentsService_1 = class DocumentsService {
         });
     }
     async buildChunksFromFile(document) {
+        if ((document.libraryType === 'national_case' || document.libraryType === 'local_case') && document.fileType === 'xlsx') {
+            try {
+                const sheets = await this.textExtractionService.extractXlsxStructured(document.sourcePath);
+                return this.caseChunkProcessor.buildXlsxCaseChunks(document, sheets);
+            }
+            catch (err) {
+                this.logger.warn(`案例XLSX结构化提取失败 [${document.title}]: ${err}`);
+                return [];
+            }
+        }
         let text = '';
         try {
             text = await this.textExtractionService.extractText(document.sourcePath, document.fileType);
@@ -952,6 +920,7 @@ exports.DocumentsService = DocumentsService = DocumentsService_1 = __decorate([
         subscriptions_service_1.SubscriptionsService,
         file_storage_service_1.FileStorageService,
         text_extraction_service_1.TextExtractionService,
+        case_chunk_processor_service_1.CaseChunkProcessorService,
         embedding_service_1.EmbeddingService])
 ], DocumentsService);
 //# sourceMappingURL=documents.service.js.map

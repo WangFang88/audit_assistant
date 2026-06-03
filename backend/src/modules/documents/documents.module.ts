@@ -11,12 +11,13 @@ import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
 import { FileStorageService } from './file-storage.service';
 import { TextExtractionService } from './text-extraction.service';
+import { CaseChunkProcessorService } from './case-chunk-processor.service';
 import { EmbeddingService } from './embedding.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([DocumentEntity, DocumentChunkEntity, DocumentExtractionJobEntity]), AuditModule, AuthModule, forwardRef(() => GroupsModule), SubscriptionsModule],
   controllers: [DocumentsController],
-  providers: [DocumentsService, FileStorageService, TextExtractionService, EmbeddingService],
+  providers: [DocumentsService, FileStorageService, TextExtractionService, CaseChunkProcessorService, EmbeddingService],
   exports: [DocumentsService, EmbeddingService, FileStorageService],
 })
 export class DocumentsModule {}

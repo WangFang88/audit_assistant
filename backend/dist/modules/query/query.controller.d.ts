@@ -71,7 +71,7 @@ export declare class QueryController {
                 legalBasis: string;
                 caseReference: string;
                 evidenceMaterials: string;
-                riskLevel: "高" | "中" | "低";
+                riskLevel: "中" | "高" | "低";
                 detail: {
                     explanation: string;
                     legalBasisDetails: string[];

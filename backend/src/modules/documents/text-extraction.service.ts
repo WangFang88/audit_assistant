@@ -2,6 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+export interface XlsxSheetData {
+  sheetName: string;
+  headers: string[];
+  rows: Record<string, string>[];
+}
+
 @Injectable()
 export class TextExtractionService {
   private readonly logger = new Logger(TextExtractionService.name);
@@ -64,5 +70,98 @@ export class TextExtractionService {
     });
 
     return texts.join('\n\n');
+  }
+
+  async extractXlsxStructured(sourcePath: string): Promise<XlsxSheetData[]> {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const XLSX = require('xlsx');
+    const absPath = this.getAbsolutePath(sourcePath);
+    const buffer = readFileSync(absPath);
+    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    const result: XlsxSheetData[] = [];
+
+    for (const sheetName of workbook.SheetNames) {
+      const sheet = workbook.Sheets[sheetName];
+      const rawData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      if (rawData.length === 0) continue;
+
+      // 构建合并单元格映射：被合并的行列 → 首单元格值
+      const mergeMap = this.buildMergeMapFromSheet(rawData, sheet['!merges']);
+
+      // 找到第一个非空行作为表头行索引
+      const headerRowIdx = rawData.findIndex((row) => row.some((cell: any) => String(cell).trim().length > 0));
+      if (headerRowIdx < 0) continue;
+
+      const headerRow = rawData[headerRowIdx].map((cell: any) => String(cell ?? '').trim());
+
+      // 识别有效列（表头非空），过滤空表头列
+      const validColIndices: number[] = [];
+      const headers: string[] = [];
+      for (let ci = 0; ci < headerRow.length; ci++) {
+        if (headerRow[ci].length > 0) {
+          validColIndices.push(ci);
+          headers.push(headerRow[ci]);
+        }
+      }
+
+      if (headers.length === 0) continue;
+
+      // 处理数据行：从表头下一行开始
+      const rows: Record<string, string>[] = [];
+      for (let ri = headerRowIdx + 1; ri < rawData.length; ri++) {
+        const rawRow = rawData[ri];
+        const row: Record<string, string> = {};
+        let hasValue = false;
+
+        for (let hi = 0; hi < validColIndices.length; hi++) {
+          const ci = validColIndices[hi];
+          const header = headers[hi];
+
+          // 检查是否为合并单元格（被合并的单元格），使用首单元格的值
+          const mergeKey = `${ri},${ci}`;
+          const cellValue = mergeMap.has(mergeKey)
+            ? mergeMap.get(mergeKey)!
+            : String(rawRow[ci] ?? '').trim();
+
+          row[header] = cellValue;
+          if (cellValue.length > 0) hasValue = true;
+        }
+
+        // 跳过全空行
+        if (hasValue) {
+          rows.push(row);
+        }
+      }
+
+      if (rows.length > 0) {
+        result.push({ sheetName, headers, rows });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * 构建合并单元格映射表（需要 raw data）。
+   * 对于每个合并区域，首单元格的值前向填充到区域内所有单元格。
+   */
+  private buildMergeMapFromSheet(rawData: any[][], merges: any[] | undefined): Map<string, string> {
+    const map = new Map<string, string>();
+    if (!merges || merges.length === 0 || rawData.length === 0) return map;
+
+    for (const merge of merges) {
+      const { s, e } = merge; // s = start {r, c}, e = end {r, c}
+      const firstValue = String(rawData[s.r]?.[s.c] ?? '').trim();
+      if (firstValue.length === 0) continue;
+
+      for (let r = s.r; r <= e.r; r++) {
+        for (let c = s.c; c <= e.c; c++) {
+          if (r === s.r && c === s.c) continue; // skip the first cell itself
+          map.set(`${r},${c}`, firstValue);
+        }
+      }
+    }
+
+    return map;
   }
 }

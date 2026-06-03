@@ -102,7 +102,7 @@ export declare class OverviewService {
             currentPlanId: string;
             trialEndsAt: string;
             trialDays: number;
-            status: "admin-preview" | "trial" | "active" | "expired";
+            status: "admin-preview" | "active" | "trial" | "expired";
             statusLabel: string;
             latestOrder: {
                 id: string;

@@ -20,6 +20,7 @@ const documents_controller_1 = require("./documents.controller");
 const documents_service_1 = require("./documents.service");
 const file_storage_service_1 = require("./file-storage.service");
 const text_extraction_service_1 = require("./text-extraction.service");
+const case_chunk_processor_service_1 = require("./case-chunk-processor.service");
 const embedding_service_1 = require("./embedding.service");
 let DocumentsModule = class DocumentsModule {
 };
@@ -28,7 +29,7 @@ exports.DocumentsModule = DocumentsModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([document_entity_1.DocumentEntity, document_chunk_entity_1.DocumentChunkEntity, document_extraction_job_entity_1.DocumentExtractionJobEntity]), audit_module_1.AuditModule, auth_module_1.AuthModule, (0, common_1.forwardRef)(() => groups_module_1.GroupsModule), subscriptions_module_1.SubscriptionsModule],
         controllers: [documents_controller_1.DocumentsController],
-        providers: [documents_service_1.DocumentsService, file_storage_service_1.FileStorageService, text_extraction_service_1.TextExtractionService, embedding_service_1.EmbeddingService],
+        providers: [documents_service_1.DocumentsService, file_storage_service_1.FileStorageService, text_extraction_service_1.TextExtractionService, case_chunk_processor_service_1.CaseChunkProcessorService, embedding_service_1.EmbeddingService],
         exports: [documents_service_1.DocumentsService, embedding_service_1.EmbeddingService, file_storage_service_1.FileStorageService],
     })
 ], DocumentsModule);

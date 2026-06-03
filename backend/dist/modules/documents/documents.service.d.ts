@@ -8,6 +8,7 @@ import { GroupsService } from '../groups/groups.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { FileStorageService } from './file-storage.service';
 import { TextExtractionService } from './text-extraction.service';
+import { CaseChunkProcessorService } from './case-chunk-processor.service';
 import { EmbeddingService } from './embedding.service';
 import { LibraryType } from './library-type';
 declare class ImportDocumentDto {
@@ -71,9 +72,10 @@ export declare class DocumentsService {
     private readonly subscriptionsService;
     private readonly fileStorageService;
     private readonly textExtractionService;
+    private readonly caseChunkProcessor;
     private readonly embeddingService;
     private readonly logger;
-    constructor(persistedDocumentRepository: Repository<DocumentEntity>, persistedChunkRepository: Repository<DocumentChunkEntity>, persistedExtractionJobRepository: Repository<DocumentExtractionJobEntity>, auditService: AuditService, authService: AuthService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, fileStorageService: FileStorageService, textExtractionService: TextExtractionService, embeddingService: EmbeddingService);
+    constructor(persistedDocumentRepository: Repository<DocumentEntity>, persistedChunkRepository: Repository<DocumentChunkEntity>, persistedExtractionJobRepository: Repository<DocumentExtractionJobEntity>, auditService: AuditService, authService: AuthService, groupsService: GroupsService, subscriptionsService: SubscriptionsService, fileStorageService: FileStorageService, textExtractionService: TextExtractionService, caseChunkProcessor: CaseChunkProcessorService, embeddingService: EmbeddingService);
     private assertAdminPublicLibraryOnly;
     private assertAdminCanAccessDocument;
     private toDocumentRecord;
@@ -92,8 +94,6 @@ export declare class DocumentsService {
     getReadyChunks(groupId?: string): Promise<DocumentChunkRecord[]>;
     listDocumentChunks(documentId: string): Promise<DocumentChunkRecord[]>;
     getDocumentById(documentId: string): Promise<DocumentRecord>;
-    private buildCaseChunks;
-    private buildCaseChunksFromSegments;
     private buildChunksFromRawText;
     private buildChunksFromFile;
     private buildChunksForDocument;
