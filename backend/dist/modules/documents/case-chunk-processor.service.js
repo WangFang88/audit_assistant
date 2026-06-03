@@ -40,6 +40,8 @@ let CaseChunkProcessorService = CaseChunkProcessorService_1 = class CaseChunkPro
         for (const sheet of sheets) {
             if (sheet.rows.length === 0)
                 continue;
+            if (this.isAuditWorkingPaper(sheet.headers))
+                continue;
             const columnTypes = this.detectColumnTypes(sheet.headers);
             for (let rowIdx = 0; rowIdx < sheet.rows.length; rowIdx++) {
                 const row = sheet.rows[rowIdx];
@@ -74,6 +76,22 @@ let CaseChunkProcessorService = CaseChunkProcessorService_1 = class CaseChunkPro
             }
         }
         return chunks;
+    }
+    isAuditWorkingPaper(headers) {
+        if (headers.length === 0)
+            return true;
+        const metadataPattern = /被审计单位|审计项目|审计人员|复核人员|会计期间|会计截止日|编号|日期|第.*页|共.*页/;
+        const dataPattern = /序号|问题|描述|违反|条例|法规|依据|名称|金额|类别/;
+        let metadataCount = 0;
+        let dataCount = 0;
+        for (const h of headers) {
+            const normalized = h.replace(/\s+/g, '');
+            if (metadataPattern.test(normalized))
+                metadataCount++;
+            if (dataPattern.test(normalized))
+                dataCount++;
+        }
+        return metadataCount >= 2 && dataCount < 2;
     }
     detectColumnTypes(headers) {
         const result = {
@@ -147,8 +165,9 @@ let CaseChunkProcessorService = CaseChunkProcessorService_1 = class CaseChunkPro
     extractArticleRef(row, columnTypes) {
         for (const col of columnTypes.articleRefCols) {
             const val = row[col]?.trim();
-            if (val)
-                return val;
+            if (val) {
+                return val.length <= 128 ? val : val.slice(0, 125) + '...';
+            }
         }
         return '';
     }
@@ -232,7 +251,7 @@ let CaseChunkProcessorService = CaseChunkProcessorService_1 = class CaseChunkPro
         const words = text
             .replace(/[\uff0c\u3002\uff1b\uff1a\u3001\u201c\u201d\u2018\u2019\uff08\uff09()\u3010\u3011\[\]\-【】\n\r]/g, ' ')
             .split(/[\s]+/)
-            .filter(item => item.length >= 2);
+            .filter(item => item.length >= 2 && !item.endsWith('：') && !item.endsWith(':'));
         const filtered = words.filter(w => !STOP_WORDS.has(w) && !titleSet.has(w));
         const freq = new Map();
         for (const w of filtered) {

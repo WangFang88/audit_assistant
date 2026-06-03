@@ -80,6 +80,9 @@ export class CaseChunkProcessorService {
     for (const sheet of sheets) {
       if (sheet.rows.length === 0) continue;
 
+      // 跳过审计工作底稿类的非数据表（表头包含审计元数据字段而非数据列名）
+      if (this.isAuditWorkingPaper(sheet.headers)) continue;
+
       const columnTypes = this.detectColumnTypes(sheet.headers);
 
       for (let rowIdx = 0; rowIdx < sheet.rows.length; rowIdx++) {
@@ -122,6 +125,31 @@ export class CaseChunkProcessorService {
     }
 
     return chunks;
+  }
+
+  /**
+   * 判断 sheet 是否为审计工作底稿（非数据表），基于表头关键词检测
+   */
+  private isAuditWorkingPaper(headers: string[]): boolean {
+    if (headers.length === 0) return true;
+
+    // 审计工作底稿元数据字段
+    const metadataPattern = /被审计单位|审计项目|审计人员|复核人员|会计期间|会计截止日|编号|日期|第.*页|共.*页/;
+    // 数据表列名（含"序号"说明是正常数据表，不过滤）
+    const dataPattern = /序号|问题|描述|违反|条例|法规|依据|名称|金额|类别/;
+
+    let metadataCount = 0;
+    let dataCount = 0;
+
+    for (const h of headers) {
+      // 去除空格后匹配（处理"被 审 计 单 位"等分散字符的情况）
+      const normalized = h.replace(/\s+/g, '');
+      if (metadataPattern.test(normalized)) metadataCount++;
+      if (dataPattern.test(normalized)) dataCount++;
+    }
+
+    // 如果元数据字段 >= 2 且数据字段 < 2，判定为工作底稿
+    return metadataCount >= 2 && dataCount < 2;
   }
 
   /**
@@ -208,7 +236,10 @@ export class CaseChunkProcessorService {
   private extractArticleRef(row: Record<string, string>, columnTypes: ColumnTypes): string {
     for (const col of columnTypes.articleRefCols) {
       const val = row[col]?.trim();
-      if (val) return val;
+      if (val) {
+        // 截断至 128 字符以匹配数据库 varchar(128) 列
+        return val.length <= 128 ? val : val.slice(0, 125) + '...';
+      }
     }
     return '';
   }
@@ -321,11 +352,11 @@ export class CaseChunkProcessorService {
   private extractContentKeywords(text: string, titleKeywords: string[]): string[] {
     const titleSet = new Set(titleKeywords);
 
-    // 去标点、分词
+    // 去标点、分词，同时移除 label 前缀标记中的冒号
     const words = text
       .replace(/[\uff0c\u3002\uff1b\uff1a\u3001\u201c\u201d\u2018\u2019\uff08\uff09()\u3010\u3011\[\]\-【】\n\r]/g, ' ')
       .split(/[\s]+/)
-      .filter(item => item.length >= 2);
+      .filter(item => item.length >= 2 && !item.endsWith('：') && !item.endsWith(':'));
 
     // 过滤停用词和标题关键词
     const filtered = words.filter(w => !STOP_WORDS.has(w) && !titleSet.has(w));

@@ -88,8 +88,18 @@ export class TextExtractionService {
       // 构建合并单元格映射：被合并的行列 → 首单元格值
       const mergeMap = this.buildMergeMapFromSheet(rawData, sheet['!merges']);
 
-      // 找到第一个非空行作为表头行索引
-      const headerRowIdx = rawData.findIndex((row) => row.some((cell: any) => String(cell).trim().length > 0));
+      // 找到表头行：至少 3 个非空单元格（避免标题行等单列合并行被误判）
+      const MIN_HEADER_CELLS = 3;
+      const headerRowIdx = rawData.findIndex((row) => {
+        let nonEmptyCount = 0;
+        for (const cell of row) {
+          if (String(cell ?? '').trim().length > 0) {
+            nonEmptyCount++;
+            if (nonEmptyCount >= MIN_HEADER_CELLS) return true;
+          }
+        }
+        return false;
+      });
       if (headerRowIdx < 0) continue;
 
       const headerRow = rawData[headerRowIdx].map((cell: any) => String(cell ?? '').trim());

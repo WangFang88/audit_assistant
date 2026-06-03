@@ -73,7 +73,18 @@ let TextExtractionService = TextExtractionService_1 = class TextExtractionServic
             if (rawData.length === 0)
                 continue;
             const mergeMap = this.buildMergeMapFromSheet(rawData, sheet['!merges']);
-            const headerRowIdx = rawData.findIndex((row) => row.some((cell) => String(cell).trim().length > 0));
+            const MIN_HEADER_CELLS = 3;
+            const headerRowIdx = rawData.findIndex((row) => {
+                let nonEmptyCount = 0;
+                for (const cell of row) {
+                    if (String(cell ?? '').trim().length > 0) {
+                        nonEmptyCount++;
+                        if (nonEmptyCount >= MIN_HEADER_CELLS)
+                            return true;
+                    }
+                }
+                return false;
+            });
             if (headerRowIdx < 0)
                 continue;
             const headerRow = rawData[headerRowIdx].map((cell) => String(cell ?? '').trim());

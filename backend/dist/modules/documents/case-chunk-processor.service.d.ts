@@ -34,6 +34,7 @@ export declare class CaseChunkProcessorService {
     private readonly COLUMN_PATTERNS;
     private buildImportedChunkId;
     buildXlsxCaseChunks(document: DocumentRecord, sheets: XlsxSheetData[]): DocumentChunkRecord[];
+    private isAuditWorkingPaper;
     private detectColumnTypes;
     private assembleContent;
     private extractArticleRef;
