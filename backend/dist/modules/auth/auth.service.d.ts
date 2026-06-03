@@ -27,7 +27,6 @@ type DemoUser = {
 };
 type AuthUserRecord = DemoUser & {
     passwordHash: string;
-    passwordIsLegacyPlaintext?: boolean;
     subscriptionType: string;
 };
 export declare class AuthService {
@@ -36,8 +35,10 @@ export declare class AuthService {
     private readonly userRepository;
     private readonly auditService;
     private readonly redisCache;
-    constructor(localStateService: LocalStateService, authUserRepository: AuthUserRepository, userRepository: Repository<UserEntity>, auditService: AuditService, redisCache: RedisUserCacheService);
+    private readonly jwtSecret;
     private readonly demoUsers;
+    constructor(localStateService: LocalStateService, authUserRepository: AuthUserRepository, userRepository: Repository<UserEntity>, auditService: AuditService, redisCache: RedisUserCacheService);
+    private generateFallbackSecret;
     private registeredUsers;
     private readonly userStorage;
     private get users();
@@ -47,12 +48,11 @@ export declare class AuthService {
     private persistUsers;
     private hashPassword;
     private verifyPassword;
-    private upgradeLegacyPassword;
     private buildAccessToken;
     private buildRefreshToken;
     private normalizePhone;
     private findUserByPhone;
-    private findUserByToken;
+    private verifyToken;
     private setCurrentUser;
     private buildAuthResponse;
     private createUserName;

@@ -1,4 +1,5 @@
-import { createHash } from 'crypto';
+import * as bcrypt from 'bcrypt';
+import * as jwt from 'jsonwebtoken';
 import { AsyncLocalStorage } from 'async_hooks';
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { IsString, Matches, MinLength, MaxLength } from 'class-validator';
@@ -9,6 +10,8 @@ import { UserEntity } from '../../database/entities/user.entity';
 import { AuditService } from '../audit/audit.service';
 import { LocalStateService } from '../subscriptions/local-state.service';
 import { RedisUserCacheService } from './redis-user-cache.service';
+
+const BCRYPT_ROUNDS = 10;
 
 class LoginDto {
   @IsString({ message: '账号不能为空' })
@@ -53,12 +56,14 @@ type DemoUser = {
 
 type AuthUserRecord = DemoUser & {
   passwordHash: string;
-  passwordIsLegacyPlaintext?: boolean;
   subscriptionType: string;
 };
 
 @Injectable()
 export class AuthService {
+  private readonly jwtSecret: string;
+  private readonly demoUsers: AuthUserRecord[];
+
   constructor(
     private readonly localStateService: LocalStateService,
     private readonly authUserRepository: AuthUserRepository,
@@ -67,20 +72,29 @@ export class AuthService {
     private readonly auditService: AuditService,
     private readonly redisCache: RedisUserCacheService,
   ) {
+    this.jwtSecret = process.env.JWT_SECRET ?? this.generateFallbackSecret();
+
+    // 管理员密码从环境变量读取，默认使用强密码
+    const adminPassword = process.env.ADMIN_PASSWORD ?? 'XiaoJia@2024!Audit';
+    this.demoUsers = [
+      {
+        id: 'user-1',
+        name: '系统管理员',
+        phone: '13800138000',
+        role: 'admin',
+        trialEndsAt: '2099-12-31',
+        passwordHash: bcrypt.hashSync(adminPassword, BCRYPT_ROUNDS),
+        subscriptionType: 'admin-preview',
+      },
+    ];
+
     setImmediate(() => this.loadUsersFromDatabase());
   }
 
-  private readonly demoUsers: AuthUserRecord[] = [
-    {
-      id: 'user-1',
-      name: '系统管理员',
-      phone: '13800138000',
-      role: 'admin',
-      trialEndsAt: '2099-12-31',
-      passwordHash: createHash('sha256').update('123456').digest('hex'),
-      subscriptionType: 'admin-preview',
-    },
-  ];
+  private generateFallbackSecret(): string {
+    // 生成一个 64 字符的随机 hex 字符串作为兜底密钥
+    return require('crypto').randomBytes(32).toString('hex');
+  }
 
   private registeredUsers: AuthUserRecord[] = [];
   private readonly userStorage = new AsyncLocalStorage<DemoUser>();
@@ -127,35 +141,20 @@ export class AuthService {
     // users are persisted directly to DB on register/update
   }
 
-  private hashPassword(password: string) {
-    return createHash('sha256').update(password).digest('hex');
+  private async hashPassword(password: string) {
+    return bcrypt.hash(password, BCRYPT_ROUNDS);
   }
 
-  private verifyPassword(user: AuthUserRecord, password: string) {
-    const normalizedPassword = password.trim();
-    if (user.passwordIsLegacyPlaintext) {
-      return user.passwordHash === normalizedPassword;
-    }
-
-    return user.passwordHash === this.hashPassword(normalizedPassword);
-  }
-
-  private upgradeLegacyPassword(user: AuthUserRecord) {
-    if (!user.passwordIsLegacyPlaintext) {
-      return;
-    }
-
-    user.passwordHash = this.hashPassword(user.passwordHash);
-    user.passwordIsLegacyPlaintext = false;
-    this.persistUsers();
+  private async verifyPassword(user: AuthUserRecord, password: string) {
+    return bcrypt.compare(password.trim(), user.passwordHash);
   }
 
   private buildAccessToken(userId: string) {
-    return `demo-access-token-${userId}`;
+    return jwt.sign({ sub: userId }, this.jwtSecret, { expiresIn: '24h' });
   }
 
   private buildRefreshToken(userId: string) {
-    return `demo-refresh-token-${userId}`;
+    return jwt.sign({ sub: userId, type: 'refresh' }, this.jwtSecret, { expiresIn: '7d' });
   }
 
   private normalizePhone(phone: string) {
@@ -167,13 +166,19 @@ export class AuthService {
     return this.users.find((user) => user.phone === normalizedPhone || (normalizedPhone === 'admin' && user.role === 'admin')) ?? null;
   }
 
-  private findUserByToken(token: string, prefix: 'demo-access-token-' | 'demo-refresh-token-') {
-    if (!token.startsWith(prefix)) {
+  private verifyToken(token: string, expectRefresh: boolean): { sub: string } | null {
+    try {
+      const payload = jwt.verify(token, this.jwtSecret) as { sub: string; type?: string };
+      // refresh token 只能用于 refresh 端点
+      if (expectRefresh) {
+        if (payload.type !== 'refresh') return null;
+      } else {
+        if (payload.type === 'refresh') return null;
+      }
+      return { sub: payload.sub };
+    } catch {
       return null;
     }
-
-    const userId = token.slice(prefix.length);
-    return this.users.find((user) => user.id === userId) ?? null;
   }
 
   private setCurrentUser(user: DemoUser) {
@@ -205,11 +210,10 @@ export class AuthService {
       throw new UnauthorizedException('账号不存在，请先注册后再登录');
     }
 
-    if (!this.verifyPassword(user, dto.password)) {
+    if (!(await this.verifyPassword(user, dto.password))) {
       throw new UnauthorizedException('密码错误，请重新输入');
     }
 
-    this.upgradeLegacyPassword(user);
     const response = this.buildAuthResponse(user);
     await this.auditService.recordEvent({
       eventType: 'auth.login',
@@ -225,7 +229,7 @@ export class AuthService {
 
   async register(dto: RegisterDto) {
     const phone = this.normalizePhone(dto.phone);
-    const passwordHash = this.hashPassword(dto.password.trim());
+    const passwordHash = await this.hashPassword(dto.password.trim());
     if (phone === 'admin') {
       throw new BadRequestException('admin 为保留账号，不能用于注册');
     }
@@ -265,16 +269,26 @@ export class AuthService {
   }
 
   refresh(dto: RefreshTokenDto) {
-    const user = this.findUserByToken(dto.refreshToken, 'demo-refresh-token-');
+    const payload = this.verifyToken(dto.refreshToken, true);
+    if (!payload) {
+      throw new UnauthorizedException('Refresh token 无效或已过期');
+    }
+
+    const user = this.users.find((u) => u.id === payload.sub);
     if (!user) {
-      throw new UnauthorizedException('Refresh token 无效');
+      throw new UnauthorizedException('用户不存在');
     }
 
     return this.buildAuthResponse(user);
   }
 
   validateAccessToken(token: string) {
-    const user = this.findUserByToken(token, 'demo-access-token-');
+    const payload = this.verifyToken(token, false);
+    if (!payload) {
+      return null;
+    }
+
+    const user = this.users.find((u) => u.id === payload.sub);
     if (!user) {
       return null;
     }

@@ -13,7 +13,8 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateProfileDto = exports.RegisterDto = exports.RefreshTokenDto = exports.LoginDto = exports.AuthService = void 0;
-const crypto_1 = require("crypto");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const async_hooks_1 = require("async_hooks");
 const common_1 = require("@nestjs/common");
 const class_validator_1 = require("class-validator");
@@ -24,6 +25,7 @@ const user_entity_1 = require("../../database/entities/user.entity");
 const audit_service_1 = require("../audit/audit.service");
 const local_state_service_1 = require("../subscriptions/local-state.service");
 const redis_user_cache_service_1 = require("./redis-user-cache.service");
+const BCRYPT_ROUNDS = 10;
 class LoginDto {
 }
 exports.LoginDto = LoginDto;
@@ -74,6 +76,10 @@ let AuthService = class AuthService {
         this.userRepository = userRepository;
         this.auditService = auditService;
         this.redisCache = redisCache;
+        this.registeredUsers = [];
+        this.userStorage = new async_hooks_1.AsyncLocalStorage();
+        this.jwtSecret = process.env.JWT_SECRET ?? this.generateFallbackSecret();
+        const adminPassword = process.env.ADMIN_PASSWORD ?? 'XiaoJia@2024!Audit';
         this.demoUsers = [
             {
                 id: 'user-1',
@@ -81,13 +87,14 @@ let AuthService = class AuthService {
                 phone: '13800138000',
                 role: 'admin',
                 trialEndsAt: '2099-12-31',
-                passwordHash: (0, crypto_1.createHash)('sha256').update('123456').digest('hex'),
+                passwordHash: bcrypt.hashSync(adminPassword, BCRYPT_ROUNDS),
                 subscriptionType: 'admin-preview',
             },
         ];
-        this.registeredUsers = [];
-        this.userStorage = new async_hooks_1.AsyncLocalStorage();
         setImmediate(() => this.loadUsersFromDatabase());
+    }
+    generateFallbackSecret() {
+        return require('crypto').randomBytes(32).toString('hex');
     }
     get users() {
         return [...this.demoUsers, ...this.registeredUsers];
@@ -125,29 +132,17 @@ let AuthService = class AuthService {
     }
     persistUsers() {
     }
-    hashPassword(password) {
-        return (0, crypto_1.createHash)('sha256').update(password).digest('hex');
+    async hashPassword(password) {
+        return bcrypt.hash(password, BCRYPT_ROUNDS);
     }
-    verifyPassword(user, password) {
-        const normalizedPassword = password.trim();
-        if (user.passwordIsLegacyPlaintext) {
-            return user.passwordHash === normalizedPassword;
-        }
-        return user.passwordHash === this.hashPassword(normalizedPassword);
-    }
-    upgradeLegacyPassword(user) {
-        if (!user.passwordIsLegacyPlaintext) {
-            return;
-        }
-        user.passwordHash = this.hashPassword(user.passwordHash);
-        user.passwordIsLegacyPlaintext = false;
-        this.persistUsers();
+    async verifyPassword(user, password) {
+        return bcrypt.compare(password.trim(), user.passwordHash);
     }
     buildAccessToken(userId) {
-        return `demo-access-token-${userId}`;
+        return jwt.sign({ sub: userId }, this.jwtSecret, { expiresIn: '24h' });
     }
     buildRefreshToken(userId) {
-        return `demo-refresh-token-${userId}`;
+        return jwt.sign({ sub: userId, type: 'refresh' }, this.jwtSecret, { expiresIn: '7d' });
     }
     normalizePhone(phone) {
         return phone.trim().replace(/[-\s()]/g, '');
@@ -156,12 +151,22 @@ let AuthService = class AuthService {
         const normalizedPhone = this.normalizePhone(phone);
         return this.users.find((user) => user.phone === normalizedPhone || (normalizedPhone === 'admin' && user.role === 'admin')) ?? null;
     }
-    findUserByToken(token, prefix) {
-        if (!token.startsWith(prefix)) {
+    verifyToken(token, expectRefresh) {
+        try {
+            const payload = jwt.verify(token, this.jwtSecret);
+            if (expectRefresh) {
+                if (payload.type !== 'refresh')
+                    return null;
+            }
+            else {
+                if (payload.type === 'refresh')
+                    return null;
+            }
+            return { sub: payload.sub };
+        }
+        catch {
             return null;
         }
-        const userId = token.slice(prefix.length);
-        return this.users.find((user) => user.id === userId) ?? null;
     }
     setCurrentUser(user) {
         return user;
@@ -187,10 +192,9 @@ let AuthService = class AuthService {
         if (!user) {
             throw new common_1.UnauthorizedException('账号不存在，请先注册后再登录');
         }
-        if (!this.verifyPassword(user, dto.password)) {
+        if (!(await this.verifyPassword(user, dto.password))) {
             throw new common_1.UnauthorizedException('密码错误，请重新输入');
         }
-        this.upgradeLegacyPassword(user);
         const response = this.buildAuthResponse(user);
         await this.auditService.recordEvent({
             eventType: 'auth.login',
@@ -205,7 +209,7 @@ let AuthService = class AuthService {
     }
     async register(dto) {
         const phone = this.normalizePhone(dto.phone);
-        const passwordHash = this.hashPassword(dto.password.trim());
+        const passwordHash = await this.hashPassword(dto.password.trim());
         if (phone === 'admin') {
             throw new common_1.BadRequestException('admin 为保留账号，不能用于注册');
         }
@@ -238,14 +242,22 @@ let AuthService = class AuthService {
         return response;
     }
     refresh(dto) {
-        const user = this.findUserByToken(dto.refreshToken, 'demo-refresh-token-');
+        const payload = this.verifyToken(dto.refreshToken, true);
+        if (!payload) {
+            throw new common_1.UnauthorizedException('Refresh token 无效或已过期');
+        }
+        const user = this.users.find((u) => u.id === payload.sub);
         if (!user) {
-            throw new common_1.UnauthorizedException('Refresh token 无效');
+            throw new common_1.UnauthorizedException('用户不存在');
         }
         return this.buildAuthResponse(user);
     }
     validateAccessToken(token) {
-        const user = this.findUserByToken(token, 'demo-access-token-');
+        const payload = this.verifyToken(token, false);
+        if (!payload) {
+            return null;
+        }
+        const user = this.users.find((u) => u.id === payload.sub);
         if (!user) {
             return null;
         }
